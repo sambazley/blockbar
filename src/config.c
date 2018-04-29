@@ -32,6 +32,8 @@
     }
 
 static void loadDefaults() {
+    conf.height = 22;
+
     conf.bg[0] = 0;
     conf.bg[1] = 0;
     conf.bg[2] = 0;
@@ -67,7 +69,18 @@ static const char *defaultConfigFile() {
     strcpy(ret, cfgDir);
     strcat(ret, filename);
 
+    free(cfgDir);
+
     return ret;
+}
+
+static void
+parseInt(JsonObject *jo, const char *key, int *dest, JsonError *err) {
+    if (jsonGetPairIndex(jo, key) == -1) {
+        return;
+    }
+
+    jsonGetInt(jo, key, dest, err);
 }
 
 static void
@@ -115,6 +128,10 @@ void configParse(const char *config) {
 
     JsonObject *jsonConfig = jsonParseFile(file, &err);
 
+    if (strcmp(config, "") == 0) {
+        free((char *) file);
+    }
+
     if (jsonErrorIsSet(&err)) {
         fprintf(stderr, "\nError loading configuration file.\n");
         fprintf(stderr, "%s\n", err.msg);
@@ -123,6 +140,9 @@ void configParse(const char *config) {
         return;
     }
 
+    parseInt(jsonConfig, "height", &conf.height, &err);
     parseColor(jsonConfig, "background", conf.bg, &err);
     parseColor(jsonConfig, "foreground", conf.fg, &err);
+
+    jsonCleanup(jsonConfig);
 }

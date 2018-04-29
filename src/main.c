@@ -18,6 +18,7 @@
  */
 
 #include "config.h"
+#include "window.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -40,6 +41,13 @@ int main(int argc, const char *argv[]) {
     }
 
     configParse(config);
+    if (createBars() != 0) {
+        return 1;
+    }
+
+    while (1) {
+        pollEvents();
+    }
 
     return 0;
 }

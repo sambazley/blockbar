@@ -17,17 +17,20 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef WINDOW_H
+#define WINDOW_H
 
-#include <stdint.h>
+#include <X11/Xlib.h>
 
-struct {
+struct Bar {
+    Window window;
+    int width;
     int height;
-    uint8_t bg [3];
-    uint8_t fg [3];
-} conf;
+    char *output;
+};
 
-void configParse(const char *config);
+int createBars();
+void pollEvents();
+void cleanupBars();
 
-#endif /* CONFIG_H */
+#endif /* WINDOW_H */
