@@ -41,6 +41,8 @@ static void loadDefaults() {
     conf.fg[0] = 0xFF;
     conf.fg[1] = 0xFF;
     conf.fg[2] = 0xFF;
+
+    conf.font = 0;
 }
 
 static const char *defaultConfigFile() {
@@ -110,6 +112,19 @@ parseColor(JsonObject *jo, const char *key, uint8_t *dest, JsonError *err) {
     }
 }
 
+static void
+parseString(JsonObject *jo, const char *key, char **dest, JsonError *err) {
+    if (jsonGetPairIndex(jo, key) == -1) {
+        return;
+    }
+
+    char *str;
+    jsonGetString(jo, key, &str, err);
+
+    *dest = malloc(strlen(str) + 1);
+    strcpy(*dest, str);
+}
+
 void configParse(const char *config) {
     loadDefaults();
 
@@ -143,6 +158,7 @@ void configParse(const char *config) {
     parseInt(jsonConfig, "height", &conf.height, &err);
     parseColor(jsonConfig, "background", conf.bg, &err);
     parseColor(jsonConfig, "foreground", conf.fg, &err);
+    parseString(jsonConfig, "font", &conf.font, &err);
 
     jsonCleanup(jsonConfig);
 }

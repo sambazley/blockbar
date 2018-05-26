@@ -22,10 +22,13 @@
 
 #include <stdint.h>
 
+typedef uint8_t color [3];
+
 struct {
     int height;
-    uint8_t bg [3];
-    uint8_t fg [3];
+    color bg;
+    color fg;
+    char *font;
 } conf;
 
 void configParse(const char *config);

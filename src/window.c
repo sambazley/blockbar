@@ -26,10 +26,9 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
 
-static Display *disp;
-
-static int barCount;
-static struct Bar *bars;
+Display *disp;
+int barCount;
+struct Bar *bars;
 
 #define ATOM(x) Atom x = XInternAtom(disp, #x, False);
 
@@ -77,6 +76,11 @@ int createBars() {
 
         bar->output = malloc(oputInfo->nameLen + 1);
         strcpy(bar->output, oputInfo->name);
+
+        bar->sfc = cairo_xlib_surface_create(disp, bar->window,
+                DefaultVisual(disp, s), bar->width, bar->height);
+
+        bar->ctx = cairo_create(bar->sfc);
 
         XRRFreeOutputInfo(oputInfo);
         XRRFreeCrtcInfo(crtcInfo);

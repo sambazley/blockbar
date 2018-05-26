@@ -17,27 +17,10 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef WINDOW_H
-#define WINDOW_H
-#include <cairo/cairo-xlib.h>
-#include <X11/Xlib.h>
+#ifndef RENDER_H
+#define RENDER_H
 
-struct Bar {
-    Window window;
-    int width;
-    int height;
-    char *output;
+void renderInit();
+void redraw();
 
-    cairo_surface_t *sfc;
-    cairo_t *ctx;
-};
-
-extern Display *disp;
-extern int barCount;
-extern struct Bar *bars;
-
-int createBars();
-void pollEvents();
-void cleanupBars();
-
-#endif /* WINDOW_H */
+#endif /* RENDER_H */
