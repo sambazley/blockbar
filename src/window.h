@@ -28,8 +28,8 @@ struct Bar {
     int height;
     char *output;
 
-    cairo_surface_t *sfc;
-    cairo_t *ctx;
+    cairo_surface_t *sfc [2];
+    cairo_t *ctx [2];
 };
 
 extern Display *disp;

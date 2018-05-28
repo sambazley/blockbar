@@ -37,7 +37,7 @@ void renderInit() {
 
 static void
 drawString(struct Bar *bar, const char *str, int x, int pos, color col) {
-    PangoLayout *layout = pango_cairo_create_layout(bar->ctx);
+    PangoLayout *layout = pango_cairo_create_layout(bar->ctx[1]);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
 
@@ -54,22 +54,27 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color col) {
             break;
     }
 
-    cairo_set_source_rgb(bar->ctx, col[0]/255.f, col[1]/255.f, col[2]/255.f);
-    cairo_move_to(bar->ctx, xpos, bar->height/2 - height/2);
-    pango_cairo_show_layout(bar->ctx, layout);
+    cairo_set_source_rgb(bar->ctx[1], col[0]/255.f, col[1]/255.f, col[2]/255.f);
+    cairo_move_to(bar->ctx[1], xpos, bar->height/2 - height/2);
+    pango_cairo_show_layout(bar->ctx[1], layout);
 
     g_object_unref(layout);
 }
 
 void redraw() {
     for (int i = 0; i < barCount; i++) {
-        cairo_t *ctx = bars[i].ctx;
+        cairo_t *ctx = bars[i].ctx[1];
         cairo_set_source_rgba(ctx,
                 conf.bg[0]/255.f,
                 conf.bg[1]/255.f,
                 conf.bg[2]/255.f, 1);
         cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
         cairo_paint(ctx);
+    }
+
+    for (int i = 0; i < barCount; i++) {
+        cairo_set_source_surface(bars[i].ctx[0], bars[i].sfc[1], 0, 0);
+        cairo_paint(bars[i].ctx[0]);
     }
 
     XSync(disp, False);

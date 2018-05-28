@@ -77,10 +77,13 @@ int createBars() {
         bar->output = malloc(oputInfo->nameLen + 1);
         strcpy(bar->output, oputInfo->name);
 
-        bar->sfc = cairo_xlib_surface_create(disp, bar->window,
+        bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
                 DefaultVisual(disp, s), bar->width, bar->height);
+        bar->sfc[1] = cairo_surface_create_similar_image(bar->sfc[0],
+                CAIRO_FORMAT_RGB24, bar->width, bar->height);
 
-        bar->ctx = cairo_create(bar->sfc);
+        bar->ctx[0] = cairo_create(bar->sfc[0]);
+        bar->ctx[1] = cairo_create(bar->sfc[1]);
 
         XRRFreeOutputInfo(oputInfo);
         XRRFreeCrtcInfo(crtcInfo);
@@ -124,7 +127,10 @@ void cleanupBars() {
         struct Bar *bar = &bars[i];
 
         free(bar->output);
-
+        cairo_surface_destroy(bar->sfc[0]);
+        cairo_surface_destroy(bar->sfc[1]);
+        cairo_destroy(bar->ctx[0]);
+        cairo_destroy(bar->ctx[1]);
         XDestroyWindow(disp, bar->window);
     }
 }
