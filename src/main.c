@@ -17,14 +17,44 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
+#include "blocks.h"
 #include "config.h"
 #include "render.h"
 #include "window.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
+}
+
+static void blocksInit(struct Block *blocks, int count) {
+    for (int i = 0; i < count; i++) {
+        struct Block *blk = &blocks[i];
+        if (blk->eachmon) {
+            if (blk->mode == LEGACY) {
+                blk->data.eachMon.legacy =
+                    malloc(sizeof(struct LegacyData) * barCount);
+            } else {
+                blk->data.eachMon.subblock =
+                    malloc(sizeof(struct SubblockData) * barCount);
+            }
+        }
+    }
+}
+
+static void blocksCleanup(struct Block *blocks, int count) {
+    for (int i = 0; i < count; i++) {
+        struct Block *blk = &blocks[i];
+        if (blk->eachmon) {
+            if (blk->mode == LEGACY) {
+                free(blk->data.eachMon.legacy);
+            } else {
+                free(blk->data.eachMon.subblock);
+            }
+        }
+    }
 }
 
 int main(int argc, const char *argv[]) {
@@ -42,16 +72,23 @@ int main(int argc, const char *argv[]) {
     }
 
     configParse(config);
+
     renderInit();
 
     if (createBars() != 0) {
         return 1;
     }
 
+    blocksInit(leftBlocks, leftBlockCount);
+    blocksInit(rightBlocks, rightBlockCount);
+
     while (1) {
         pollEvents();
         redraw();
     }
+
+    blocksCleanup(leftBlocks, leftBlockCount);
+    blocksCleanup(rightBlocks, rightBlockCount);
 
     return 0;
 }
