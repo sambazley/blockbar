@@ -9,6 +9,7 @@ set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 set(SOURCE
     src/main.c
     src/config.c
+    src/exec.c
     src/render.c
     src/window.c
 )

@@ -19,11 +19,16 @@
 
 #include "blocks.h"
 #include "config.h"
+#include "exec.h"
 #include "render.h"
 #include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
@@ -36,9 +41,13 @@ static void blocksInit(struct Block *blocks, int count) {
             if (blk->mode == LEGACY) {
                 blk->data.eachMon.legacy =
                     malloc(sizeof(struct LegacyData) * barCount);
+                memset(blk->data.eachMon.legacy, 0,
+                        sizeof(struct LegacyData) * barCount);
             } else {
                 blk->data.eachMon.subblock =
                     malloc(sizeof(struct SubblockData) * barCount);
+                memset(blk->data.eachMon.subblock, 0,
+                        sizeof(struct SubblockData) * barCount);
             }
         }
     }
@@ -54,6 +63,57 @@ static void blocksCleanup(struct Block *blocks, int count) {
                 free(blk->data.eachMon.subblock);
             }
         }
+    }
+}
+
+static int gcd(int a, int b) {
+    while (b) {
+        a %= b;
+        a ^= b;
+        b ^= a;
+        a ^= b;
+    }
+
+    return a;
+}
+
+static int getTickInterval() {
+    int time = 0;
+
+    for (int i = 0; i < leftBlockCount; i++) {
+        time = gcd(time, leftBlocks[i].interval);
+    }
+    for (int i = 0; i < rightBlockCount; i++) {
+        time = gcd(time, rightBlocks[i].interval);
+    }
+
+    for (int i = 0; i < leftBlockCount; i++) {
+        leftBlocks[i].tickCount = leftBlocks[i].ticks =
+            leftBlocks[i].interval / time;
+    }
+    for (int i = 0; i < rightBlockCount; i++) {
+        rightBlocks[i].tickCount = rightBlocks[i].ticks =
+            rightBlocks[i].interval / time;
+    }
+
+    return time;
+}
+
+static void tickBlock(struct Block *blk) {
+    if (blk->tickCount == blk->ticks) {
+        blk->tickCount = 0;
+        blockExec(blk);
+    }
+
+    blk->tickCount++;
+}
+
+static void tick() {
+    for (int i = 0; i < leftBlockCount; i++) {
+        tickBlock(&leftBlocks[i]);
+    }
+    for (int i = 0; i < rightBlockCount; i++) {
+        tickBlock(&rightBlocks[i]);
     }
 }
 
@@ -79,11 +139,80 @@ int main(int argc, const char *argv[]) {
         return 1;
     }
 
+
     blocksInit(leftBlocks, leftBlockCount);
     blocksInit(rightBlocks, rightBlockCount);
 
+    redraw();
+
+    struct timeval tv;
+    fd_set fds;
+    int x11fd = ConnectionNumber(disp);
+    int interval = getTickInterval();
+
     while (1) {
+        FD_ZERO(&fds);
+        FD_SET(x11fd, &fds);
+
+        tv.tv_sec = 0;
+        tv.tv_usec = interval * 1000;
+
+        int nfds = x11fd;
+        for (int i = 0; i < procCount; i++) {
+            struct Proc *proc = &procs[i];
+
+            if (proc->pid) {
+                FD_SET(proc->fdout, &fds);
+                if (proc->fdout > nfds) {
+                    nfds = proc->fdout;
+                }
+            }
+        }
+
+        int fdsRdy = select(nfds+1, &fds, 0, 0, &tv);
+
         pollEvents();
+
+        if (fdsRdy == 0) {
+            tick();
+            continue;
+        }
+
+        for (int i = 0; i < procCount; i++) {
+            struct Proc *proc = &procs[i];
+
+            if (proc->pid == 0) continue;
+            if (!FD_ISSET(proc->fdout, &fds)) continue;
+
+            waitpid(proc->pid, 0, 0);
+
+            char buf [2048] = {0};
+            read(proc->fdout, buf, sizeof(buf) - 1);
+
+            struct Block *blk = proc->blk;
+
+            char **execData;
+            if (blk->eachmon) {
+                execData = &(blk->data.eachMon.legacy[proc->bar].execData);
+            } else {
+                execData = &(blk->data.singleMon.legacy.execData);
+            }
+
+            if (*execData) {
+                free(*execData);
+            }
+            *execData = malloc(strlen(buf) + 1);
+            strcpy(*execData, buf);
+
+            close(proc->fdout);
+
+            proc->blk = 0;
+            proc->pid = 0;
+            proc->fdout = 0;
+
+            break;
+        }
+
         redraw();
     }
 
