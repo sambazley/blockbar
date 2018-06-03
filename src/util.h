@@ -17,19 +17,14 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef UTIL_H
+#define UTIL_H
 
-#include "util.h"
+#include <stdint.h>
+#include <ujson.h>
 
-struct {
-    int height;
-    int padding;
-    color bg;
-    color fg;
-    char *font;
-} conf;
+typedef int16_t color [3];
 
-void configParse(const char *config);
+void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err);
 
-#endif /* CONFIG_H */
+#endif /* UTIL_H */

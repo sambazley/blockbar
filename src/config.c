@@ -38,6 +38,7 @@ struct Block *leftBlocks, *rightBlocks;
 
 static void loadDefaults() {
     conf.height = 22;
+    conf.padding = 5;
 
     conf.bg[0] = 0;
     conf.bg[1] = 0;
@@ -97,33 +98,6 @@ parseBool(JsonObject *jo, const char *key, int *dest, JsonError *err) {
     }
 
     jsonGetBool(jo, key, (unsigned *) dest, 0, err);
-}
-
-static void
-parseColor(JsonObject *jo, const char *key, uint8_t *dest, JsonError *err) {
-    if (jsonGetPairIndex(jo, key) == -1) {
-        return;
-    }
-
-    JsonArray *col;
-    jsonGetArray(jo, key, &col, err); ERRCHK();
-
-    if (col->used != 3) {
-        fprintf(stderr, "Invalid \"%s\" array\n", key);
-        return;
-    }
-
-    for (int i = 0; i < col->used; i++) {
-        void *val = col->vals[i];
-        if (jsonGetType(val) != JSON_NUMBER) {
-            fprintf(stderr,
-                    "Value in \"%s\" array in not a valid number\n", key);
-            return;
-        }
-
-        JsonNumber *n = (JsonNumber *) val;
-        dest[i] = (uint8_t) n->data;
-    }
 }
 
 static void
@@ -216,6 +190,7 @@ void configParse(const char *config) {
     }
 
     parseInt(jsonConfig, "height", &conf.height, &err);
+    parseInt(jsonConfig, "padding", &conf.padding, &err);
     parseColor(jsonConfig, "background", conf.bg, &err);
     parseColor(jsonConfig, "foreground", conf.fg, &err);
     parseString(jsonConfig, "font", &conf.font, &err);

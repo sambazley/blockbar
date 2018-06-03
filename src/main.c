@@ -38,17 +38,8 @@ static void blocksInit(struct Block *blocks, int count) {
     for (int i = 0; i < count; i++) {
         struct Block *blk = &blocks[i];
         if (blk->eachmon) {
-            if (blk->mode == LEGACY) {
-                blk->data.eachMon.legacy =
-                    malloc(sizeof(struct LegacyData) * barCount);
-                memset(blk->data.eachMon.legacy, 0,
-                        sizeof(struct LegacyData) * barCount);
-            } else {
-                blk->data.eachMon.subblock =
-                    malloc(sizeof(struct SubblockData) * barCount);
-                memset(blk->data.eachMon.subblock, 0,
-                        sizeof(struct SubblockData) * barCount);
-            }
+            blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
+            memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
         }
     }
 }
@@ -57,11 +48,7 @@ static void blocksCleanup(struct Block *blocks, int count) {
     for (int i = 0; i < count; i++) {
         struct Block *blk = &blocks[i];
         if (blk->eachmon) {
-            if (blk->mode == LEGACY) {
-                free(blk->data.eachMon.legacy);
-            } else {
-                free(blk->data.eachMon.subblock);
-            }
+            free(blk->data.mon);
         }
     }
 }
@@ -193,9 +180,9 @@ int main(int argc, const char *argv[]) {
 
             char **execData;
             if (blk->eachmon) {
-                execData = &(blk->data.eachMon.legacy[proc->bar].execData);
+                execData = &(blk->data.mon[proc->bar].type.legacy.execData);
             } else {
-                execData = &(blk->data.singleMon.legacy.execData);
+                execData = &(blk->data.type.legacy.execData);
             }
 
             if (*execData) {

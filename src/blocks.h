@@ -55,12 +55,14 @@ struct Block {
         union {
             struct LegacyData legacy;
             struct SubblockData subblock;
-        } singleMon;
+        } type;
 
-        union {
-            struct LegacyData *legacy;
-            struct SubblockData *subblock;
-        } eachMon;
+        struct {
+            union {
+                struct LegacyData legacy;
+                struct SubblockData subblock;
+            } type;
+        } *mon;
     } data;
 };
 
