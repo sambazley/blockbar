@@ -199,6 +199,10 @@ static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
         goto end;
     }
 
+    if (subblocks->used == 0) {
+        return x;
+    }
+
     if (*xdivs) {
         free(*xdivs);
     }
@@ -255,9 +259,10 @@ static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
         (*xdivs)[i] = x;
     }
 
+    x+=2;
 end:
     jsonCleanup(jo);
-    return x + 2;
+    return x;
 }
 
 static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
@@ -301,7 +306,7 @@ static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
                 x += conf.padding + blk->padding + blk->padIn;
             }
 
-            if (!blk->nodiv && j != 0) {
+            if (!blk->nodiv && j != 0 && divx != x) {
                 cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
 
                 if (pos == RIGHT) {
