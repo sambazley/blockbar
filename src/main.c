@@ -89,7 +89,7 @@ static int getTickInterval() {
 static void tickBlock(struct Block *blk) {
     if (blk->tickCount == blk->ticks) {
         blk->tickCount = 0;
-        blockExec(blk);
+        blockExec(blk, 0);
     }
 
     blk->tickCount++;

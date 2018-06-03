@@ -18,7 +18,9 @@
  */
 
 #include "window.h"
+#include "blocks.h"
 #include "config.h"
+#include "exec.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -113,11 +115,81 @@ int createBars() {
     return 0;
 }
 
+static int search(struct Block *blks, int blkCount, struct Click *cd, int x) {
+    for (int i = 0; i < blkCount; i++) {
+        struct Block *blk = &blks[i];
+
+        if (blk->mode == LEGACY) {
+            int xdiv;
+            if (blk->eachmon) {
+                xdiv = blk->data.mon[cd->bar].type.legacy.xdiv;
+            } else {
+                xdiv = blk->data.type.legacy.xdiv;
+            }
+
+            if (xdiv >= x) {
+                cd->block = blk;
+                return 1;
+            }
+        } else {
+            int *xdivs;
+            int subblockCount;
+
+            if (blk->eachmon) {
+                xdivs = blk->data.mon[cd->bar].type.subblock.xdivs;
+                subblockCount =
+                    blk->data.mon[cd->bar].type.subblock.subblockCount;
+            } else {
+                xdivs = blk->data.type.subblock.xdivs;
+                subblockCount = blk->data.type.subblock.subblockCount;
+            }
+
+            if (xdivs == 0 || xdivs[subblockCount - 1] < x) {
+                continue;
+            }
+
+            for (int j = 0; j < subblockCount; j++) {
+                if (xdivs[j] >= x) {
+                    cd->block = blk;
+                    cd->subblock = j;
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
+static void click(struct Click *cd) {
+    if (!search(leftBlocks, leftBlockCount, cd, cd->x)) {
+        search(rightBlocks, rightBlockCount, cd, bars[cd->bar].width - cd->x);
+    }
+
+    if (!cd->block) return;
+
+    blockExec(cd->block, cd);
+}
+
 void pollEvents() {
     XEvent ev;
     while (XPending(disp)) {
         XNextEvent(disp, &ev);
         switch (ev.type) {
+            case ButtonPress:
+                {
+                    int bar;
+                    for (bar = 0; bar < barCount; bar++) {
+                        if (bars[bar].window == ev.xbutton.window) break;
+                    }
+
+                    struct Click cd = {
+                        .button = ev.xbutton.button,
+                        .x = ev.xbutton.x,
+                        .bar = bar,
+                    };
+
+                    click(&cd);
+                }
         }
     }
 }

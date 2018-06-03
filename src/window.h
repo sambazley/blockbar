@@ -32,6 +32,15 @@ struct Bar {
     cairo_t *ctx [2];
 };
 
+struct Click {
+    int button;
+    int x;
+    int bar;
+
+    struct Block *block;
+    int subblock;
+};
+
 extern Display *disp;
 extern int barCount;
 extern struct Bar *bars;

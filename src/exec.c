@@ -18,7 +18,6 @@
  */
 
 #include "exec.h"
-#include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -72,13 +71,35 @@ static void execute(struct Block *blk, int bar) {
     proc->bar = bar;
 }
 
-void blockExec(struct Block *blk) {
+void blockExec(struct Block *blk, struct Click *cd) {
     if (!blk->exec) return;
 
+    char button [2] = {0};
+    char subblock [4] = {0};
+    if (cd != 0) {
+        button[0] = cd->button + '0';
+        sprintf(subblock, "%u", cd->subblock);
+    }
+    setenv("BLOCK_BUTTON", button, 1);
+    setenv("SUBBLOCK", subblock, 1);
+
     if (blk->eachmon) {
-        for (int i = 0; i < barCount; i++) {
-            setenv("BAR_OUTPUT", bars[i].output, 1);
-            execute(blk, i);
+        if (cd) {
+            setenv("BAR_OUTPUT", bars[cd->bar].output, 1);
+            execute(blk, cd->bar);
+
+            setenv("BLOCK_BUTTON", "", 1);
+            for (int i = 0; i < barCount; i++) {
+                if (i == cd->bar) continue;
+
+                setenv("BAR_OUTPUT", bars[i].output, 1);
+                execute(blk, i);
+            }
+        } else {
+            for (int i = 0; i < barCount; i++) {
+                setenv("BAR_OUTPUT", bars[i].output, 1);
+                execute(blk, i);
+            }
         }
     } else {
         setenv("BAR_OUTPUT", "", 1);

@@ -148,6 +148,12 @@ drawLegacyBlock(struct Block *blk, int x, enum Pos pos, int bar) {
 
     x += conf.padding + blk->padding + blk->padIn;
 
+    if (blk->eachmon) {
+        blk->data.mon[bar].type.legacy.xdiv = x;
+    } else {
+        blk->data.type.legacy.xdiv = x;
+    }
+
     free(data);
 
     return x;
@@ -156,11 +162,17 @@ drawLegacyBlock(struct Block *blk, int x, enum Pos pos, int bar) {
 static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
     char *data;
     char *exec = blk->exec;
+    int **xdivs;
+    int *subblockCount;
 
     if (blk->eachmon) {
         data = blk->data.mon[bar].type.subblock.execData;
+        xdivs = &(blk->data.mon[bar].type.subblock.xdivs);
+        subblockCount = &(blk->data.mon[bar].type.subblock.subblockCount);
     } else {
         data = blk->data.type.subblock.execData;
+        xdivs = &(blk->data.type.subblock.xdivs);
+        subblockCount = &(blk->data.type.subblock.subblockCount);
     }
 
     JsonError err;
@@ -186,6 +198,13 @@ static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
         fprintf(stderr, "Error parsing \"subblocks\" array\n%s\n", err.msg);
         goto end;
     }
+
+    if (*xdivs) {
+        free(*xdivs);
+    }
+
+    *xdivs = malloc(sizeof(int) * subblocks->used);
+    *subblockCount = subblocks->used;
 
     for (int i = 0; i < subblocks->used; i++) {
         void *val = subblocks->vals[i];
@@ -223,7 +242,6 @@ static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
                 } \
             }
 
-
         INT(bgwidth);
         INT(bgheight);
         INT(bgxpad);
@@ -233,6 +251,8 @@ static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
 
         x += drawString(&bars[bar], text, x, pos, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
+
+        (*xdivs)[i] = x;
     }
 
 end:

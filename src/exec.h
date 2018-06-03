@@ -21,6 +21,7 @@
 #define EXEC_H
 
 #include "blocks.h"
+#include "window.h"
 
 struct Proc {
     struct Block *blk;
@@ -32,6 +33,6 @@ struct Proc {
 extern int procCount;
 extern struct Proc *procs;
 
-void blockExec(struct Block *blk);
+void blockExec(struct Block *blk, struct Click *cd);
 
 #endif /* EXEC_H */
