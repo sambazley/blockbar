@@ -11,6 +11,7 @@ set(SOURCE
     src/config.c
     src/exec.c
     src/render.c
+    src/tray.c
     src/util.c
     src/window.c
 )

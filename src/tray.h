@@ -17,23 +17,20 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef TRAY_H
+#define TRAY_H
 
-#include "util.h"
+#include "window.h"
 
-struct {
-    int height;
-    int padding;
-    color bg;
-    color fg;
-    char *font;
+extern int trayBar;
 
-    int trayPadding;
-    int trayIconSize;
-    char *trayBar;
-} conf;
+void trayInit(int barIndex);
+void trayCleanup();
 
-void configParse(const char *config);
+int isTrayEvent(XEvent *ev);
+void handleTrayEvent(XEvent *ev);
+void handleUnmapEvent(XEvent *ev);
 
-#endif /* CONFIG_H */
+int getTrayWidth();
+
+#endif /* TRAY_H */

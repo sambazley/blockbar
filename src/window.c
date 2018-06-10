@@ -21,6 +21,7 @@
 #include "blocks.h"
 #include "config.h"
 #include "exec.h"
+#include "tray.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,7 +33,7 @@ Display *disp;
 int barCount;
 struct Bar *bars;
 
-#define ATOM(x) Atom x = XInternAtom(disp, #x, False);
+#define ATOM(x) Atom x = XInternAtom(disp, #x, False)
 
 int createBars() {
     disp = XOpenDisplay(NULL);
@@ -105,7 +106,8 @@ int createBars() {
         XSetClassHint(disp, bar->window, classhint);
         XFree(classhint);
 
-        XSelectInput(disp, bar->window, ButtonPressMask);
+        XSelectInput(disp, bar->window,
+                ButtonPressMask | SubstructureNotifyMask);
 
         XMapWindow(disp, bar->window);
     }
@@ -115,7 +117,12 @@ int createBars() {
     return 0;
 }
 
-static int search(struct Block *blks, int blkCount, struct Click *cd, int x) {
+static int
+search(struct Block *blks, int blkCount, struct Click *cd, int x, int pos) {
+    if (cd->bar == trayBar && pos == RIGHT) {
+        x -= getTrayWidth();
+    }
+
     for (int i = 0; i < blkCount; i++) {
         struct Block *blk = &blks[i];
 
@@ -161,8 +168,9 @@ static int search(struct Block *blks, int blkCount, struct Click *cd, int x) {
 }
 
 static void click(struct Click *cd) {
-    if (!search(leftBlocks, leftBlockCount, cd, cd->x)) {
-        search(rightBlocks, rightBlockCount, cd, bars[cd->bar].width - cd->x);
+    if (!search(leftBlocks, leftBlockCount, cd, cd->x, LEFT)) {
+        search(rightBlocks, rightBlockCount, cd, bars[cd->bar].width - cd->x,
+                RIGHT);
     }
 
     if (!cd->block) return;
@@ -190,6 +198,20 @@ void pollEvents() {
 
                     click(&cd);
                 }
+                break;
+            case ClientMessage:
+                if (isTrayEvent(&ev)) {
+                    handleTrayEvent(&ev);
+                }
+                break;
+            case ReparentNotify:
+            case UnmapNotify:
+            case DestroyNotify:
+                handleUnmapEvent(&ev);
+                break;
+            case SubstructureNotifyMask:
+                printf("substructure\n");
+                break;
         }
     }
 }

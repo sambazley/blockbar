@@ -41,6 +41,11 @@ struct Click {
     int subblock;
 };
 
+enum Pos {
+    LEFT,
+    RIGHT
+};
+
 extern Display *disp;
 extern int barCount;
 extern struct Bar *bars;

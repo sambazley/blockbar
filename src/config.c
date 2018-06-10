@@ -39,6 +39,9 @@ struct Block *leftBlocks, *rightBlocks;
 static void loadDefaults() {
     conf.height = 22;
     conf.padding = 5;
+    conf.trayPadding = 2;
+    conf.trayIconSize = 18;
+    conf.trayBar = 0;
 
     conf.bg[0] = 0;
     conf.bg[1] = 0;
@@ -194,6 +197,10 @@ void configParse(const char *config) {
     parseColor(jsonConfig, "background", conf.bg, &err);
     parseColor(jsonConfig, "foreground", conf.fg, &err);
     parseString(jsonConfig, "font", &conf.font, &err);
+
+    parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err);
+    parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err);
+    parseString(jsonConfig, "traybar", &conf.trayBar, &err);
 
     parseBlocks(jsonConfig, "left", &leftBlocks, &leftBlockCount, &err);
     parseBlocks(jsonConfig, "right", &rightBlocks, &rightBlockCount, &err);

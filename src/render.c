@@ -20,15 +20,11 @@
 #include "render.h"
 #include "blocks.h"
 #include "config.h"
+#include "tray.h"
 #include "window.h"
 #include <pango/pangocairo.h>
 #include <stdlib.h>
 #include <ujson.h>
-
-enum Pos {
-    LEFT,
-    RIGHT
-};
 
 static PangoFontDescription *fontDesc;
 
@@ -44,6 +40,10 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
     PangoLayout *layout = pango_cairo_create_layout(bar->ctx[1]);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
+
+    if (bar == &bars[trayBar] && pos == RIGHT) {
+        x += getTrayWidth();
+    }
 
     int width, height;
     pango_layout_get_pixel_size(layout, &width, &height);
@@ -288,7 +288,12 @@ static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
                 continue;
             }
 
-            int divx = x;
+            int divx;
+            if (i == trayBar && pos == RIGHT) {
+                divx = x + getTrayWidth();
+            } else {
+                divx = x;
+            }
 
             if (execData) {
                 if (blk->mode == LEGACY) {
@@ -306,7 +311,8 @@ static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
                 x += conf.padding + blk->padding + blk->padIn;
             }
 
-            if (!blk->nodiv && j != 0 && divx != x) {
+            if (!blk->nodiv && divx != x &&
+                    (j != 0 || (i == trayBar && pos == RIGHT))) {
                 cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
 
                 if (pos == RIGHT) {

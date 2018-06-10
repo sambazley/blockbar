@@ -21,6 +21,7 @@
 #include "config.h"
 #include "exec.h"
 #include "render.h"
+#include "tray.h"
 #include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -126,6 +127,19 @@ int main(int argc, const char *argv[]) {
         return 1;
     }
 
+    int trayBar = 0;
+
+    if (conf.trayBar != 0) {
+        for (int i = 0; i < barCount; i++) {
+            struct Bar bar = bars[i];
+            if (strcmp(bar.output, conf.trayBar) == 0) {
+                trayBar = i;
+                break;
+            }
+        }
+    }
+
+    trayInit(trayBar);
 
     blocksInit(leftBlocks, leftBlockCount);
     blocksInit(rightBlocks, rightBlockCount);
@@ -202,6 +216,8 @@ int main(int argc, const char *argv[]) {
 
         redraw();
     }
+
+    trayCleanup();
 
     blocksCleanup(leftBlocks, leftBlockCount);
     blocksCleanup(rightBlocks, rightBlockCount);
