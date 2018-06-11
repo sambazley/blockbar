@@ -51,6 +51,8 @@ struct Block {
 
     enum Mode mode;
 
+    int rendered;
+
     union {
         union {
             struct LegacyData legacy;

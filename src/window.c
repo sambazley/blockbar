@@ -126,6 +126,10 @@ search(struct Block *blks, int blkCount, struct Click *cd, int x, int pos) {
     for (int i = 0; i < blkCount; i++) {
         struct Block *blk = &blks[i];
 
+        if (!blk->rendered) {
+            continue;
+        }
+
         if (blk->mode == LEGACY) {
             int xdiv;
             if (blk->eachmon) {

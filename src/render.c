@@ -280,13 +280,17 @@ static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
             }
 
             if (execData == 0 && blk->label == 0) {
+                blk->rendered = 0;
                 continue;
             }
 
             if ((execData && strcmp(execData, "") == 0) ||
                     (blk->label && strcmp(blk->label, "") == 0)) {
+                blk->rendered = 0;
                 continue;
             }
+
+            blk->rendered = 1;
 
             int divx;
             if (i == trayBar && pos == RIGHT) {
