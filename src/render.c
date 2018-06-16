@@ -95,8 +95,7 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
     return width;
 }
 
-static int
-drawLegacyBlock(struct Block *blk, int x, enum Pos pos, int bar) {
+static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     char *dataOrig;
 
     if (blk->eachmon) {
@@ -136,14 +135,14 @@ drawLegacyBlock(struct Block *blk, int x, enum Pos pos, int bar) {
 
     x += conf.padding + blk->padding + blk->padOut;
 
-    if (pos == LEFT && blk->label && strcmp(blk->label, "") != 0) {
-        x += drawString(&bars[bar], blk->label, x, pos, col, 0, 0, 0, 0, 0);
+    if (blk->pos == LEFT && blk->label && strcmp(blk->label, "") != 0) {
+        x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
-    x += drawString(&bars[bar], longText, x, pos, col, 0, 0, 0, 0, 0);
+    x += drawString(&bars[bar], longText, x, blk->pos, col, 0,0,0,0,0);
 
-    if (pos == RIGHT && blk->label && strcmp(blk->label, "") != 0) {
-        x += drawString(&bars[bar], blk->label, x, pos, col, 0, 0, 0, 0, 0);
+    if (blk->pos == RIGHT && blk->label && strcmp(blk->label, "") != 0) {
+        x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
     x += conf.padding + blk->padding + blk->padIn;
@@ -159,7 +158,7 @@ drawLegacyBlock(struct Block *blk, int x, enum Pos pos, int bar) {
     return x;
 }
 
-static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
+static int drawSubblocks(struct Block *blk, int x, int bar) {
     char *data;
     char *exec = blk->exec;
     int **xdivs;
@@ -253,7 +252,7 @@ static int drawSubblocks(struct Block *blk, int x, enum Pos pos, int bar) {
 
         #undef INT
 
-        x += drawString(&bars[bar], text, x, pos, fg,
+        x += drawString(&bars[bar], text, x, blk->pos, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
 
         (*xdivs)[i] = x;
@@ -265,12 +264,12 @@ end:
     return x;
 }
 
-static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
+static void drawBlocks() {
     for (int i = 0; i < barCount; i++) {
-        int x = 0;
+        int x [SIDES] = {0};
 
-        for (int j = 0; j < blkCount; j++) {
-            struct Block *blk = &blks[j];
+        for (int j = 0; j < blockCount; j++) {
+            struct Block *blk = &blocks[j];
 
             char *execData;
             if (blk->eachmon) {
@@ -293,40 +292,40 @@ static void drawBlocks(struct Block *blks, int blkCount, enum Pos pos) {
             blk->rendered = 1;
 
             int divx;
-            if (i == trayBar && pos == RIGHT) {
-                divx = x + getTrayWidth();
+            if (i == trayBar && blk->pos == RIGHT) {
+                divx = x[blk->pos] + getTrayWidth();
             } else {
-                divx = x;
+                divx = x[blk->pos];
             }
 
             if (execData) {
                 if (blk->mode == LEGACY) {
-                    x = drawLegacyBlock(blk, x, pos, i);
+                    x[blk->pos] = drawLegacyBlock(blk, x[blk->pos], i);
                 } else {
-                    x = drawSubblocks(blk, x, pos, i);
+                    x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
                 }
             } else if (blk->label) {
-                x += conf.padding + blk->padding + blk->padOut;
+                x[blk->pos] += conf.padding + blk->padding + blk->padOut;
 
                 color col = {0xff, 0xff, 0xff};
-                x += drawString(&bars[i], blk->label, x, pos, col,
-                        0, 0, 0, 0, 0);
+                x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
+                        blk->pos, col, 0, 0, 0, 0, 0);
 
-                x += conf.padding + blk->padding + blk->padIn;
+                x[blk->pos] += conf.padding + blk->padding + blk->padIn;
             }
 
-            if (!blk->nodiv && divx != x &&
-                    (j != 0 || (i == trayBar && pos == RIGHT))) {
+            if (!blk->nodiv && divx != x[blk->pos] &&
+                    (j != 0 || (i == trayBar && blk->pos == RIGHT))) {
                 cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
 
-                if (pos == RIGHT) {
+                if (blk->pos == RIGHT) {
                     divx = bars[i].width - divx;
                 }
 
                 cairo_rectangle(bars[i].ctx[1], divx, 4, 1, bars[i].height-8);
                 cairo_fill(bars[i].ctx[1]);
 
-                x++;
+                x[blk->pos]++;
             }
         }
     }
@@ -343,8 +342,7 @@ void redraw() {
         cairo_paint(ctx);
     }
 
-    drawBlocks(leftBlocks, leftBlockCount, LEFT);
-    drawBlocks(rightBlocks, rightBlockCount, RIGHT);
+    drawBlocks();
 
     for (int i = 0; i < barCount; i++) {
         cairo_set_source_surface(bars[i].ctx[0], bars[i].sfc[1], 0, 0);

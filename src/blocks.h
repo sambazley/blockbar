@@ -36,6 +36,12 @@ enum Mode {
     SUBBLOCK
 };
 
+enum Pos {
+    LEFT,
+    RIGHT,
+    SIDES
+};
+
 struct Block {
     char *exec;
 
@@ -50,6 +56,8 @@ struct Block {
     int tickCount;
 
     enum Mode mode;
+
+    enum Pos pos;
 
     int rendered;
 
@@ -68,7 +76,7 @@ struct Block {
     } data;
 };
 
-extern int leftBlockCount, rightBlockCount;
-extern struct Block *leftBlocks, *rightBlocks;
+extern int blockCount;
+extern struct Block *blocks;
 
 #endif /* BLOCKS_H */

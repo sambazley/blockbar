@@ -117,17 +117,22 @@ int createBars() {
     return 0;
 }
 
-static int
-search(struct Block *blks, int blkCount, struct Click *cd, int x, int pos) {
-    if (cd->bar == trayBar && pos == RIGHT) {
-        x -= getTrayWidth();
-    }
-
-    for (int i = 0; i < blkCount; i++) {
-        struct Block *blk = &blks[i];
+static void click(struct Click *cd) {
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
 
         if (!blk->rendered) {
             continue;
+        }
+
+        int rx;
+        if (cd->bar == trayBar && blk->pos == RIGHT) {
+            rx = bars[cd->bar].width - cd->x;
+            if (cd->bar == trayBar) {
+                rx -= getTrayWidth();
+            }
+        } else {
+            rx = cd->x;
         }
 
         if (blk->mode == LEGACY) {
@@ -138,9 +143,9 @@ search(struct Block *blks, int blkCount, struct Click *cd, int x, int pos) {
                 xdiv = blk->data.type.legacy.xdiv;
             }
 
-            if (xdiv >= x) {
+            if (xdiv >= rx) {
                 cd->block = blk;
-                return 1;
+                goto found;
             }
         } else {
             int *xdivs;
@@ -155,30 +160,23 @@ search(struct Block *blks, int blkCount, struct Click *cd, int x, int pos) {
                 subblockCount = blk->data.type.subblock.subblockCount;
             }
 
-            if (xdivs == 0 || xdivs[subblockCount - 1] < x) {
+            if (xdivs == 0 || xdivs[subblockCount - 1] < rx) {
                 continue;
             }
 
             for (int j = 0; j < subblockCount; j++) {
-                if (xdivs[j] >= x) {
+                if (xdivs[j] >= rx) {
                     cd->block = blk;
                     cd->subblock = j;
-                    return 1;
+                    goto found;
                 }
             }
         }
     }
-    return 0;
-}
-
-static void click(struct Click *cd) {
-    if (!search(leftBlocks, leftBlockCount, cd, cd->x, LEFT)) {
-        search(rightBlocks, rightBlockCount, cd, bars[cd->bar].width - cd->x,
-                RIGHT);
-    }
 
     if (!cd->block) return;
 
+found:
     blockExec(cd->block, cd);
 }
 

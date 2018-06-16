@@ -33,8 +33,8 @@
         return; \
     }
 
-int leftBlockCount, rightBlockCount;
-struct Block *leftBlocks, *rightBlocks;
+int blockCount;
+struct Block *blocks;
 
 static void loadDefaults() {
     conf.height = 22;
@@ -116,21 +116,17 @@ parseString(JsonObject *jo, const char *key, char **dest, JsonError *err) {
     strcpy(*dest, str);
 }
 
-static void parseBlocks(JsonObject *jo, const char *key, struct Block **dest,
-        int *count, JsonError *err) {
+static void
+parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
     JsonArray *arr;
 
     if (jsonGetPairIndex(jo, key) == -1) {
-        *dest = 0;
-        *count = 0;
         return;
     }
 
     jsonGetArray(jo, key, &arr, err); ERRCHK();
 
-    *dest = malloc(sizeof(struct Block) * arr->used);
-    memset(*dest, 0, sizeof(struct Block) * arr->used);
-    *count = arr->used;
+    blocks = realloc(blocks, sizeof(struct Block) * (blockCount + arr->used));
 
     for (int i = 0; i < arr->used; i++) {
         JsonObject *entry = arr->vals[i];
@@ -139,7 +135,8 @@ static void parseBlocks(JsonObject *jo, const char *key, struct Block **dest,
             continue;
         }
 
-        struct Block *blk = &(*dest)[i];
+        struct Block *blk = &blocks[blockCount];
+        memset(blk, 0, sizeof(struct Block));
         char *mode = 0;
         parseString(entry, "mode", &mode, err);
         parseBool(entry, "eachmon", &(blk->eachmon), err);
@@ -152,6 +149,8 @@ static void parseBlocks(JsonObject *jo, const char *key, struct Block **dest,
         parseInt(entry, "padding-outside", &(blk->padOut), err);
         parseBool(entry, "nodiv", &(blk->nodiv), err);
 
+        blk->pos = pos;
+
         blk->mode = LEGACY;
         if (mode) {
             if (strcmp(mode, "subblocks") == 0) {
@@ -159,6 +158,8 @@ static void parseBlocks(JsonObject *jo, const char *key, struct Block **dest,
             }
             free(mode);
         }
+
+        blockCount++;
     }
 }
 
@@ -202,8 +203,8 @@ void configParse(const char *config) {
     parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err);
     parseString(jsonConfig, "traybar", &conf.trayBar, &err);
 
-    parseBlocks(jsonConfig, "left", &leftBlocks, &leftBlockCount, &err);
-    parseBlocks(jsonConfig, "right", &rightBlocks, &rightBlockCount, &err);
+    parseBlocks(jsonConfig, "left", LEFT, &err);
+    parseBlocks(jsonConfig, "right", RIGHT, &err);
 
     jsonCleanup(jsonConfig);
 }

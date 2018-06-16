@@ -35,8 +35,8 @@ static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
 }
 
-static void blocksInit(struct Block *blocks, int count) {
-    for (int i = 0; i < count; i++) {
+static void blocksInit() {
+    for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->eachmon) {
             blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
@@ -45,8 +45,8 @@ static void blocksInit(struct Block *blocks, int count) {
     }
 }
 
-static void blocksCleanup(struct Block *blocks, int count) {
-    for (int i = 0; i < count; i++) {
+static void blocksCleanup() {
+    for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->eachmon) {
             free(blk->data.mon);
@@ -68,20 +68,12 @@ static int gcd(int a, int b) {
 static int getTickInterval() {
     int time = 0;
 
-    for (int i = 0; i < leftBlockCount; i++) {
-        time = gcd(time, leftBlocks[i].interval);
-    }
-    for (int i = 0; i < rightBlockCount; i++) {
-        time = gcd(time, rightBlocks[i].interval);
+    for (int i = 0; i < blockCount; i++) {
+        time = gcd(time, blocks[i].interval);
     }
 
-    for (int i = 0; i < leftBlockCount; i++) {
-        leftBlocks[i].tickCount = leftBlocks[i].ticks =
-            leftBlocks[i].interval / time;
-    }
-    for (int i = 0; i < rightBlockCount; i++) {
-        rightBlocks[i].tickCount = rightBlocks[i].ticks =
-            rightBlocks[i].interval / time;
+    for (int i = 0; i < blockCount; i++) {
+        blocks[i].tickCount = blocks[i].ticks = blocks[i].interval / time;
     }
 
     return time;
@@ -94,15 +86,6 @@ static void tickBlock(struct Block *blk) {
     }
 
     blk->tickCount++;
-}
-
-static void tick() {
-    for (int i = 0; i < leftBlockCount; i++) {
-        tickBlock(&leftBlocks[i]);
-    }
-    for (int i = 0; i < rightBlockCount; i++) {
-        tickBlock(&rightBlocks[i]);
-    }
 }
 
 int main(int argc, const char *argv[]) {
@@ -141,8 +124,7 @@ int main(int argc, const char *argv[]) {
 
     trayInit(trayBar);
 
-    blocksInit(leftBlocks, leftBlockCount);
-    blocksInit(rightBlocks, rightBlockCount);
+    blocksInit();
 
     redraw();
 
@@ -175,7 +157,9 @@ int main(int argc, const char *argv[]) {
         pollEvents();
 
         if (fdsRdy == 0) {
-            tick();
+            for (int i = 0; i < blockCount; i++) {
+                tickBlock(&blocks[i]);
+            }
             continue;
         }
 
@@ -219,8 +203,7 @@ int main(int argc, const char *argv[]) {
 
     trayCleanup();
 
-    blocksCleanup(leftBlocks, leftBlockCount);
-    blocksCleanup(rightBlocks, rightBlockCount);
+    blocksCleanup();
 
     return 0;
 }
