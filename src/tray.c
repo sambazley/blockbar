@@ -70,18 +70,6 @@ static int untrapErrors() {
     return trappedErrorCode;
 }
 
-static int isBadWindow(Window w) {
-    XSync(disp, False);
-    trapErrors();
-    XWindowAttributes attr;
-    XGetWindowAttributes(disp, w, &attr);
-    XMoveWindow(disp, w, 1, 1);
-    XMoveWindow(disp, w, attr.x, attr.y);
-    XSync(disp, False);
-
-    return untrapErrors() == BadWindow;
-}
-
 static void
 xembedSendMessage(Window w, long msg, long detail, long d1, long d2) {
     XEvent ev;
@@ -185,9 +173,7 @@ int getTrayWidth() {
 }
 
 static void handleDockRequest(Window embed) {
-    if (isBadWindow(embed)) {
-        return;
-    }
+    trapErrors();
 
     XChangeSaveSet(disp, embed, SetModeInsert);
     XWithdrawWindow(disp, embed, 0);
@@ -220,6 +206,12 @@ static void handleDockRequest(Window embed) {
             XEMBED_VERSION);
 
     XMapRaised(disp, embed);
+
+    int err = untrapErrors();
+
+    if (err == BadWindow) {
+        return;
+    }
 
     redrawTray();
 }

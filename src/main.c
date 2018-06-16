@@ -21,6 +21,7 @@
 #include "config.h"
 #include "exec.h"
 #include "render.h"
+#include "socket.h"
 #include "tray.h"
 #include "window.h"
 #include <stdio.h>
@@ -30,6 +31,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#define MAX(a, b) (a>b?a:b)
 
 static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
@@ -128,6 +131,8 @@ int main(int argc, const char *argv[]) {
 
     redraw();
 
+    int sockfd = socketInit();
+
     struct timeval tv;
     fd_set fds;
     int x11fd = ConnectionNumber(disp);
@@ -135,12 +140,15 @@ int main(int argc, const char *argv[]) {
 
     while (1) {
         FD_ZERO(&fds);
+        if (sockfd > 0) {
+            FD_SET(sockfd, &fds);
+        }
         FD_SET(x11fd, &fds);
 
         tv.tv_sec = 0;
         tv.tv_usec = interval * 1000;
 
-        int nfds = x11fd;
+        int nfds = MAX(x11fd, sockfd);
         for (int i = 0; i < procCount; i++) {
             struct Proc *proc = &procs[i];
 
@@ -160,6 +168,11 @@ int main(int argc, const char *argv[]) {
             for (int i = 0; i < blockCount; i++) {
                 tickBlock(&blocks[i]);
             }
+            continue;
+        }
+
+        if (FD_ISSET(sockfd, &fds)) {
+            socketRecv(sockfd);
             continue;
         }
 

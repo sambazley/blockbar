@@ -11,12 +11,17 @@ set(SOURCE
     src/config.c
     src/exec.c
     src/render.c
+    src/socket.c
     src/tray.c
     src/util.c
     src/window.c
 )
 
 add_executable(blockbar ${SOURCE})
+add_executable(bbc src/bbc.c)
+
+add_definitions(-DBBCBUFFSIZE=1024)
+add_definitions(-DSOCKETPATH="/tmp/blockbar-socket")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(pangocairo REQUIRED pangocairo)
