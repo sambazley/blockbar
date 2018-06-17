@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
+add_subdirectory(ujson ujson_static EXCLUDE_FROM_ALL)
+include_directories(ujson/src)
+
 project(blockbar)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Og -ggdb -Wall")
@@ -27,10 +30,9 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(pangocairo REQUIRED pangocairo)
 
 find_library(cairo cairo)
-find_library(ujson ujson)
 find_library(X11 X11)
 find_library(xrandr Xrandr)
-target_link_libraries(blockbar ${cairo} ${pangocairo_LIBRARIES} ${ujson} ${X11} ${xrandr})
+target_link_libraries(blockbar ${cairo} ${pangocairo_LIBRARIES} ${X11} ${xrandr} ujson_static)
 
 target_include_directories(blockbar PUBLIC ${pangocairo_INCLUDE_DIRS})
 target_compile_options(blockbar PUBLIC ${pangocairo_CFLAGS_OTHER})

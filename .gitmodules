@@ -1,0 +1,3 @@
+[submodule "ujson"]
+	path = ujson
+	url = git@gitlab.com:Niflheimr/ujson.git
