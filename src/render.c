@@ -41,10 +41,6 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
 
-    if (bar == &bars[trayBar] && pos == RIGHT) {
-        x += getTrayWidth();
-    }
-
     int width, height;
     pango_layout_get_pixel_size(layout, &width, &height);
 
@@ -97,6 +93,7 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
 
 static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     char *dataOrig;
+    int startx = x;
 
     if (blk->eachmon) {
         dataOrig = blk->data.mon[bar].type.legacy.execData;
@@ -148,9 +145,9 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     x += conf.padding + blk->padding + blk->padIn;
 
     if (blk->eachmon) {
-        blk->data.mon[bar].type.legacy.xdiv = x;
+        blk->data.mon[bar].type.legacy.width = x - startx;
     } else {
-        blk->data.type.legacy.xdiv = x;
+        blk->data.type.legacy.width = x - startx;
     }
 
     free(data);
@@ -161,16 +158,16 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 static int drawSubblocks(struct Block *blk, int x, int bar) {
     char *data;
     char *exec = blk->exec;
-    int **xdivs;
+    int **widths;
     int *subblockCount;
 
     if (blk->eachmon) {
         data = blk->data.mon[bar].type.subblock.execData;
-        xdivs = &(blk->data.mon[bar].type.subblock.xdivs);
+        widths = &(blk->data.mon[bar].type.subblock.widths);
         subblockCount = &(blk->data.mon[bar].type.subblock.subblockCount);
     } else {
         data = blk->data.type.subblock.execData;
-        xdivs = &(blk->data.type.subblock.xdivs);
+        widths = &(blk->data.type.subblock.widths);
         subblockCount = &(blk->data.type.subblock.subblockCount);
     }
 
@@ -202,11 +199,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         return x;
     }
 
-    if (*xdivs) {
-        free(*xdivs);
-    }
-
-    *xdivs = malloc(sizeof(int) * subblocks->used);
+    *widths = realloc(*widths, sizeof(int) * subblocks->used);
     *subblockCount = subblocks->used;
 
     for (int i = 0; i < subblocks->used; i++) {
@@ -252,13 +245,18 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         #undef INT
 
+        int startx = x;
+
         x += drawString(&bars[bar], text, x, blk->pos, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
 
-        (*xdivs)[i] = x;
+        if (i == *subblockCount - 1) {
+            x += 2;
+        }
+
+        (*widths)[i] = x - startx;
     }
 
-    x+=2;
 end:
     jsonCleanup(jo);
     return x;
@@ -268,35 +266,36 @@ static void drawBlocks() {
     for (int i = 0; i < barCount; i++) {
         int x [SIDES] = {0};
 
+        if (i == trayBar) {
+            x[RIGHT] = getTrayWidth();
+        }
+
         for (int j = 0; j < blockCount; j++) {
             struct Block *blk = &blocks[j];
 
             char *execData;
+            int *rendered;
             if (blk->eachmon) {
                 execData = blk->data.mon[i].type.legacy.execData;
+                rendered = &(blk->data.mon[i].type.legacy.rendered);
             } else {
                 execData = blk->data.type.legacy.execData;
+                rendered = &(blk->data.type.legacy.rendered);
             }
+            *rendered = 0;
 
             if (execData == 0 && blk->label == 0) {
-                blk->rendered = 0;
                 continue;
             }
 
             if ((execData && strcmp(execData, "") == 0) ||
                     (blk->label && strcmp(blk->label, "") == 0)) {
-                blk->rendered = 0;
                 continue;
             }
 
-            blk->rendered = 1;
+            *rendered = 1;
 
-            int divx;
-            if (i == trayBar && blk->pos == RIGHT) {
-                divx = x[blk->pos] + getTrayWidth();
-            } else {
-                divx = x[blk->pos];
-            }
+            int divx = x[blk->pos];
 
             if (execData) {
                 if (blk->mode == LEGACY) {
@@ -305,6 +304,7 @@ static void drawBlocks() {
                     x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
                 }
             } else if (blk->label) {
+                int startx = x[blk->pos];
                 x[blk->pos] += conf.padding + blk->padding + blk->padOut;
 
                 color col = {0xff, 0xff, 0xff};
@@ -312,6 +312,7 @@ static void drawBlocks() {
                         blk->pos, col, 0, 0, 0, 0, 0);
 
                 x[blk->pos] += conf.padding + blk->padding + blk->padIn;
+                blk->data.type.legacy.width = x[blk->pos] - startx;
             }
 
             if (!blk->nodiv && divx != x[blk->pos] &&
@@ -324,8 +325,6 @@ static void drawBlocks() {
 
                 cairo_rectangle(bars[i].ctx[1], divx, 4, 1, bars[i].height-8);
                 cairo_fill(bars[i].ctx[1]);
-
-                x[blk->pos]++;
             }
         }
     }

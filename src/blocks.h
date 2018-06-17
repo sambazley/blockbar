@@ -21,13 +21,15 @@
 #define BLOCKS_H
 
 struct LegacyData {
+    int rendered;
     char *execData;
-    int xdiv;
+    int width;
 };
 
 struct SubblockData {
+    int rendered;
     char *execData;
-    int *xdivs;
+    int *widths;
     int subblockCount;
 };
 
@@ -58,8 +60,6 @@ struct Block {
     enum Mode mode;
 
     enum Pos pos;
-
-    int rendered;
 
     union {
         union {

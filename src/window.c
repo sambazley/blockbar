@@ -118,15 +118,23 @@ int createBars() {
 }
 
 static void click(struct Click *cd) {
+    int cx [SIDES] = {0};
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
 
-        if (!blk->rendered) {
+        int rendered;
+        if (blk->eachmon) {
+            rendered = blk->data.mon[cd->bar].type.legacy.rendered;
+        } else {
+            rendered = blk->data.type.legacy.rendered;
+        }
+
+        if (!rendered) {
             continue;
         }
 
         int rx;
-        if (cd->bar == trayBar && blk->pos == RIGHT) {
+        if (blk->pos == RIGHT) {
             rx = bars[cd->bar].width - cd->x;
             if (cd->bar == trayBar) {
                 rx -= getTrayWidth();
@@ -135,37 +143,41 @@ static void click(struct Click *cd) {
             rx = cd->x;
         }
 
+        if (rx < 0) {
+            continue;
+        }
+
         if (blk->mode == LEGACY) {
-            int xdiv;
             if (blk->eachmon) {
-                xdiv = blk->data.mon[cd->bar].type.legacy.xdiv;
+                cx[blk->pos] += blk->data.mon[cd->bar].type.legacy.width;
             } else {
-                xdiv = blk->data.type.legacy.xdiv;
+                cx[blk->pos] += blk->data.type.legacy.width;
             }
 
-            if (xdiv >= rx) {
+            if (cx[blk->pos] > rx) {
                 cd->block = blk;
                 goto found;
             }
         } else {
-            int *xdivs;
+            int *widths;
             int subblockCount;
 
             if (blk->eachmon) {
-                xdivs = blk->data.mon[cd->bar].type.subblock.xdivs;
+                widths = blk->data.mon[cd->bar].type.subblock.widths;
                 subblockCount =
                     blk->data.mon[cd->bar].type.subblock.subblockCount;
             } else {
-                xdivs = blk->data.type.subblock.xdivs;
+                widths = blk->data.type.subblock.widths;
                 subblockCount = blk->data.type.subblock.subblockCount;
             }
 
-            if (xdivs == 0 || xdivs[subblockCount - 1] < rx) {
+            if (widths == 0) {
                 continue;
             }
 
             for (int j = 0; j < subblockCount; j++) {
-                if (xdivs[j] >= rx) {
+                cx[blk->pos] += widths[j];
+                if (cx[blk->pos] >= rx) {
                     cd->block = blk;
                     cd->subblock = j;
                     goto found;
