@@ -81,6 +81,11 @@ static int exec(int argc, char **argv, char *rsp) {
         return 1;
     }
 
+    if (argv[2] == 0) {
+        rprintf("Index is null\n");
+        return 1;
+    }
+
     char *end;
     int index = strtol(argv[2], &end, 0);
 
