@@ -143,7 +143,6 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
         parseString(entry, "label", &(blk->label), err);
         parseString(entry, "exec", &(blk->exec), err);
         parseInt(entry, "interval", &(blk->interval), err);
-        parseBool(entry, "eachmon", &(blk->eachmon), err);
         parseInt(entry, "padding", &(blk->padding), err);
         parseInt(entry, "padding-inside", &(blk->padIn), err);
         parseInt(entry, "padding-outside", &(blk->padOut), err);
