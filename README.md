@@ -4,7 +4,7 @@ Blocks based status bar for X window managers.
 ![screenshot](https://gitlab.com/sambazley/blockbar/raw/master/doc/1.png)
 
 ### Installation
-If you are using Arch Linux, blockbar can be install from the [AUR](https://aur.archlinux.org/packages/blockbar-git).
+If you are using Arch Linux, blockbar can be installed from the [AUR](https://aur.archlinux.org/packages/blockbar-git).
 
 Otherwise, it can be installed with the following commands:
 
