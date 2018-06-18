@@ -76,7 +76,13 @@ static int getTickInterval() {
     }
 
     for (int i = 0; i < blockCount; i++) {
-        blocks[i].tickCount = blocks[i].ticks = blocks[i].interval / time;
+        int freq;
+        if (time == 0) {
+            freq = 0;
+        } else {
+            freq = blocks[i].interval / time;
+        }
+        blocks[i].tickCount = blocks[i].ticks = freq;
     }
 
     return time;
