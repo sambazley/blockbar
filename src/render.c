@@ -172,7 +172,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
     }
 
     JsonError err;
-    JSON_ERROR_INIT(err);
+    jsonErrorInit(&err);
 
     JsonObject *jo = jsonParseString(data, &err);
 
@@ -206,7 +206,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         void *val = subblocks->vals[i];
         if (jsonGetType(val) != JSON_OBJECT) {
             fprintf(stderr, "Expecting object in \"subblocks\" array\n");
-            goto end;
+            break;
         }
 
         JsonObject *subblock = (JsonObject *) val;
@@ -218,7 +218,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
                 fprintf(stderr,
                         "Error parsing \"text\" string from subblock\n%s\n",
                         err.msg);
-                goto end;
+                jsonErrorCleanup(&err);
+                jsonErrorInit(&err);
             }
         }
 
@@ -227,7 +228,22 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         int bgwidth = -1, bgheight = -1, bgxpad = -1, bgypad = -1;
 
         parseColor(subblock, "background", bg, &err);
+        if (jsonErrorIsSet(&err)) {
+            fprintf(stderr,
+                    "Error parsing \"background\" array form subblock\n%s\n",
+                    err.msg);
+            jsonErrorCleanup(&err);
+            jsonErrorInit(&err);
+        }
+
         parseColor(subblock, "foreground", fg, &err);
+        if (jsonErrorIsSet(&err)) {
+            fprintf(stderr,
+                    "Error parsing \"foreground\" array form subblock\n%s\n",
+                    err.msg);
+            jsonErrorCleanup(&err);
+            jsonErrorInit(&err);
+        }
 
         #define INT(x) \
             if (jsonGetPairIndex(subblock, #x) != -1) { \
@@ -235,6 +251,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
                 if (jsonErrorIsSet(&err)) { \
                     fprintf(stderr, "Error parsing \"" #x  "\"string " \
                             "from subblock\n%s\n", err.msg); \
+                    jsonErrorCleanup(&err); \
+                    jsonErrorInit(&err); \
                 } \
             }
 

@@ -29,11 +29,15 @@ void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
     jsonGetArray(jo, key, &col, err);
     if (jsonErrorIsSet(err)) {
         fprintf(stderr, "Error parsing array \"%s\"\n", key);
+        jsonErrorCleanup(err);
+        jsonErrorInit(err);
         return;
     }
 
     if (col->used != 3) {
         fprintf(stderr, "\"%s\" array must contain 3 values\n", key);
+        jsonErrorCleanup(err);
+        jsonErrorInit(err);
         return;
     }
 
@@ -41,6 +45,8 @@ void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
         void *val = col->vals[j];
         if (jsonGetType(val) != JSON_NUMBER) {
             fprintf(stderr, "Value in \"%s\" array is not a valid int\n", key);
+            jsonErrorCleanup(err);
+            jsonErrorInit(err);
             return;
         }
 

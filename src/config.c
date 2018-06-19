@@ -27,10 +27,11 @@
 #include <ujson.h>
 #include <unistd.h>
 
-#define ERRCHK() \
+#define ERR(err) \
     if (jsonErrorIsSet(err)) { \
-        fprintf(stderr, "error %u\n%s\n", (uint32_t) __LINE__, err->msg); \
-        return; \
+        fprintf(stderr, "Error parsing JSON file:\n%s\n", (err)->msg); \
+        jsonErrorCleanup(err); \
+        jsonErrorInit(err); \
     }
 
 int blockCount;
@@ -124,7 +125,7 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
         return;
     }
 
-    jsonGetArray(jo, key, &arr, err); ERRCHK();
+    jsonGetArray(jo, key, &arr, err); ERR(err);
 
     blocks = realloc(blocks, sizeof(struct Block) * (blockCount + arr->used));
 
@@ -138,15 +139,15 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
         struct Block *blk = &blocks[blockCount];
         memset(blk, 0, sizeof(struct Block));
         char *mode = 0;
-        parseString(entry, "mode", &mode, err);
-        parseBool(entry, "eachmon", &(blk->eachmon), err);
-        parseString(entry, "label", &(blk->label), err);
-        parseString(entry, "exec", &(blk->exec), err);
-        parseInt(entry, "interval", &(blk->interval), err);
-        parseInt(entry, "padding", &(blk->padding), err);
-        parseInt(entry, "padding-inside", &(blk->padIn), err);
-        parseInt(entry, "padding-outside", &(blk->padOut), err);
-        parseBool(entry, "nodiv", &(blk->nodiv), err);
+        parseString(entry, "mode", &mode, err); ERR(err)
+        parseBool(entry, "eachmon", &(blk->eachmon), err); ERR(err)
+        parseString(entry, "label", &(blk->label), err); ERR(err)
+        parseString(entry, "exec", &(blk->exec), err); ERR(err)
+        parseInt(entry, "interval", &(blk->interval), err); ERR(err)
+        parseInt(entry, "padding", &(blk->padding), err); ERR(err)
+        parseInt(entry, "padding-inside", &(blk->padIn), err); ERR(err)
+        parseInt(entry, "padding-outside", &(blk->padOut), err); ERR(err)
+        parseBool(entry, "nodiv", &(blk->nodiv), err); ERR(err)
 
         blk->pos = pos;
 
@@ -176,7 +177,7 @@ void configParse(const char *config) {
     printf("Using config %s\n", file);
 
     JsonError err;
-    JSON_ERROR_INIT(err);
+    jsonErrorInit(&err);
 
     JsonObject *jsonConfig = jsonParseFile(file, &err);
 
@@ -184,7 +185,7 @@ void configParse(const char *config) {
         free((char *) file);
     }
 
-    if (jsonErrorIsSet(&err)) {
+    if (jsonConfig == 0 || jsonErrorIsSet(&err)) {
         fprintf(stderr, "\nError loading configuration file.\n");
         fprintf(stderr, "%s\n", err.msg);
         fprintf(stderr, "Loading defaults\n\n");
@@ -192,18 +193,18 @@ void configParse(const char *config) {
         return;
     }
 
-    parseInt(jsonConfig, "height", &conf.height, &err);
-    parseInt(jsonConfig, "padding", &conf.padding, &err);
-    parseColor(jsonConfig, "background", conf.bg, &err);
-    parseColor(jsonConfig, "foreground", conf.fg, &err);
-    parseString(jsonConfig, "font", &conf.font, &err);
+    parseInt(jsonConfig, "height", &conf.height, &err); ERR(&err);
+    parseInt(jsonConfig, "padding", &conf.padding, &err); ERR(&err);
+    parseColor(jsonConfig, "background", conf.bg, &err); ERR(&err);
+    parseColor(jsonConfig, "foreground", conf.fg, &err); ERR(&err);
+    parseString(jsonConfig, "font", &conf.font, &err); ERR(&err);
 
-    parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err);
-    parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err);
-    parseString(jsonConfig, "traybar", &conf.trayBar, &err);
+    parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err); ERR(&err);
+    parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err); ERR(&err);
+    parseString(jsonConfig, "traybar", &conf.trayBar, &err); ERR(&err);
 
-    parseBlocks(jsonConfig, "left", LEFT, &err);
-    parseBlocks(jsonConfig, "right", RIGHT, &err);
+    parseBlocks(jsonConfig, "left", LEFT, &err); ERR(&err);
+    parseBlocks(jsonConfig, "right", RIGHT, &err); ERR(&err);
 
     jsonCleanup(jsonConfig);
 }
