@@ -136,11 +136,12 @@ static void click(struct Click *cd) {
         int rx;
         if (blk->pos == RIGHT) {
             rx = bars[cd->bar].width - cd->x;
-            if (cd->bar == trayBar) {
-                rx -= getTrayWidth();
-            }
         } else {
             rx = cd->x;
+        }
+
+        if (cd->bar == trayBar && blk->pos == conf.traySide) {
+            rx -= getTrayWidth();
         }
 
         if (rx < 0) {
