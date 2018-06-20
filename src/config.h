@@ -20,6 +20,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include "blocks.h"
 #include "util.h"
 
 struct {
@@ -32,6 +33,7 @@ struct {
     int trayPadding;
     int trayIconSize;
     char *trayBar;
+    enum Pos traySide;
 } conf;
 
 void configParse(const char *config);

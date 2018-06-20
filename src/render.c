@@ -285,7 +285,7 @@ static void drawBlocks() {
         int x [SIDES] = {0};
 
         if (i == trayBar) {
-            x[RIGHT] = getTrayWidth();
+            x[conf.traySide] = getTrayWidth();
         }
 
         for (int j = 0; j < blockCount; j++) {
@@ -334,7 +334,7 @@ static void drawBlocks() {
             }
 
             if (!blk->nodiv && divx != x[blk->pos] &&
-                    (j != 0 || (i == trayBar && blk->pos == RIGHT))) {
+                    (j != 0 || (i == trayBar && blk->pos == conf.traySide))) {
                 cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
 
                 if (blk->pos == RIGHT) {

@@ -146,9 +146,12 @@ static void redrawTray() {
             continue;
         }
 
-        int x = bars[trayBar].width -
-            (conf.trayIconSize + conf.trayPadding) * (iconsDrawn + 1);
+        int x = conf.trayIconSize*iconsDrawn + conf.trayPadding*(iconsDrawn+1);
         int y = bars[trayBar].height / 2 - conf.trayIconSize / 2;
+
+        if (conf.traySide == RIGHT) {
+            x = bars[trayBar].width - x - conf.trayIconSize;
+        }
 
         trapErrors();
 

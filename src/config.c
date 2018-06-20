@@ -18,7 +18,6 @@
  */
 
 #include "config.h"
-#include "blocks.h"
 #include "window.h"
 #include <pwd.h>
 #include <stdio.h>
@@ -202,6 +201,17 @@ void configParse(const char *config) {
     parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err); ERR(&err);
     parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err); ERR(&err);
     parseString(jsonConfig, "traybar", &conf.trayBar, &err); ERR(&err);
+
+    char *trayside = 0;
+    parseString(jsonConfig, "trayside", &trayside, &err); ERR(&err);
+
+    conf.traySide = RIGHT;
+    if (trayside) {
+        if (strcmp(trayside, "left") == 0) {
+            conf.traySide = LEFT;
+        }
+        free(trayside);
+    }
 
     parseBlocks(jsonConfig, "left", LEFT, &err); ERR(&err);
     parseBlocks(jsonConfig, "right", RIGHT, &err); ERR(&err);

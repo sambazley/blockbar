@@ -40,7 +40,7 @@ target_compile_options(blockbar PUBLIC ${pangocairo_CFLAGS_OTHER})
 add_custom_command(
     OUTPUT doc/blockbar.1.gz
     DEPENDS doc/blockbar.1
-    COMMAND gzip -k doc/blockbar.1)
+    COMMAND gzip -fk doc/blockbar.1)
 
 add_custom_target(
     man ALL DEPENDS doc/blockbar.1.gz)
