@@ -42,6 +42,7 @@ static void loadDefaults() {
     conf.trayPadding = 2;
     conf.trayIconSize = 18;
     conf.trayBar = 0;
+    conf.traySide = RIGHT;
 
     conf.bg[0] = 0;
     conf.bg[1] = 0;

@@ -154,7 +154,7 @@ void socketRecv(int sockfd) {
 end:
         free(argv);
 
-        if (send(fd, rsp, sizeof(rsp), 0) == -1) {
+        if (send(fd, rsp, sizeof(rsp), MSG_NOSIGNAL) == -1) {
             fprintf(stderr, "Error sending response\n");
         }
         close(fd);
