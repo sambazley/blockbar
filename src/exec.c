@@ -56,6 +56,7 @@ static void execute(struct Block *blk, int bar) {
     for (int i = 0; i < procCount; i++) {
         if (procs[i].pid == 0) {
             proc = &procs[i];
+            break;
         }
     }
 
