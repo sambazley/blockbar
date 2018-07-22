@@ -208,6 +208,10 @@ int main(int argc, const char *argv[]) {
             *execData = malloc(strlen(buf) + 1);
             strcpy(*execData, buf);
 
+            if ((*execData)[strlen(buf) - 1] == '\n') {
+                (*execData)[strlen(buf) - 1] = 0;
+            }
+
             close(proc->fdout);
 
             proc->blk = 0;

@@ -110,6 +110,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     int j = 0;
     int len = strlen(data);
+
     for (int i = 0; i < len; i++) {
         if (data[i] == '\0') {
             break;
@@ -118,12 +119,21 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         if (data[i] == '\n') {
             if (j == 0) {
                 shortText = data + i + 1;
-            } else if (j == 1 && len - i - 3 == 6) {
-                long colLong = strtol(data+i+2, 0, 16);
+            } else if (j == 1 && data[i + 1] == '#') {
+                int c = strtol(data+i+2, 0, 16);
+                int colInt = 0xFFFFFF;
 
-                col[0] = colLong >> 16;
-                col[1] = (colLong >> 8) & 0xFF;
-                col[2] = colLong & 0xFF;
+                if (len - i - 2 == 3) {
+                    colInt = ((c & 0xF00) << 12) | ((c & 0xF00) << 8)
+                           | ((c & 0x0F0) << 8) | ((c & 0x0F0) << 4)
+                           | ((c & 0x00F) << 4) | (c & 0x00F);
+                } else if (len - i - 2 == 6) {
+                    colInt = c;
+                }
+
+                col[0] = colInt >> 16;
+                col[1] = (colInt >> 8) & 0xFF;
+                col[2] = colInt & 0xFF;
             }
             data[i] = 0;
             j++;
