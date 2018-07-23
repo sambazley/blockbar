@@ -28,6 +28,8 @@
 
 static PangoFontDescription *fontDesc;
 
+static int shortMode;
+
 void renderInit() {
     if (conf.font) {
         fontDesc = pango_font_description_from_string(conf.font);
@@ -142,23 +144,28 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     x += conf.padding + blk->padding + blk->padOut;
 
-    if (blk->pos == LEFT && blk->label && strcmp(blk->label, "") != 0) {
+    if (!shortMode && blk->pos == LEFT &&
+            blk->label && strcmp(blk->label, "") != 0) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
-    x += drawString(&bars[bar], longText, x, blk->pos, col, 0,0,0,0,0);
+    char *text;
+    if (shortMode) {
+        text = shortText;
+    } else {
+        text = longText;
+    }
 
-    if (blk->pos == RIGHT && blk->label && strcmp(blk->label, "") != 0) {
+    x += drawString(&bars[bar], text, x, blk->pos, col, 0,0,0,0,0);
+
+    if (!shortMode && blk->pos == RIGHT &&
+            blk->label && strcmp(blk->label, "") != 0) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
     x += conf.padding + blk->padding + blk->padIn;
 
-    if (blk->eachmon) {
-        blk->data.mon[bar].type.legacy.width = x - startx;
-    } else {
-        blk->data.type.legacy.width = x - startx;
-    }
+    blk->width[bar] = x - startx;
 
     free(data);
 
@@ -290,90 +297,99 @@ end:
     return x;
 }
 
-static void drawBlocks() {
-    for (int i = 0; i < barCount; i++) {
-        int x [SIDES] = {0};
+static int drawBlocks(int i) {
+    int x [SIDES] = {0};
 
-        if (i == trayBar) {
-            x[conf.traySide] = getTrayWidth();
+    if (i == trayBar) {
+        x[conf.traySide] = getTrayWidth();
+    }
+
+    for (int j = 0; j < blockCount; j++) {
+        struct Block *blk = &blocks[j];
+
+        char *execData;
+        int *rendered;
+        if (blk->eachmon) {
+            execData = blk->data.mon[i].type.legacy.execData;
+            rendered = &(blk->data.mon[i].type.legacy.rendered);
+        } else {
+            execData = blk->data.type.legacy.execData;
+            rendered = &(blk->data.type.legacy.rendered);
+        }
+        *rendered = 0;
+
+        if (execData == 0 && blk->label == 0) {
+            continue;
         }
 
-        for (int j = 0; j < blockCount; j++) {
-            struct Block *blk = &blocks[j];
+        if (execData && strcmp(execData, "") == 0) {
+            continue;
+        }
 
-            char *execData;
-            int *rendered;
-            if (blk->eachmon) {
-                execData = blk->data.mon[i].type.legacy.execData;
-                rendered = &(blk->data.mon[i].type.legacy.rendered);
+        *rendered = 1;
+
+        int divx = x[blk->pos];
+
+        if (execData) {
+            if (blk->mode == LEGACY) {
+                x[blk->pos] = drawLegacyBlock(blk, x[blk->pos], i);
             } else {
-                execData = blk->data.type.legacy.execData;
-                rendered = &(blk->data.type.legacy.rendered);
+                x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
             }
-            *rendered = 0;
+        } else if (blk->label && !shortMode) {
+            x[blk->pos] += conf.padding + blk->padding + blk->padOut;
 
-            if (execData == 0 && blk->label == 0) {
-                continue;
-            }
+            color col = {0xff, 0xff, 0xff};
+            x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
+                    blk->pos, col, 0, 0, 0, 0, 0);
 
-            if ((execData && strcmp(execData, "") == 0) ||
-                    (blk->label && strcmp(blk->label, "") == 0)) {
-                continue;
-            }
-
-            *rendered = 1;
-
-            int divx = x[blk->pos];
-
-            if (execData) {
-                if (blk->mode == LEGACY) {
-                    x[blk->pos] = drawLegacyBlock(blk, x[blk->pos], i);
-                } else {
-                    x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
-                }
-            } else if (blk->label) {
-                int startx = x[blk->pos];
-                x[blk->pos] += conf.padding + blk->padding + blk->padOut;
-
-                color col = {0xff, 0xff, 0xff};
-                x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
-                        blk->pos, col, 0, 0, 0, 0, 0);
-
-                x[blk->pos] += conf.padding + blk->padding + blk->padIn;
-                blk->data.type.legacy.width = x[blk->pos] - startx;
-            }
-
-            if (!blk->nodiv && divx != x[blk->pos] &&
-                    (j != 0 || (i == trayBar && blk->pos == conf.traySide))) {
-                cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
-
-                if (blk->pos == RIGHT) {
-                    divx = bars[i].width - divx;
-                }
-
-                cairo_rectangle(bars[i].ctx[1], divx, 4, 1, bars[i].height-8);
-                cairo_fill(bars[i].ctx[1]);
-            }
+            x[blk->pos] += conf.padding + blk->padding + blk->padIn;
         }
+
+        blk->width[i] = x[blk->pos] - divx;
+
+        if (!blk->nodiv && divx != x[blk->pos] &&
+                (j != 0 || (i == trayBar && blk->pos == conf.traySide))) {
+            cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
+
+            if (blk->pos == RIGHT) {
+                divx = bars[i].width - divx;
+            }
+
+            cairo_rectangle(bars[i].ctx[1], divx, 4, 1, bars[i].height-8);
+            cairo_fill(bars[i].ctx[1]);
+        }
+    }
+
+    if (!shortMode && x[RIGHT] + x[LEFT] >= bars[i].width) {
+        shortMode = 1;
+        return 1;
+    }
+
+    shortMode = 0;
+    return 0;
+}
+
+static void drawBar(int i) {
+    cairo_t *ctx = bars[i].ctx[1];
+    cairo_set_source_rgba(ctx,
+                          conf.bg[0]/255.f,
+                          conf.bg[1]/255.f,
+                          conf.bg[2]/255.f, 1);
+    cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+    cairo_paint(ctx);
+
+    if (drawBlocks(i) == 0) {
+        cairo_set_source_surface(bars[i].ctx[0], bars[i].sfc[1], 0, 0);
+        cairo_paint(bars[i].ctx[0]);
+    } else {
+        drawBar(i);
     }
 }
 
 void redraw() {
     for (int i = 0; i < barCount; i++) {
-        cairo_t *ctx = bars[i].ctx[1];
-        cairo_set_source_rgba(ctx,
-                conf.bg[0]/255.f,
-                conf.bg[1]/255.f,
-                conf.bg[2]/255.f, 1);
-        cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-        cairo_paint(ctx);
-    }
-
-    drawBlocks();
-
-    for (int i = 0; i < barCount; i++) {
-        cairo_set_source_surface(bars[i].ctx[0], bars[i].sfc[1], 0, 0);
-        cairo_paint(bars[i].ctx[0]);
+        drawBar(i);
     }
 
     XSync(disp, False);

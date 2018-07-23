@@ -45,6 +45,8 @@ static void blocksInit() {
             blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
             memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
         }
+
+        blk->width = malloc(sizeof(int) * barCount);
     }
 }
 

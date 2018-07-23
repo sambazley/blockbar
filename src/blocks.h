@@ -23,7 +23,6 @@
 struct LegacyData {
     int rendered;
     char *execData;
-    int width;
 };
 
 struct SubblockData {
@@ -60,6 +59,8 @@ struct Block {
     enum Mode mode;
 
     enum Pos pos;
+
+    int *width;
 
     union {
         union {

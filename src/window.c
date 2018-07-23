@@ -148,42 +148,36 @@ static void click(struct Click *cd) {
             continue;
         }
 
-        if (blk->mode == LEGACY) {
-            if (blk->eachmon) {
-                cx[blk->pos] += blk->data.mon[cd->bar].type.legacy.width;
-            } else {
-                cx[blk->pos] += blk->data.type.legacy.width;
-            }
+        cx[blk->pos] += blk->width[cd->bar];
 
-            if (cx[blk->pos] > rx) {
-                cd->block = blk;
-                goto found;
-            }
-        } else {
-            int *widths;
-            int subblockCount;
+        if (cx[blk->pos] > rx) {
+            cd->block = blk;
 
-            if (blk->eachmon) {
-                widths = blk->data.mon[cd->bar].type.subblock.widths;
-                subblockCount =
-                    blk->data.mon[cd->bar].type.subblock.subblockCount;
-            } else {
-                widths = blk->data.type.subblock.widths;
-                subblockCount = blk->data.type.subblock.subblockCount;
-            }
+            if (blk->mode == SUBBLOCK) {
+                int subblockCount;
+                if (blk->eachmon) {
+                    subblockCount =
+                        blk->data.mon[cd->bar].type.subblock.subblockCount;
+                } else {
+                    subblockCount = blk->data.type.subblock.subblockCount;
+                }
 
-            if (widths == 0) {
-                continue;
-            }
+                int sbx = cx[blk->pos] - blk->width[cd->bar];
+                for (int j = 0; j < subblockCount; j++) {
+                    if (blk->eachmon) {
+                        sbx += blk->data.mon[cd->bar].type.subblock.widths[j];
+                    } else {
+                        sbx += blk->data.type.subblock.widths[j];
+                    }
 
-            for (int j = 0; j < subblockCount; j++) {
-                cx[blk->pos] += widths[j];
-                if (cx[blk->pos] >= rx) {
-                    cd->block = blk;
-                    cd->subblock = j;
-                    goto found;
+                    if (sbx > rx) {
+                        cd->subblock = j;
+                        break;
+                    }
                 }
             }
+
+            goto found;
         }
     }
 
