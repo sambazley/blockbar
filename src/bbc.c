@@ -37,6 +37,33 @@ int main(int argc, char **argv) {
         dest += sprintf(dest, "%s ", argv[i]);
     }
 
+    int pipe = 0;
+
+    if (*(dest - 2) == '-') {
+        pipe = 1;
+        dest -= 2;
+    }
+
+    char buf [BBCBUFFSIZE];
+    int len;
+    while (pipe && (len = read(STDIN_FILENO, buf, BBCBUFFSIZE)) > 0) {
+        if (dest + len - msg >= BBCBUFFSIZE - 1) {
+            fprintf(stderr, "Input too long\n");
+            return 1;
+        }
+
+        dest += snprintf(dest, len + 1, "%s", buf);
+    }
+
+    if (!pipe) {
+        *dest-- = 0;
+    }
+
+    if (*(dest - 1) == '\n') {
+        *(dest - 1) = 0;
+        dest--;
+    }
+
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockfd < 0) {
         fprintf(stderr, "Error opening socket\n");
@@ -53,7 +80,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    if (send(sockfd, msg, dest-msg-1, 0) == -1) {
+    if (send(sockfd, msg, dest-msg, 0) == -1) {
         fprintf(stderr, "Error sending data\n");
         return 1;
     }
