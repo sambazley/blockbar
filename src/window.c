@@ -101,8 +101,8 @@ int createBars() {
                 PropModeAppend, (unsigned char *) &_NET_WM_STATE_BELOW, 1);
 
         XClassHint *classhint = XAllocClassHint();
-        classhint->res_name = "BlockBar";
-        classhint->res_class = "BlockBar";
+        classhint->res_name = "blockbar";
+        classhint->res_class = "blockbar";
         XSetClassHint(disp, bar->window, classhint);
         XFree(classhint);
 
