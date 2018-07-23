@@ -210,7 +210,7 @@ int main(int argc, const char *argv[]) {
             *execData = malloc(strlen(buf) + 1);
             strcpy(*execData, buf);
 
-            if ((*execData)[strlen(buf) - 1] == '\n') {
+            if (strlen(buf) && (*execData)[strlen(buf) - 1] == '\n') {
                 (*execData)[strlen(buf) - 1] = 0;
             }
 
