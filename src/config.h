@@ -30,6 +30,7 @@ struct {
     color fg;
     char *font;
     int shortLabels;
+    int top;
 
     int trayPadding;
     int trayIconSize;

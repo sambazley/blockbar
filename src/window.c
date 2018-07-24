@@ -70,8 +70,10 @@ int createBars() {
 
         struct Bar *bar = &bars[barCount-1];
 
+        int y = conf.top ? 0 : crtcInfo->height - conf.height;
+
         bar->window = XCreateWindow(disp, root,
-                crtcInfo->x, 0, crtcInfo->width, conf.height,
+                crtcInfo->x, y, crtcInfo->width, conf.height,
                 0, 0, CopyFromParent, CopyFromParent, 0, NULL);
 
         bar->width = crtcInfo->width;

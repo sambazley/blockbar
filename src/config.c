@@ -44,6 +44,7 @@ static void loadDefaults() {
     conf.trayBar = 0;
     conf.traySide = RIGHT;
     conf.shortLabels = 1;
+    conf.top = 1;
 
     conf.bg[0] = 0;
     conf.bg[1] = 0;
@@ -194,12 +195,15 @@ void configParse(const char *config) {
         return;
     }
 
+    char *position;
+
     parseInt(jsonConfig, "height", &conf.height, &err); ERR(&err);
     parseInt(jsonConfig, "padding", &conf.padding, &err); ERR(&err);
     parseColor(jsonConfig, "background", conf.bg, &err); ERR(&err);
     parseColor(jsonConfig, "foreground", conf.fg, &err); ERR(&err);
     parseString(jsonConfig, "font", &conf.font, &err); ERR(&err);
     parseBool(jsonConfig, "shortlabels", &conf.shortLabels, &err); ERR(&err);
+    parseString(jsonConfig, "position", &position, &err); ERR(&err);
 
     parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err); ERR(&err);
     parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err); ERR(&err);
@@ -214,6 +218,13 @@ void configParse(const char *config) {
             conf.traySide = LEFT;
         }
         free(trayside);
+    }
+
+    if (position) {
+        if (strcmp(position, "bottom") == 0) {
+            conf.top = 0;
+        }
+        free(position);
     }
 
     parseBlocks(jsonConfig, "left", LEFT, &err); ERR(&err);
