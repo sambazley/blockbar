@@ -144,8 +144,9 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     x += conf.padding + blk->padding + blk->padOut;
 
-    if (!shortMode && blk->pos == LEFT &&
-            blk->label && strcmp(blk->label, "") != 0) {
+    int dl = shortMode ? conf.shortLabels : 1;
+
+    if (dl && blk->pos == LEFT && blk->label && strcmp(blk->label, "") != 0) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
@@ -158,8 +159,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     x += drawString(&bars[bar], text, x, blk->pos, col, 0,0,0,0,0);
 
-    if (!shortMode && blk->pos == RIGHT &&
-            blk->label && strcmp(blk->label, "") != 0) {
+    if (dl && blk->pos == RIGHT && blk->label && strcmp(blk->label, "") != 0) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
@@ -336,7 +336,7 @@ static int drawBlocks(int i) {
             } else {
                 x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
             }
-        } else if (blk->label && !shortMode) {
+        } else if (blk->label && (shortMode ? conf.shortLabels : 1)) {
             x[blk->pos] += conf.padding + blk->padding + blk->padOut;
 
             color col = {0xff, 0xff, 0xff};

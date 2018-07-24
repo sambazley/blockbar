@@ -29,6 +29,7 @@ struct {
     color bg;
     color fg;
     char *font;
+    int shortLabels;
 
     int trayPadding;
     int trayIconSize;

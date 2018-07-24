@@ -43,6 +43,7 @@ static void loadDefaults() {
     conf.trayIconSize = 18;
     conf.trayBar = 0;
     conf.traySide = RIGHT;
+    conf.shortLabels = 1;
 
     conf.bg[0] = 0;
     conf.bg[1] = 0;
@@ -198,6 +199,7 @@ void configParse(const char *config) {
     parseColor(jsonConfig, "background", conf.bg, &err); ERR(&err);
     parseColor(jsonConfig, "foreground", conf.fg, &err); ERR(&err);
     parseString(jsonConfig, "font", &conf.font, &err); ERR(&err);
+    parseBool(jsonConfig, "shortlabels", &conf.shortLabels, &err); ERR(&err);
 
     parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err); ERR(&err);
     parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err); ERR(&err);
