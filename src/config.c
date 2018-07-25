@@ -195,7 +195,7 @@ void configParse(const char *config) {
         return;
     }
 
-    char *position;
+    char *position = 0;
 
     parseInt(jsonConfig, "height", &conf.height, &err); ERR(&err);
     parseInt(jsonConfig, "padding", &conf.padding, &err); ERR(&err);
