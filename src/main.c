@@ -41,24 +41,13 @@ static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
 }
 
-static void blocksInit() {
-    for (int i = 0; i < blockCount; i++) {
-        struct Block *blk = &blocks[i];
-        if (blk->eachmon) {
-            blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
-            memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
-        }
-
-        blk->width = malloc(sizeof(int) * barCount);
-    }
-}
-
 static void blocksCleanup() {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->eachmon) {
             free(blk->data.mon);
         }
+        free(blk->width);
     }
 }
 
@@ -95,12 +84,21 @@ int main(int argc, const char *argv[]) {
         return 1;
     }
 
-    configParse(config);
+    JsonObject *jsonConfig = configInit(config);
+
+    if (jsonConfig) {
+        configParseGeneral(jsonConfig);
+    }
 
     renderInit();
 
     if (createBars() != 0) {
         return 1;
+    }
+
+    if (jsonConfig) {
+        configParseBlocks(jsonConfig);
+        configCleanup(jsonConfig);
     }
 
     int trayBar = 0;
@@ -117,7 +115,6 @@ int main(int argc, const char *argv[]) {
 
     trayInit(trayBar);
 
-    blocksInit();
     for (int i = 0; i < blockCount; i++) {
         blockExec(&blocks[i], 0);
     }
@@ -187,23 +184,32 @@ int main(int argc, const char *argv[]) {
             char buf [2048] = {0};
             read(proc->fdout, buf, sizeof(buf) - 1);
 
-            struct Block *blk = proc->blk;
+            struct Block *blk = 0;
 
-            char **execData;
-            if (blk->eachmon) {
-                execData = &(blk->data.mon[proc->bar].type.legacy.execData);
-            } else {
-                execData = &(blk->data.type.legacy.execData);
+            for (int j = 0; j < blockCount; j++) {
+                if (blocks[j].id == proc->blk) {
+                    blk = &blocks[j];
+                    break;
+                }
             }
 
-            if (*execData) {
-                free(*execData);
-            }
-            *execData = malloc(strlen(buf) + 1);
-            strcpy(*execData, buf);
+            if (blk) {
+                char **execData;
+                if (blk->eachmon) {
+                    execData = &(blk->data.mon[proc->bar].type.legacy.execData);
+                } else {
+                    execData = &(blk->data.type.legacy.execData);
+                }
 
-            if (strlen(buf) && (*execData)[strlen(buf) - 1] == '\n') {
-                (*execData)[strlen(buf) - 1] = 0;
+                if (*execData) {
+                    free(*execData);
+                }
+                *execData = malloc(strlen(buf) + 1);
+                strcpy(*execData, buf);
+
+                if (strlen(buf) && (*execData)[strlen(buf) - 1] == '\n') {
+                    (*execData)[strlen(buf) - 1] = 0;
+                }
             }
 
             close(proc->fdout);

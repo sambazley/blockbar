@@ -44,6 +44,8 @@ enum Pos {
 };
 
 struct Block {
+    int id;
+
     char *exec;
 
     char *label;

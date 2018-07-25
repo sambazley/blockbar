@@ -24,7 +24,7 @@
 #include "window.h"
 
 struct Proc {
-    struct Block *blk;
+    int blk;
     int bar;
     int pid;
     int fdout;

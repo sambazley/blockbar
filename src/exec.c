@@ -68,7 +68,7 @@ static void execute(struct Block *blk, int bar) {
 
     proc->fdout = out[0];
     proc->pid = pid;
-    proc->blk = blk;
+    proc->blk = blk->id;
     proc->bar = bar;
 }
 

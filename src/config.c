@@ -18,12 +18,12 @@
  */
 
 #include "config.h"
+#include "util.h"
 #include "window.h"
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ujson.h>
 #include <unistd.h>
 
 #define ERR(err) \
@@ -129,8 +129,6 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
 
     jsonGetArray(jo, key, &arr, err); ERR(err);
 
-    blocks = realloc(blocks, sizeof(struct Block) * (blockCount + arr->used));
-
     for (int i = 0; i < arr->used; i++) {
         JsonObject *entry = arr->vals[i];
         if (jsonGetType(entry) != JSON_OBJECT) {
@@ -138,11 +136,13 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
             continue;
         }
 
-        struct Block *blk = &blocks[blockCount];
-        memset(blk, 0, sizeof(struct Block));
+        int eachmon = 0;
+        parseBool(entry, "eachmon", &eachmon, err); ERR(err)
+
+        struct Block *blk = createBlock(eachmon);
+
         char *mode = 0;
         parseString(entry, "mode", &mode, err); ERR(err)
-        parseBool(entry, "eachmon", &(blk->eachmon), err); ERR(err)
         parseString(entry, "label", &(blk->label), err); ERR(err)
         parseString(entry, "exec", &(blk->exec), err); ERR(err)
         parseInt(entry, "interval", &(blk->interval), err); ERR(err)
@@ -160,12 +160,10 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
             }
             free(mode);
         }
-
-        blockCount++;
     }
 }
 
-void configParse(const char *config) {
+JsonObject *configInit(const char *config) {
     loadDefaults();
 
     const char *file;
@@ -192,8 +190,15 @@ void configParse(const char *config) {
         fprintf(stderr, "%s\n", err.msg);
         fprintf(stderr, "Loading defaults\n\n");
 
-        return;
+        return 0;
     }
+
+    return jsonConfig;
+}
+
+void configParseGeneral(JsonObject *jsonConfig) {
+    JsonError err;
+    jsonErrorInit(&err);
 
     char *position = 0;
 
@@ -226,9 +231,16 @@ void configParse(const char *config) {
         }
         free(position);
     }
+}
+
+void configParseBlocks(JsonObject *jsonConfig) {
+    JsonError err;
+    jsonErrorInit(&err);
 
     parseBlocks(jsonConfig, "left", LEFT, &err); ERR(&err);
     parseBlocks(jsonConfig, "right", RIGHT, &err); ERR(&err);
+}
 
+void configCleanup(JsonObject *jsonConfig) {
     jsonCleanup(jsonConfig);
 }

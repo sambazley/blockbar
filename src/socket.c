@@ -108,6 +108,7 @@ static int help(int argc, char **argv, char *rsp) {
     phelp("list-props", "List a block's properties");
     phelp("get <n>[:o] <p>", "Get a property of a block");
     phelp("set <n>[:o] <p> <v>", "Set a property of a block");
+    phelp("new [eachmon]", "Creates a new block");
     return 0;
 }
 
@@ -324,6 +325,29 @@ static int set(int argc, char **argv, char *rsp) {
     return 0;
 }
 
+static int new(int argc, char **argv, char *rsp) {
+    if (!(argc == 2 || argc == 3)) {
+        rprintf("Usage: %s %s [eachmon]\n", argv[0], argv[1]);
+        return 1;
+    }
+
+    int eachmon = 0;
+
+    if (argc == 3) {
+        if (strcmp(argv[2], "eachmon")) {
+            rprintf("Third argument must be \"eachmon\" or blank\n");
+            return 1;
+        }
+        eachmon = 1;
+    }
+
+    rprintf("%u\n", blockCount);
+
+    struct Block *blk = createBlock(eachmon);
+
+    return 0;
+}
+
 #define _CASE(x, y) \
     else if (strcmp(argv[1], x) == 0) { \
         rsp[0] = y(argc, argv, rsp+1); \
@@ -374,6 +398,7 @@ void socketRecv(int sockfd) {
         _CASE("list-props", list_props)
         CASE(get)
         CASE(set)
+        CASE(new)
         else {
             rprintf("%cUnknown command\n", 1);
         }

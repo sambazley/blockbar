@@ -22,6 +22,7 @@
 
 #include "blocks.h"
 #include "util.h"
+#include <ujson.h>
 
 struct {
     int height;
@@ -38,6 +39,9 @@ struct {
     enum Pos traySide;
 } conf;
 
-void configParse(const char *config);
+JsonObject *configInit(const char *config);
+void configParseGeneral(JsonObject *jsonConfig);
+void configParseBlocks(JsonObject *jsonConfig);
+void configCleanup(JsonObject *jsonConfig);
 
 #endif /* CONFIG_H */

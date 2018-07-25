@@ -19,7 +19,12 @@
 
 #include "util.h"
 #include "blocks.h"
+#include "window.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+static int idCount;
 
 void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
     if (jsonGetPairIndex(jo, key) == -1) {
@@ -54,6 +59,25 @@ void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
         JsonNumber *n = (JsonNumber *) val;
         dest[j] = n->data;
     }
+}
+
+struct Block *createBlock(int eachmon) {
+    blocks = realloc(blocks, sizeof(struct Block) * ++blockCount);
+
+    struct Block *blk = &blocks[blockCount - 1];
+    memset(blk, 0, sizeof(struct Block));
+
+    blk->id = idCount++;
+    blk->eachmon = eachmon;
+
+    if (eachmon) {
+        blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
+        memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
+    }
+
+    blk->width = malloc(sizeof(int) * barCount);
+
+    return blk;
 }
 
 static int gcd(int a, int b) {
