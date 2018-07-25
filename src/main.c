@@ -30,9 +30,12 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 #define MAX(a, b) (a>b?a:b)
+
+int interval;
 
 static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
@@ -59,45 +62,24 @@ static void blocksCleanup() {
     }
 }
 
-static int gcd(int a, int b) {
-    while (b) {
-        a %= b;
-        a ^= b;
-        b ^= a;
-        a ^= b;
-    }
+static void tickBlock(struct Block *blk, int interval) {
+    if (blk->interval == 0) return;
 
-    return a;
-}
-
-static int getTickInterval() {
-    int time = 0;
-
-    for (int i = 0; i < blockCount; i++) {
-        time = gcd(time, blocks[i].interval);
-    }
-
-    for (int i = 0; i < blockCount; i++) {
-        int freq;
-        if (time == 0) {
-            freq = 0;
-        } else {
-            freq = blocks[i].interval / time;
-        }
-        blocks[i].tickCount = blocks[i].ticks = freq;
-    }
-
-    return time;
-}
-
-static void tickBlock(struct Block *blk) {
-    if (blk->tickCount == blk->ticks) {
-        blk->tickCount = 0;
+    if (blk->timePassed >= blk->interval) {
+        blk->timePassed = 0;
         blockExec(blk, 0);
     }
 
-    blk->tickCount++;
+    blk->timePassed += interval;
 }
+
+static void getTime(struct timeval *tv) {
+    clock_gettime(CLOCK_MONOTONIC_RAW, (struct timespec *) tv);
+    tv->tv_usec /= 1000;
+}
+
+#define TIMEDIFF(a, b) (long) (((b.tv_sec - a.tv_sec) * 1000000) \
+                              + (b.tv_usec - a.tv_usec))
 
 int main(int argc, const char *argv[]) {
     const char *config = "";
@@ -136,15 +118,21 @@ int main(int argc, const char *argv[]) {
     trayInit(trayBar);
 
     blocksInit();
+    for (int i = 0; i < blockCount; i++) {
+        blockExec(&blocks[i], 0);
+    }
 
     redraw();
 
     int sockfd = socketInit();
 
-    struct timeval tv;
+    struct timeval tv, timer1, timer2;
     fd_set fds;
     int x11fd = ConnectionNumber(disp);
-    int interval = getTickInterval();
+
+    updateTickInterval();
+
+    getTime(&timer1);
 
     while (1) {
         FD_ZERO(&fds);
@@ -153,8 +141,11 @@ int main(int argc, const char *argv[]) {
         }
         FD_SET(x11fd, &fds);
 
+        getTime(&timer2);
+        long elapsed = TIMEDIFF(timer1, timer2);
+
         tv.tv_sec = 0;
-        tv.tv_usec = interval * 1000;
+        tv.tv_usec = MAX(interval * 1000 - elapsed, 0);
 
         int nfds = MAX(x11fd, sockfd);
         for (int i = 0; i < procCount; i++) {
@@ -173,8 +164,9 @@ int main(int argc, const char *argv[]) {
         pollEvents();
 
         if (fdsRdy == 0) {
+            getTime(&timer1);
             for (int i = 0; i < blockCount; i++) {
-                tickBlock(&blocks[i]);
+                tickBlock(&blocks[i], interval);
             }
             continue;
         }

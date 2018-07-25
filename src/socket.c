@@ -21,6 +21,7 @@
 #include "blocks.h"
 #include "exec.h"
 #include "render.h"
+#include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -288,6 +289,7 @@ static int set(int argc, char **argv, char *rsp) {
     IS("interval") {
         INT;
         blk->interval = integer;
+        updateTickInterval();
     }
     IS("padding") {
         INT;

@@ -53,8 +53,7 @@ struct Block {
     int nodiv;
 
     int interval;
-    int ticks;
-    int tickCount;
+    int timePassed;
 
     enum Mode mode;
 

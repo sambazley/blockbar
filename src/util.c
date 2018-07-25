@@ -18,6 +18,7 @@
  */
 
 #include "util.h"
+#include "blocks.h"
 #include <stdio.h>
 
 void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
@@ -55,3 +56,23 @@ void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
     }
 }
 
+static int gcd(int a, int b) {
+    while (b) {
+        a %= b;
+        a ^= b;
+        b ^= a;
+        a ^= b;
+    }
+    return a;
+}
+
+void updateTickInterval() {
+    int time = 0;
+
+    for (int i = 0; i < blockCount; i++) {
+        time = gcd(time, blocks[i].interval);
+    }
+
+    extern int interval;
+    interval = time;
+}
