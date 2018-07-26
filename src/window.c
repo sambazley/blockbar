@@ -124,6 +124,10 @@ static void click(struct Click *cd) {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
 
+        if (!blk->id) {
+            continue;
+        }
+
         int rendered;
         if (blk->eachmon) {
             rendered = blk->data.mon[cd->bar].type.legacy.rendered;

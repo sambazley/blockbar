@@ -4,7 +4,7 @@ function __fish_bbc
         bbc --help | tail -n+4 | sed 's/^\s*//g' | sed -E 's/\s.*\s{2,}/\t/g'
         return
     else if [ (count $cmd) -eq 2 ]
-        if [ $cmd[2] = 'exec' -o $cmd[2] = 'get' -o $cmd[2] = 'set' ]
+        if [ $cmd[2] = 'exec' -o $cmd[2] = 'get' -o $cmd[2] = 'set' -o $cmd[2] = 'rm' ]
             bbc list
         end
     else if [ (count $cmd) -eq 3 ]

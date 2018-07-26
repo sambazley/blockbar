@@ -44,10 +44,9 @@ static void printUsage(const char *file) {
 static void blocksCleanup() {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
-        if (blk->eachmon) {
-            free(blk->data.mon);
+        if (blk->id) {
+            removeBlock(blk);
         }
-        free(blk->width);
     }
 }
 
@@ -184,14 +183,7 @@ int main(int argc, const char *argv[]) {
             char buf [2048] = {0};
             read(proc->fdout, buf, sizeof(buf) - 1);
 
-            struct Block *blk = 0;
-
-            for (int j = 0; j < blockCount; j++) {
-                if (blocks[j].id == proc->blk) {
-                    blk = &blocks[j];
-                    break;
-                }
-            }
+            struct Block *blk = getBlock(proc->blk);
 
             if (blk) {
                 char **execData;

@@ -94,7 +94,8 @@ int socketInit() {
         rprintf("Invalid index, expecting integer\n"); \
         return 1; \
     } \
-    if (index >= blockCount) { \
+    struct Block *blk = getBlock(index); \
+    if (!blk) { \
         rprintf("No block at index %u\n", index); \
         return 1; \
     }
@@ -109,12 +110,16 @@ static int help(int argc, char **argv, char *rsp) {
     phelp("get <n>[:o] <p>", "Get a property of a block");
     phelp("set <n>[:o] <p> <v>", "Set a property of a block");
     phelp("new [eachmon]", "Creates a new block");
+    phelp("rm <n>", "Removes a block");
     return 0;
 }
 
 static int list(int argc, char **argv, char *rsp) {
     for (int i = 0; i < blockCount; i++) {
-        rprintf("%u\t%s\n", i, blocks[i].exec);
+        struct Block *blk = &blocks[i];
+        if (blk->id) {
+            rprintf("%u\t%s\n", blk->id, blocks[i].exec);
+        }
     }
 
     return 0;
@@ -123,7 +128,7 @@ static int list(int argc, char **argv, char *rsp) {
 static int exec(int argc, char **argv, char *rsp) {
     vars(3, "", 0);
 
-    blockExec(&blocks[index], 0);
+    blockExec(blk, 0);
     return 0;
 }
 
@@ -149,8 +154,6 @@ static int list_props(int argc, char **argv, char *rsp) {
 
 static int get(int argc, char **argv, char *rsp) {
     vars(4, "<property>", 1);
-
-    struct Block *blk = &blocks[index];
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
         rprintf("Output must be specified when eachmon=true "
@@ -208,8 +211,6 @@ static int get(int argc, char **argv, char *rsp) {
 
 static int set(int argc, char **argv, char *rsp) {
     vars(argc <= 4 ? 0 : argc, "<property> <value>", 1);
-
-    struct Block *blk = &blocks[index];
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
         rprintf("Output must be specified when eachmon=true "
@@ -343,9 +344,17 @@ static int new(int argc, char **argv, char *rsp) {
         eachmon = 1;
     }
 
-    rprintf("%u\n", blockCount);
-
     struct Block *blk = createBlock(eachmon);
+
+    rprintf("%u\n", blk->id);
+
+    return 0;
+}
+
+static int rm(int argc, char **argv, char *rsp) {
+    vars(3, "", 0);
+
+    removeBlock(blk);
 
     return 0;
 }
@@ -401,6 +410,7 @@ void socketRecv(int sockfd) {
         CASE(get)
         CASE(set)
         CASE(new)
+        CASE(rm)
         else {
             rprintf("%cUnknown command\n", 1);
         }

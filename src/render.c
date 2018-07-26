@@ -307,6 +307,10 @@ static int drawBlocks(int i) {
     for (int j = 0; j < blockCount; j++) {
         struct Block *blk = &blocks[j];
 
+        if (!blk->id) {
+            continue;
+        }
+
         char *execData;
         int *rendered;
         if (blk->eachmon) {

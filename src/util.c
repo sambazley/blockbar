@@ -24,8 +24,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int idCount;
-
 void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
     if (jsonGetPairIndex(jo, key) == -1) {
         return;
@@ -62,12 +60,24 @@ void parseColor(JsonObject *jo, const char *key, color dest, JsonError *err) {
 }
 
 struct Block *createBlock(int eachmon) {
-    blocks = realloc(blocks, sizeof(struct Block) * ++blockCount);
+    struct Block *blk = 0;
 
-    struct Block *blk = &blocks[blockCount - 1];
-    memset(blk, 0, sizeof(struct Block));
+    for (int i = 0; i < blockCount; i++) {
+        if (blocks[i].id == 0) {
+            blk = &blocks[i];
+            memset(blk, 0, sizeof(struct Block));
+            blk->id = i + 1;
+            break;
+        }
+    }
 
-    blk->id = idCount++;
+    if (blk == 0) {
+        blocks = realloc(blocks, sizeof(struct Block) * ++blockCount);
+        blk = &blocks[blockCount - 1];
+        memset(blk, 0, sizeof(struct Block));
+        blk->id = blockCount;
+    }
+
     blk->eachmon = eachmon;
 
     if (eachmon) {
@@ -78,6 +88,27 @@ struct Block *createBlock(int eachmon) {
     blk->width = malloc(sizeof(int) * barCount);
 
     return blk;
+}
+
+void removeBlock(struct Block *blk) {
+    blk->id = 0;
+
+    if (blk->eachmon) {
+        free(blk->data.mon);
+    }
+
+    free(blk->width);
+}
+
+struct Block *getBlock(int id) {
+    for (int i = 0; i < blockCount && id; i++) {
+        struct Block *blk = &blocks[i];
+        if (blk->id == id) {
+            return blk;
+        }
+    }
+
+    return 0;
 }
 
 static int gcd(int a, int b) {
