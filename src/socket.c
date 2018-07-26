@@ -322,6 +322,8 @@ static int set(int argc, char **argv, char *rsp) {
 #undef INT
 #undef IS
 
+    redraw();
+
     return 0;
 }
 
