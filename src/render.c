@@ -122,7 +122,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
             if (j == 0) {
                 shortText = data + i + 1;
             } else if (j == 1 && data[i + 1] == '#') {
-                char str [7];
+                char str [7] = "000000";
                 if (len - i - 2 == 3) {
                     strncpy(str, data+i+2, 3);
                     parseColorString(str, col);

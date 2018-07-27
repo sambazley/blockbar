@@ -57,9 +57,6 @@ int socketInit() {
 #define rprintf(fmt, ...) \
     sprintf(rsp + strlen(rsp), fmt, ##__VA_ARGS__)
 
-#define phelp(key, val) \
-    rprintf("\t%-22s%s\n", key, val)
-
 #define vars(n, usage, eachmon) \
     if (argc != (n)) { \
         rprintf("Usage: %s %s <block index>%s " usage "\n", \
@@ -102,17 +99,22 @@ int socketInit() {
 
 
 static int help(int argc, char **argv, char *rsp) {
+#define phelp(key, val) \
+    rprintf("\t%-27s%s\n", key, val)
+
     rprintf("Usage: %s <command>\n\n", argv[0]);
     rprintf("Commands:\n");
     phelp("list", "List blocks by their indices and \"exec\" value");
     phelp("exec <n>", "Execute block's script");
     phelp("list-props", "List a block's properties");
-    phelp("get <n>[:o] <p>", "Get a property of a block");
-    phelp("set <n>[:o] <p> <v>", "Set a property of a block");
+    phelp("property <n>[:o] <p> [v]", "Gets or sets a property of a block");
     phelp("new [eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
     phelp("move-out <n>", "Moves a block towards the outside of the bar");
     phelp("move-in <n>", "Moves a block towards the inside of the bar");
+
+#undef phelp
+
     return 0;
 }
 
@@ -330,6 +332,18 @@ static int set(int argc, char **argv, char *rsp) {
     return 0;
 }
 
+static int property(int argc, char **argv, char *rsp) {
+    if (argc == 4) {
+        return get(argc, argv, rsp);
+    } else if (argc == 5) {
+        return set(argc, argv, rsp);
+    } else {
+        rprintf("Usage: %s %s <index>[:output] <property> [value]\n",
+                argv[0], argv[1]);
+        return 1;
+    }
+}
+
 static int new(int argc, char **argv, char *rsp) {
     if (!(argc == 2 || argc == 3)) {
         rprintf("Usage: %s %s [eachmon]\n", argv[0], argv[1]);
@@ -472,8 +486,7 @@ void socketRecv(int sockfd) {
         CASE(list)
         CASE(exec)
         _CASE("list-props", list_props)
-        CASE(get)
-        CASE(set)
+        CASE(property)
         CASE(new)
         CASE(rm)
         _CASE("move-out", move_out)
