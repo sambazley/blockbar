@@ -47,7 +47,7 @@ The configuration file is JSON file, that has the following sections
 .in
 
 .PP
-The "Colour" type can be either:
+The "Color" type can be either:
 .IP 1
 an array in the format of [r, g, b],
 where r, g, and b are integers in the range of 0-255.
@@ -71,11 +71,11 @@ padding|T{
 Padding on either side of each block.
 T}|Integer|5
 background|T{
-Background colour of the bar.
-T}|Colour|[0,0,0]
+Background color of the bar.
+T}|Color|[0,0,0]
 foreground|T{
-Default text colour.
-T}|Colour|[255,255,255]
+Default text color.
+T}|Color|[255,255,255]
 font|T{
 Font name and size.
 T}|String|System default
@@ -152,7 +152,7 @@ Full text
 .IP 2
 Short text
 .IP 3
-Colour
+Color
 .PP
 Lines 2 and 3 are optional.
 If the standard output is empty, the block will not be drawn.
@@ -190,11 +190,11 @@ text#T{
 Text displayed in the subblock.
 T}#String#""
 background#T{
-Background colour of the subblock.
-T}#Array[r,g,b]#\-
+Background color of the subblock.
+T}#Color#\-
 foreground#T{
-Default text colour.
-T}#Array[r,g,b]#[255,255,255]
+Default text color.
+T}#Color#[255,255,255]
 bgwidth#T{
 Sets the width of the block.
 Takes priority over bgxpad.
