@@ -111,6 +111,8 @@ static int help(int argc, char **argv, char *rsp) {
     phelp("set <n>[:o] <p> <v>", "Set a property of a block");
     phelp("new [eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
+    phelp("move-out <n>", "Moves a block towards the outside of the bar");
+    phelp("move-in <n>", "Moves a block towards the inside of the bar");
     return 0;
 }
 
@@ -359,6 +361,69 @@ static int rm(int argc, char **argv, char *rsp) {
     return 0;
 }
 
+static int move_out(int argc, char **argv, char *rsp) {
+    vars(3, "", 0);
+
+    struct Block *swp = 0;
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *_blk = &blocks[i];
+        if (blk->pos == _blk->pos) {
+            if (blk == _blk) {
+                break;
+            }
+            swp = _blk;
+        }
+    }
+
+    if (swp == 0) {
+        rprintf("Cannot move block out further\n");
+        return 1;
+    }
+
+    struct Block tmp;
+    memcpy(&tmp, swp, sizeof(struct Block));
+    memcpy(swp, blk, sizeof(struct Block));
+    memcpy(blk, &tmp, sizeof(struct Block));
+
+    redraw();
+
+    return 0;
+}
+
+static int move_in(int argc, char **argv, char *rsp) {
+    vars(3, "", 0);
+
+    struct Block *swp = 0;
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *_blk = &blocks[i];
+        if (_blk == blk) {
+            for (i++; i < blockCount; i++) {
+                struct Block *_blk = &blocks[i];
+                if (blk->pos == _blk->pos) {
+                    swp = _blk;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    if (swp == 0) {
+        rprintf("Cannot move block in further\n");
+        return 1;
+    }
+
+    struct Block tmp;
+    memcpy(&tmp, swp, sizeof(struct Block));
+    memcpy(swp, blk, sizeof(struct Block));
+    memcpy(blk, &tmp, sizeof(struct Block));
+
+    redraw();
+
+    return 0;
+
+}
+
 #define _CASE(x, y) \
     else if (strcmp(argv[1], x) == 0) { \
         rsp[0] = y(argc, argv, rsp+1); \
@@ -411,6 +476,8 @@ void socketRecv(int sockfd) {
         CASE(set)
         CASE(new)
         CASE(rm)
+        _CASE("move-out", move_out)
+        _CASE("move-in", move_in)
         else {
             rprintf("%cUnknown command\n", 1);
         }

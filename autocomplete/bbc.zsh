@@ -8,7 +8,8 @@ _bbc()
             cmds+=$(echo "$line" | sed "s/^\s*//g" | sed -E "s/\s.*\s{2,}/:/g")
         done
         _describe -t commands 'bbc' cmds
-    elif [[ "$CURRENT" == "3" && "${words[2]}" =~ "(exec)|(get)|(set)|(rm)" ]]; then
+    elif [[ "$CURRENT" == "3" && "${words[2]}" =~ "(exec)|(get)|(set)|\
+            (rm)|(move-out)|(move-in)" ]]; then
         ids=()
         bbc list | while read id; do
             ids+=$(echo $id | sed -E "s/\t/:/g")
