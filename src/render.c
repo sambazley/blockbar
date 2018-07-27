@@ -122,20 +122,14 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
             if (j == 0) {
                 shortText = data + i + 1;
             } else if (j == 1 && data[i + 1] == '#') {
-                int c = strtol(data+i+2, 0, 16);
-                int colInt = 0xFFFFFF;
-
+                char str [7];
                 if (len - i - 2 == 3) {
-                    colInt = ((c & 0xF00) << 12) | ((c & 0xF00) << 8)
-                           | ((c & 0x0F0) << 8) | ((c & 0x0F0) << 4)
-                           | ((c & 0x00F) << 4) | (c & 0x00F);
+                    strncpy(str, data+i+2, 3);
+                    parseColorString(str, col);
                 } else if (len - i - 2 == 6) {
-                    colInt = c;
+                    strncpy(str, data+i+2, 6);
+                    parseColorString(str, col);
                 }
-
-                col[0] = colInt >> 16;
-                col[1] = (colInt >> 8) & 0xFF;
-                col[2] = colInt & 0xFF;
             }
             data[i] = 0;
             j++;
@@ -244,7 +238,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         color fg = {0xff, 0xff, 0xff};
         int bgwidth = -1, bgheight = -1, bgxpad = -1, bgypad = -1;
 
-        parseColor(subblock, "background", bg, &err);
+        parseColorJson(subblock, "background", bg, &err);
         if (jsonErrorIsSet(&err)) {
             fprintf(stderr,
                     "Error parsing \"background\" array form subblock\n%s\n",
@@ -253,7 +247,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
             jsonErrorInit(&err);
         }
 
-        parseColor(subblock, "foreground", fg, &err);
+        parseColorJson(subblock, "foreground", fg, &err);
         if (jsonErrorIsSet(&err)) {
             fprintf(stderr,
                     "Error parsing \"foreground\" array form subblock\n%s\n",

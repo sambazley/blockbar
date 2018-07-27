@@ -204,8 +204,8 @@ void configParseGeneral(JsonObject *jsonConfig) {
 
     parseInt(jsonConfig, "height", &conf.height, &err); ERR(&err);
     parseInt(jsonConfig, "padding", &conf.padding, &err); ERR(&err);
-    parseColor(jsonConfig, "background", conf.bg, &err); ERR(&err);
-    parseColor(jsonConfig, "foreground", conf.fg, &err); ERR(&err);
+    parseColorJson(jsonConfig, "background", conf.bg, &err); ERR(&err);
+    parseColorJson(jsonConfig, "foreground", conf.fg, &err); ERR(&err);
     parseString(jsonConfig, "font", &conf.font, &err); ERR(&err);
     parseBool(jsonConfig, "shortlabels", &conf.shortLabels, &err); ERR(&err);
     parseString(jsonConfig, "position", &position, &err); ERR(&err);

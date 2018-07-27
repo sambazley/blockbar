@@ -46,88 +46,99 @@ The configuration file is JSON file, that has the following sections
 .EE
 .in
 
+.PP
+The "Colour" type can be either:
+.IP 1
+an array in the format of [r, g, b],
+where r, g, and b are integers in the range of 0-255.
+.IP 2
+a string in the format of "#RRGGBB" or "#RGB",
+where RR, GG, and BB are hexadecimal integers in the range of 0x00-0xFF.
+If the string is in the format of "#RGB", the string will be interpreted as
+if it was written as "#RRGGBB".
+
 .TS
-allbox tab(#);
+allbox tab(|);
 cB s s s
 cB cB cB cB
 l2 lx2 l2 l.
 General bar settings
-Key#Description#Type#Default
-height#T{
+Key|Description|Type|Default
+height|T{
 Height of the bar.
-T}#Integer#22
-padding#T{
+T}|Integer|22
+padding|T{
 Padding on either side of each block.
-T}#Integer#5
-background#T{
+T}|Integer|5
+background|T{
 Background colour of the bar.
-T}#Array[r,g,b]#[0,0,0]
-foreground#T{
+T}|Colour|[0,0,0]
+foreground|T{
 Default text colour.
-T}#Array[r,g,b]#[255,255,255]
-font#T{
+T}|Colour|[255,255,255]
+font|T{
 Font name and size.
-T}#String#System default
-shortlabels#T{
+T}|String|System default
+shortlabels|T{
 If true, a block's label will still be rendered if the bar is in short mode.
-T}#Boolean#true
-position#T{
+T}|Boolean|true
+position|T{
 Postion of the screen that the bar appears on. "top" or "bottom".
-T}#String#"top"
-traypadding#T{
+T}|String|"top"
+traypadding|T{
 Padding to the right of each tray icon.
-T}#Integer#2
-trayiconsize#T{
+T}|Integer|2
+trayiconsize|T{
 Width and height of each tray icon.
-T}#Integer#18
-traybar#T{
+T}|Integer|18
+traybar|T{
 Name of output (see xrandr) that the tray should display on.
-T}#String#\-
-trayside#T{
+T}|String|\-
+trayside|T{
 Side of the bar that the tray appears on. "left" or "right".
-T}#String#"right"
+T}|String|"right"
 .TE
 
 .TS
-allbox tab(#);
+allbox tab(|);
 cB s s s
 cB cB cB cB
 l2 lx2 l2 l.
 Block Settings
-Key#Description#Type#Default
-mode#T{
+Key|Description|Type|Default
+mode|T{
 Block mode, "legacy" or "subblocks".
-T}#String#"legacy"
-eachmon#T{
+T}|String|"legacy"
+eachmon|T{
 If true, the block will execute once per monitor,
 BAR_OUTPUT will be set to the output's name.
-T}#Boolean#false
-label#T{
+T}|Boolean|false
+label|T{
 Static text that appears before the script output.
 Only works with legacy blocks.
-T}#String#""
-exec#T{
+T}|String|""
+exec|T{
 Path to the executable to run.
-T}#String#""
-interval#T{
+T}|String|""
+interval|T{
 Time between each execution of the block's script.
 If 0, the block will only execute once.
-T}#Integer#0
-padding#T{
+T}|Integer|0
+padding|T{
 Adds to the padding on either side of the block.
-T}#Integer#0
-padding-inside#T{
+T}|Integer|0
+padding-inside|T{
 Adds to the padding on the side of the block
 closest to the centre of the bar.
-T}#Integer#0
-padding-outside#T{
+T}|Integer|0
+padding-outside|T{
 Adds to the padding on the side of the block
 furthest from the centre of the bar.
-T}#Integer#0
-nodiv#T{
+T}|Integer|0
+nodiv|T{
 If true, the divider next to the block, furthest from the inside of the bar
 is not drawn.
-T}#Boolean#false
+T}|Boolean|false
 .TE
 
 .SH MODES
