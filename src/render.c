@@ -108,7 +108,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     char *longText = data;
     char *shortText = data;
-    color col = {0xff, 0xff, 0xff};
+    color col = {conf.fg[0], conf.fg[1], conf.fg[2]};
 
     int j = 0;
     int len = strlen(data);
