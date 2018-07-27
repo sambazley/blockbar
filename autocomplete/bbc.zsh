@@ -15,6 +15,12 @@ _bbc()
             ids+=$(echo $id | sed -E "s/\t/:/g")
         done
         _describe -t commands 'bbc' ids
+    elif [[ "$CURRENT" == "3" && "${words[2]}" =~ "(setting)" ]]; then
+        settings=()
+        bbc list-settings | while read s; do
+            settings+=$(echo $s | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/:/g')
+        done
+        _describe -t commands 'bbc' settings
     elif [[ "$CURRENT" == "4" && "${words[2]}" =~ "(property)" ]]; then
         props=()
         bbc list-properties | while read prop; do

@@ -19,6 +19,7 @@
 
 #include "socket.h"
 #include "blocks.h"
+#include "config.h"
 #include "exec.h"
 #include "render.h"
 #include "util.h"
@@ -109,6 +110,7 @@ static int help(int argc, char **argv, char *rsp) {
     phelp("list-properties", "List a block's properties");
     phelp("list-settings", "List the bar's settings");
     phelp("property <n>[:o] <p> [v]", "Gets or sets a property of a block");
+    phelp("setting <p> [v]", "Gets or sets a setting of the bar");
     phelp("new [eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
     phelp("move-out <n>", "Moves a block towards the outside of the bar");
@@ -178,7 +180,7 @@ static int list_settings(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int get(int argc, char **argv, char *rsp) {
+static int getProperty(int argc, char **argv, char *rsp) {
     vars(4, "<property>", 1);
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
@@ -213,16 +215,16 @@ static int get(int argc, char **argv, char *rsp) {
         rprintf("%s\n", blk->pos == LEFT ? "left" : "right");
     }
     IS("interval") {
-        rprintf("%u\n", blk->interval);
+        rprintf("%d\n", blk->interval);
     }
     IS("padding") {
-        rprintf("%u\n", blk->padding);
+        rprintf("%d\n", blk->padding);
     }
     IS("padding-inside") {
-        rprintf("%u\n", blk->padIn);
+        rprintf("%d\n", blk->padIn);
     }
     IS("padding-outside") {
-        rprintf("%u\n", blk->padOut);
+        rprintf("%d\n", blk->padOut);
     }
     IS("nodiv") {
         rprintf("%s\n", blk->nodiv ? "true" : "false");
@@ -235,7 +237,7 @@ static int get(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int set(int argc, char **argv, char *rsp) {
+static int setProperty(int argc, char **argv, char *rsp) {
     vars(argc <= 4 ? 0 : argc, "<property> <value>", 1);
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
@@ -356,12 +358,70 @@ static int set(int argc, char **argv, char *rsp) {
 
 static int property(int argc, char **argv, char *rsp) {
     if (argc == 4) {
-        return get(argc, argv, rsp);
+        return getProperty(argc, argv, rsp);
     } else if (argc == 5) {
-        return set(argc, argv, rsp);
+        return setProperty(argc, argv, rsp);
     } else {
         rprintf("Usage: %s %s <index>[:output] <property> [value]\n",
                 argv[0], argv[1]);
+        return 1;
+    }
+}
+
+static int getSetting(int argc, char **argv, char *rsp) {
+#define IS(x) \
+    else if (strcmp(argv[2], x) == 0)
+
+    if (0) {}
+    IS("height") {
+        rprintf("%d\n", conf.height);
+    }
+    IS("padding") {
+        rprintf("%d\n", conf.padding);
+    }
+    IS("background") {
+        rprintf("#%02x%02x%02x\n", conf.bg[0], conf.bg[1], conf.bg[2]);
+    }
+    IS("foreground") {
+        rprintf("#%02x%02x%02x\n", conf.fg[0], conf.fg[1], conf.fg[2]);
+    }
+    IS("font") {
+        rprintf("%s\n", conf.font);
+    }
+    IS("shortlabels") {
+        rprintf("%s\n", conf.shortLabels ? "true" : "false");
+    }
+    IS("position") {
+        rprintf("%s\n", conf.top ? "top" : "bottom");
+    }
+    IS("traypadding") {
+        rprintf("%d\n", conf.trayPadding);
+    }
+    IS("trayiconsize") {
+        rprintf("%d\n", conf.trayIconSize);
+    }
+    IS("traybar") {
+        rprintf("%s\n", conf.trayBar);
+    }
+    IS("trayside") {
+        rprintf("%s\n", conf.traySide == RIGHT ? "right" : "left");
+    }
+    else {
+        rprintf("...\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+static int setting(int argc, char **argv, char *rsp) {
+    if (argc == 3) {
+        return getSetting(argc, argv, rsp);
+    } else if (argc == 4) {
+        rprintf("todo\n");
+        return 1;
+    } else {
+        rprintf("Usage: %s %s <property> [value]\n", argv[0], argv[1]);
         return 1;
     }
 }
@@ -510,6 +570,7 @@ void socketRecv(int sockfd) {
         _CASE("list-properties", list_properties)
         _CASE("list-settings", list_settings)
         CASE(property)
+        CASE(setting)
         CASE(new)
         CASE(rm)
         _CASE("move-out", move_out)

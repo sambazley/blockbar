@@ -7,6 +7,8 @@ function __fish_bbc
         if [ $cmd[2] = 'exec' -o $cmd[2] = 'property' -o $cmd[2] = 'rm' \
              -o $cmd[2] = 'move-out' -o $cmd[2] = 'move-in' ]
             bbc list
+        else if [ $cmd[2] = 'setting' ]
+            bbc list-settings | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/\t/g'
         end
     else if [ (count $cmd) -eq 3 ]
         if [ $cmd[2] = 'property' ]
