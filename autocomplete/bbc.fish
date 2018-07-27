@@ -10,7 +10,7 @@ function __fish_bbc
         end
     else if [ (count $cmd) -eq 3 ]
         if [ $cmd[2] = 'property' ]
-            bbc list-props | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/\t/g'
+            bbc list-properties | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/\t/g'
         end
     end
 end

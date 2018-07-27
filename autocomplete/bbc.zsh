@@ -17,7 +17,7 @@ _bbc()
         _describe -t commands 'bbc' ids
     elif [[ "$CURRENT" == "4" && "${words[2]}" =~ "(property)" ]]; then
         props=()
-        bbc list-props | while read prop; do
+        bbc list-properties | while read prop; do
             props+=$(echo $prop | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/:/g')
         done
         _describe -t commands 'bbc' props

@@ -106,7 +106,8 @@ static int help(int argc, char **argv, char *rsp) {
     rprintf("Commands:\n");
     phelp("list", "List blocks by their indices and \"exec\" value");
     phelp("exec <n>", "Execute block's script");
-    phelp("list-props", "List a block's properties");
+    phelp("list-properties", "List a block's properties");
+    phelp("list-settings", "List the bar's settings");
     phelp("property <n>[:o] <p> [v]", "Gets or sets a property of a block");
     phelp("new [eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
@@ -136,9 +137,9 @@ static int exec(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int list_props(int argc, char **argv, char *rsp) {
+static int list_properties(int argc, char **argv, char *rsp) {
 #define p(t, v, d) \
-    rprintf("%-10s%-20s%s\n", t, v, d);
+    rprintf("%-8s%-17s%s\n", t, v, d);
 
     p("string", "mode", "Block mode (\"legacy\" or \"subblocks\")");
     p("string", "label", "Block's label");
@@ -150,6 +151,27 @@ static int list_props(int argc, char **argv, char *rsp) {
     p("int", "padding-inside", "Additional padding on the inside of the block");
     p("int", "padding-outside", "Additional padding on the outside of the block");
     p("bool", "nodiv", "Disables the outside divider next to the block");
+
+#undef p
+
+    return 0;
+}
+
+static int list_settings(int argc, char **argv, char *rsp) {
+#define p(t, v, d) \
+    rprintf("%-8s%-15s%s\n", t, v, d);
+
+    p("int", "height", "Height of the bar");
+    p("int", "padding", "Padding on both sides of each block");
+    p("color", "background", "Background color of the bar");
+    p("color", "foreground", "Default text color");
+    p("string", "font", "Font name and size");
+    p("bool", "shortlabels", "Whether a block's label should render in short mode");
+    p("string", "position", "Position of the bar on the screen (\"top\" or \"bottom\")");
+    p("int", "traypadding", "Padding to the right of each tray icon");
+    p("int", "trayiconsize", "Width and height of each tray icon");
+    p("string", "traybar", "Name of the output that the tray appears on");
+    p("string", "trayside", "Side that the tray appears on the bar (\"left\" or \"right\")");
 
 #undef p
 
@@ -485,7 +507,8 @@ void socketRecv(int sockfd) {
         _CASE("--help", help)
         CASE(list)
         CASE(exec)
-        _CASE("list-props", list_props)
+        _CASE("list-properties", list_properties)
+        _CASE("list-settings", list_settings)
         CASE(property)
         CASE(new)
         CASE(rm)
