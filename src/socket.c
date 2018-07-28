@@ -488,7 +488,7 @@ static int setSetting(int argc, char **argv, char *rsp) {
         if (strcmp(val, "top") == 0) {
             conf.top = 1;
         } else if (strcmp(val, "bottom") == 0) {
-            conf.top = 1;
+            conf.top = 0;
         } else {
             rprintf("Invalid value, expecting position "
                     "(\"top\" or \"bottom\")\n");
