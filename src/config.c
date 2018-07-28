@@ -38,6 +38,8 @@ struct Block *blocks;
 
 static void loadDefaults() {
     conf.height = 22;
+    conf.marginV = 0;
+    conf.marginH = 0;
     conf.padding = 5;
     conf.trayPadding = 2;
     conf.trayIconSize = 18;
@@ -203,6 +205,8 @@ void configParseGeneral(JsonObject *jsonConfig) {
     char *position = 0;
 
     parseInt(jsonConfig, "height", &conf.height, &err); ERR(&err);
+    parseInt(jsonConfig, "margin-vert", &conf.marginV, &err); ERR(&err);
+    parseInt(jsonConfig, "margin-horiz", &conf.marginH, &err); ERR(&err);
     parseInt(jsonConfig, "padding", &conf.padding, &err); ERR(&err);
     parseColorJson(jsonConfig, "background", conf.bg, &err); ERR(&err);
     parseColorJson(jsonConfig, "foreground", conf.fg, &err); ERR(&err);

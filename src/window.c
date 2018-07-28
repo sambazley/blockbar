@@ -70,13 +70,18 @@ int createBars() {
 
         struct Bar *bar = &bars[barCount-1];
 
-        int y = conf.top ? 0 : crtcInfo->height - conf.height;
+        int x = crtcInfo->x + conf.marginH;
+
+        int y = conf.top ? conf.marginV
+                         : crtcInfo->height - conf.height - conf.marginV;
+
+        int width = crtcInfo->width - conf.marginH * 2;
 
         bar->window = XCreateWindow(disp, root,
-                crtcInfo->x, y, crtcInfo->width, conf.height,
+                x, y, width, conf.height,
                 0, 0, CopyFromParent, CopyFromParent, 0, NULL);
 
-        bar->width = crtcInfo->width;
+        bar->width = width;
         bar->height = conf.height;
 
         bar->output = malloc(oputInfo->nameLen + 1);
@@ -137,12 +142,19 @@ void updateGeom() {
         XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(disp, res, oputInfo->crtc);
         struct Bar *bar = &bars[b];
 
-        int y = conf.top ? 0 : crtcInfo->height - conf.height;
+        int x = crtcInfo->x + conf.marginH;
 
-        XMoveResizeWindow(disp, bar->window, crtcInfo->x, y,
-                crtcInfo->width, conf.height);
+        int y = conf.top ? conf.marginV
+                         : crtcInfo->height - conf.height - conf.marginV;
 
-        bar->width = crtcInfo->width;
+        int width = crtcInfo->width - conf.marginH * 2;
+
+        bar->width = width;
+        bar->height = conf.height;
+
+        XMoveResizeWindow(disp, bar->window, x, y, width, conf.height);
+
+        bar->width = width;
         bar->height = conf.height;
 
         cairo_surface_destroy(bar->sfc[0]);

@@ -165,6 +165,8 @@ static int list_settings(int argc, char **argv, char *rsp) {
     rprintf("%-8s%-15s%s\n", t, v, d);
 
     p("int", "height", "Height of the bar");
+    p("int", "margin-vert", "Margin above or below the bar");
+    p("int", "margin-horiz", "Margin on the left and right of the bar");
     p("int", "padding", "Padding on both sides of each block");
     p("color", "background", "Background color of the bar");
     p("color", "foreground", "Default text color");
@@ -377,6 +379,12 @@ static int getSetting(int argc, char **argv, char *rsp) {
     IS("height") {
         rprintf("%d\n", conf.height);
     }
+    IS("margin-vert") {
+        rprintf("%d\n", conf.marginV);
+    }
+    IS("margin-horiz") {
+        rprintf("%d\n", conf.marginH);
+    }
     IS("padding") {
         rprintf("%d\n", conf.padding);
     }
@@ -444,6 +452,16 @@ static int setSetting(int argc, char **argv, char *rsp) {
         conf.height = integer;
         updateGeom();
         redrawTray();
+    }
+    IS("margin-vert") {
+        INT;
+        conf.marginV = integer;
+        updateGeom();
+    }
+    IS("margin-horiz") {
+        INT;
+        conf.marginH = integer;
+        updateGeom();
     }
     IS("padding") {
         INT;
