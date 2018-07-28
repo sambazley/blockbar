@@ -46,6 +46,7 @@ extern int barCount;
 extern struct Bar *bars;
 
 int createBars();
+void updateGeom();
 void pollEvents();
 void cleanupBars();
 

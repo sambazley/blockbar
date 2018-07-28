@@ -119,6 +119,52 @@ int createBars() {
     return 0;
 }
 
+void updateGeom() {
+    int s = DefaultScreen(disp);
+    Window root = RootWindow(disp, s);
+
+    XRRScreenResources *res = XRRGetScreenResources(disp, root);
+
+    int b = 0;
+    for (int i = 0; i < res->noutput; i++) {
+        XRROutputInfo *oputInfo = XRRGetOutputInfo(disp, res, res->outputs[i]);
+
+        if (!oputInfo->crtc) {
+            XRRFreeOutputInfo(oputInfo);
+            continue;
+        }
+
+        XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(disp, res, oputInfo->crtc);
+        struct Bar *bar = &bars[b];
+
+        int y = conf.top ? 0 : crtcInfo->height - conf.height;
+
+        XMoveResizeWindow(disp, bar->window, crtcInfo->x, y,
+                crtcInfo->width, conf.height);
+
+        bar->width = crtcInfo->width;
+        bar->height = conf.height;
+
+        cairo_surface_destroy(bar->sfc[0]);
+        cairo_surface_destroy(bar->sfc[1]);
+        cairo_destroy(bar->ctx[0]);
+        cairo_destroy(bar->ctx[1]);
+
+        bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
+                DefaultVisual(disp, s), bar->width, bar->height);
+        bar->sfc[1] = cairo_surface_create_similar_image(bar->sfc[0],
+                CAIRO_FORMAT_RGB24, bar->width, bar->height);
+
+        bar->ctx[0] = cairo_create(bar->sfc[0]);
+        bar->ctx[1] = cairo_create(bar->sfc[1]);
+
+        XRRFreeOutputInfo(oputInfo);
+        XRRFreeCrtcInfo(crtcInfo);
+
+        b++;
+    }
+}
+
 static void click(struct Click *cd) {
     int cx [SIDES] = {0};
     for (int i = 0; i < blockCount; i++) {
@@ -220,9 +266,8 @@ void pollEvents() {
                 }
                 break;
             case ReparentNotify:
-            case UnmapNotify:
             case DestroyNotify:
-                handleUnmapEvent(&ev);
+                handleDestroyEvent(&ev);
                 break;
             case SubstructureNotifyMask:
                 printf("substructure\n");

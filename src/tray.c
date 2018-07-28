@@ -131,12 +131,12 @@ void trayCleanup() {
         }
 
         XUnmapWindow(disp, embed);
-	XReparentWindow(disp, embed, DefaultRootWindow(disp), 0, 0);
+        XReparentWindow(disp, embed, DefaultRootWindow(disp), 0, 0);
         XSync(disp, False);
     }
 }
 
-static void redrawTray() {
+void redrawTray() {
     iconsDrawn = 0;
 
     for (int i = 0; i < trayIconCount; i++) {
@@ -154,6 +154,12 @@ static void redrawTray() {
         }
 
         trapErrors();
+
+        XSetWindowAttributes o;
+        o.background_pixel = conf.bg[0] << 16
+                           | conf.bg[1] << 8
+                           | conf.bg[2];
+        XChangeWindowAttributes(disp, embed, CWBackPixel, &o);
 
         XMoveResizeWindow(disp, embed, x, y,
                 conf.trayIconSize, conf.trayIconSize);
@@ -231,7 +237,7 @@ void handleTrayEvent(XEvent *ev) {
     }
 }
 
-void handleUnmapEvent(XEvent *ev) {
+void handleDestroyEvent(XEvent *ev) {
     Window window = ev->xunmap.window;
 
     if (ev->xreparent.parent == bars[trayBar].window) {
@@ -246,5 +252,16 @@ void handleUnmapEvent(XEvent *ev) {
         }
     }
 
+    redrawTray();
+}
+
+void reparentIcons() {
+    for (int i = 0; i < trayIconCount; i++) {
+        Window embed = trayIcons[i];
+        XWithdrawWindow(disp, embed, 0);
+        XReparentWindow(disp, embed, bars[trayBar].window, 0, 0);
+        XMapRaised(disp, embed);
+    }
+    XSync(disp, 0);
     redrawTray();
 }

@@ -74,9 +74,15 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
     }
 }
 
-void parseColorString(char *str, color dest) {
-    int c = strtol(str, 0, 16);
+int parseColorString(char *str, color dest) {
+    char *end = 0;
+
+    int c = strtol(str, &end, 16);
     int colInt = 0xFFFFFF;
+
+    if (end && *end) {
+        return 1;
+    }
 
     if (strlen(str) == 3) {
         colInt = ((c & 0xF00) << 12) | ((c & 0xF00) << 8)
@@ -84,11 +90,15 @@ void parseColorString(char *str, color dest) {
                | ((c & 0x00F) << 4) | (c & 0x00F);
     } else if (strlen(str) == 6) {
         colInt = c;
+    } else {
+        return 1;
     }
 
     dest[0] = colInt >> 16;
     dest[1] = (colInt >> 8) & 0xFF;
     dest[2] = colInt & 0xFF;
+
+    return 0;
 }
 
 struct Block *createBlock(int eachmon) {

@@ -22,6 +22,7 @@
 #include "config.h"
 #include "exec.h"
 #include "render.h"
+#include "tray.h"
 #include "util.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -339,7 +340,7 @@ static int setProperty(int argc, char **argv, char *rsp) {
         } else if (strcmp("false", val) == 0) {
             blk->nodiv = 0;
         } else {
-            rprintf("Invalid value, expecting boolean"
+            rprintf("Invalid value, expecting boolean "
                     "(\"true\" or \"false\")\n");
         }
     }
@@ -359,7 +360,7 @@ static int setProperty(int argc, char **argv, char *rsp) {
 static int property(int argc, char **argv, char *rsp) {
     if (argc == 4) {
         return getProperty(argc, argv, rsp);
-    } else if (argc == 5) {
+    } else if (argc >= 5) {
         return setProperty(argc, argv, rsp);
     } else {
         rprintf("Usage: %s %s <index>[:output] <property> [value]\n",
@@ -407,9 +408,135 @@ static int getSetting(int argc, char **argv, char *rsp) {
         rprintf("%s\n", conf.traySide == RIGHT ? "right" : "left");
     }
     else {
-        rprintf("...\n");
+        rprintf("Setting does not exist, or cannot be returned\n");
         return 1;
     }
+
+#undef IS
+
+    return 0;
+}
+
+static int setSetting(int argc, char **argv, char *rsp) {
+    char val [BBCBUFFSIZE] = {0};
+
+    for (int i = 3; i < argc; i++) {
+        strcat(val, argv[i]);
+        strcat(val, " ");
+    }
+
+    val[strlen(val) - 1] = 0;
+
+#define IS(x) \
+    else if (strcmp(argv[2], x) == 0)
+
+#define INT \
+    char *end; \
+    int integer = strtol(val, &end, 0); \
+    if (*end != 0) { \
+        rprintf("Invalid value, expecting integer\n"); \
+        return 1; \
+    }
+
+    if (0) {}
+    IS("height") {
+        INT;
+        conf.height = integer;
+        updateGeom();
+        redrawTray();
+    }
+    IS("padding") {
+        INT;
+        conf.padding = integer;
+    }
+    IS("background") {
+        if ((strlen(val) != 4 && strlen(val) != 7) || *val != '#' ||
+            parseColorString(val+1, conf.bg) != 0) {
+            rprintf("Invalid color\n");
+            return 1;
+        }
+        reparentIcons();
+    }
+    IS("foreground") {
+        if ((strlen(val) != 4 && strlen(val) != 7) || *val != '#' ||
+            parseColorString(val+1, conf.fg) != 0) {
+            rprintf("Invalid color\n");
+            return 1;
+        }
+    }
+    IS("font") {
+        if (conf.font) {
+            free(conf.font);
+        }
+
+        conf.font = malloc(strlen(val) + 1);
+        strcpy(conf.font, val);
+        renderInit();
+    }
+    IS("shortlabels") {
+        if (strcmp(val, "true") == 0) {
+            conf.shortLabels = 1;
+        } else if (strcmp(val, "false") == 0) {
+            conf.shortLabels = 0;
+        } else {
+            rprintf("Invalid value, expecting boolean "
+                    "(\"true\" or \"false\")\n");
+            return 1;
+        }
+    }
+    IS("position") {
+        if (strcmp(val, "top") == 0) {
+            conf.top = 1;
+        } else if (strcmp(val, "bottom") == 0) {
+            conf.top = 1;
+        } else {
+            rprintf("Invalid value, expecting position "
+                    "(\"top\" or \"bottom\")\n");
+            return 1;
+        }
+        updateGeom();
+    }
+    IS("traypadding") {
+        INT;
+        conf.trayPadding = integer;
+        redrawTray();
+    }
+    IS("traybar") {
+        for (int i = 0; i < barCount; i++) {
+            struct Bar bar = bars[i];
+            printf("%s == %s\n", bar.output, val);
+            if (strcmp(bar.output, val) == 0) {
+                trayInit(i);
+                break;
+            }
+        }
+        reparentIcons();
+    }
+    IS("trayiconsize") {
+        INT;
+        conf.trayIconSize = integer;
+        redrawTray();
+    }
+    IS("trayside") {
+        if (strcmp(val, "left") == 0) {
+            conf.traySide = LEFT;
+        } else if (strcmp(val, "right") == 0) {
+            conf.traySide = RIGHT;
+        } else {
+            rprintf("Invalid value, expecting side "
+                    "(\"left\" or \"right\")\n");
+            return 1;
+        }
+        redrawTray();
+    }
+    else {
+        rprintf("Setting does not exist, or cannot be set\n");
+    }
+
+#undef INT
+#undef IS
+
+    redraw();
 
     return 0;
 }
@@ -417,9 +544,8 @@ static int getSetting(int argc, char **argv, char *rsp) {
 static int setting(int argc, char **argv, char *rsp) {
     if (argc == 3) {
         return getSetting(argc, argv, rsp);
-    } else if (argc == 4) {
-        rprintf("todo\n");
-        return 1;
+    } else if (argc >= 4) {
+        return setSetting(argc, argv, rsp);
     } else {
         rprintf("Usage: %s %s <property> [value]\n", argv[0], argv[1]);
         return 1;

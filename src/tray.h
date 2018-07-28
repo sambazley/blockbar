@@ -27,10 +27,14 @@ extern int trayBar;
 void trayInit(int barIndex);
 void trayCleanup();
 
+void redrawTray();
+
 int isTrayEvent(XEvent *ev);
 void handleTrayEvent(XEvent *ev);
-void handleUnmapEvent(XEvent *ev);
+void handleDestroyEvent(XEvent *ev);
 
 int getTrayWidth();
+
+void reparentIcons();
 
 #endif /* TRAY_H */

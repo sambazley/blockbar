@@ -27,7 +27,7 @@ typedef int16_t color [3];
 
 void parseColorJson(JsonObject *jo, const char *key, color dest,
                     JsonError *err);
-void parseColorString(char *str, color dest);
+int parseColorString(char *str, color dest);
 
 struct Block *createBlock(int eachmon);
 void removeBlock(struct Block *blk);
