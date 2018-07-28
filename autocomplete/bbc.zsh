@@ -15,17 +15,33 @@ _bbc()
             ids+=$(echo $id | sed -E "s/\t/:/g")
         done
         _describe -t commands 'bbc' ids
-    elif [[ "$CURRENT" == "3" && "${words[2]}" =~ "(setting)" ]]; then
+    elif [[ "$CURRENT" == "3" && "${words[2]}" == "setting" ]]; then
         settings=()
         bbc list-settings | while read s; do
             settings+=$(echo $s | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/:/g')
         done
         _describe -t commands 'bbc' settings
-    elif [[ "$CURRENT" == "4" && "${words[2]}" =~ "(property)" ]]; then
+    elif [[ "$CURRENT" == "4" && "${words[2]}" == "property" ]]; then
         props=()
         bbc list-properties | while read prop; do
             props+=$(echo $prop | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/:/g')
         done
         _describe -t commands 'bbc' props
+    elif [[ "$CURRENT" == "4" && "${words[2]}" == "setting" ]]; then
+        if [[ "${words[3]}" == "position" ]]; then
+            list=("top" "bottom")
+            _describe -t commands 'bbc' list
+        elif [[ "${words[3]}" == "traybar" ]]; then
+            list=($(xrandr | grep "\sconnected" | awk '{print $1}'))
+            _describe -t commands 'bbc' list
+        elif [[ "${words[3]}" == "trayside" ]]; then
+            list=("left" "right")
+            _describe -t commands 'bbc' list
+        fi
+    elif [[ "$CURRENT" == "5" && "${words[2]}" == "property" ]]; then
+        if [[ "${words[4]}" == "pos" ]]; then
+            list=("left" "right")
+            _describe -t commands 'bbc' list
+        fi
     fi
 }

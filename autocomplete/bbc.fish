@@ -13,6 +13,23 @@ function __fish_bbc
     else if [ (count $cmd) -eq 3 ]
         if [ $cmd[2] = 'property' ]
             bbc list-properties | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/\t/g'
+        else if [ $cmd[2] = 'setting' ]
+            if [ $cmd[3] = 'position' ]
+                echo 'top'
+                echo 'bottom'
+            else if [ $cmd[3] = 'traybar' ]
+                xrandr | grep '\sconnected' | awk '{print $1}'
+            else if [ $cmd[3] = 'trayside' ]
+                echo 'left'
+                echo 'right'
+            end
+        end
+    else if [ (count $cmd) -eq 4 ]
+        if [ $cmd[2] = 'property' ]
+            if [ $cmd[4] = 'pos' ]
+                echo 'left'
+                echo 'right'
+            end
         end
     end
 end
