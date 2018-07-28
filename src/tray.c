@@ -148,15 +148,6 @@ void redrawTray() {
             continue;
         }
 
-        for (int j = 0; j < i; j++) {
-            if (trayIcons[j] == embed) {
-                trayIcons[j] = 0;
-
-                redrawTray();
-                return;
-            }
-        }
-
         int x = conf.trayIconSize*iconsDrawn + conf.trayPadding*(iconsDrawn+1);
         int y = bars[trayBar].height / 2 - conf.trayIconSize / 2;
 
@@ -206,20 +197,21 @@ static void handleDockRequest(Window embed) {
                        | conf.bg[2];
     XChangeWindowAttributes(disp, embed, CWBackPixel, &o);
 
-    int inserted = 0;
+    int index = -1;
 
     for (int i = 0; i < trayIconCount; i++) {
         if (trayIcons[i] == 0) {
             trayIcons[i] = embed;
-            inserted = 1;
+            index = i;
             break;
         }
     }
 
-    if (!inserted) {
+    if (index == -1) {
         trayIconCount++;
         trayIcons = realloc(trayIcons, sizeof(embed) * trayIconCount);
         trayIcons[trayIconCount-1] = embed;
+        index = trayIconCount-1;
     }
 
     xembedSendMessage(embed, XEMBED_EMBEDDED_NOTIFY, 0, bars[trayBar].window,
@@ -231,6 +223,12 @@ static void handleDockRequest(Window embed) {
 
     if (err == BadWindow) {
         return;
+    }
+
+    for (int i = 0; i < trayIconCount; i++) {
+        if (trayIcons[i] == embed && i != index) {
+            trayIcons[i] = 0;
+        }
     }
 
     redrawTray();
