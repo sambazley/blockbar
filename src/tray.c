@@ -56,7 +56,9 @@ static int trayIconCount;
 static int iconsDrawn;
 
 static int errorHandler(Display *disp, XErrorEvent *err) {
-    trappedErrorCode = err->error_code;
+    if (err->error_code != 0) {
+        trappedErrorCode = err->error_code;
+    }
     return 0;
 }
 
@@ -144,6 +146,15 @@ void redrawTray() {
 
         if (embed == 0) {
             continue;
+        }
+
+        for (int j = 0; j < i; j++) {
+            if (trayIcons[j] == embed) {
+                trayIcons[j] = 0;
+
+                redrawTray();
+                return;
+            }
         }
 
         int x = conf.trayIconSize*iconsDrawn + conf.trayPadding*(iconsDrawn+1);
@@ -240,7 +251,8 @@ void handleTrayEvent(XEvent *ev) {
 void handleDestroyEvent(XEvent *ev) {
     Window window = ev->xunmap.window;
 
-    if (ev->xreparent.parent == bars[trayBar].window) {
+    if (ev->type == ReparentNotify &&
+            ev->xreparent.parent == bars[trayBar].window) {
         redrawTray();
         return;
     }
@@ -262,6 +274,6 @@ void reparentIcons() {
         XReparentWindow(disp, embed, bars[trayBar].window, 0, 0);
         XMapRaised(disp, embed);
     }
-    XSync(disp, 0);
+    XSync(disp, False);
     redrawTray();
 }
