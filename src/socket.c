@@ -504,7 +504,6 @@ static int setSetting(int argc, char **argv, char *rsp) {
     IS("traybar") {
         for (int i = 0; i < barCount; i++) {
             struct Bar bar = bars[i];
-            printf("%s == %s\n", bar.output, val);
             if (strcmp(bar.output, val) == 0) {
                 trayInit(i);
                 break;
