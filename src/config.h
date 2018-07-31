@@ -28,6 +28,7 @@ struct {
     int height;
     int marginV;
     int marginH;
+    int radius;
     int padding;
     color bg;
     color fg;

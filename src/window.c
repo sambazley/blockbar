@@ -33,6 +33,8 @@ Display *disp;
 int barCount;
 struct Bar *bars;
 
+static Visual *visual;
+
 #define ATOM(x) Atom x = XInternAtom(disp, #x, False)
 
 int createBars() {
@@ -55,6 +57,11 @@ int createBars() {
     ATOM(_NET_WM_STATE_STICKY);
     ATOM(_NET_WM_STATE_BELOW);
 
+    XVisualInfo vinfo;
+    XMatchVisualInfo(disp, s, 32, TrueColor, &vinfo);
+
+    visual = vinfo.visual;
+
     for (int i = 0; i < res->noutput; i++) {
         XRROutputInfo *oputInfo = XRRGetOutputInfo(disp, res, res->outputs[i]);
 
@@ -70,30 +77,18 @@ int createBars() {
 
         struct Bar *bar = &bars[barCount-1];
 
-        int x = crtcInfo->x + conf.marginH;
+        XSetWindowAttributes wa;
+        wa.override_redirect = True;
+        wa.colormap = XCreateColormap(disp, root, visual, AllocNone);
+        wa.border_pixel = 0;
 
-        int y = conf.top ? conf.marginV
-                         : crtcInfo->height - conf.height - conf.marginV;
-
-        int width = crtcInfo->width - conf.marginH * 2;
-
-        bar->window = XCreateWindow(disp, root,
-                x, y, width, conf.height,
-                0, 0, CopyFromParent, CopyFromParent, 0, NULL);
-
-        bar->width = width;
-        bar->height = conf.height;
+        bar->window = XCreateWindow(disp, root, 0, 0, 10, 10,
+                0, vinfo.depth, InputOutput, visual,
+                CWOverrideRedirect | CWColormap | CWBorderPixel,
+                &wa);
 
         bar->output = malloc(oputInfo->nameLen + 1);
         strcpy(bar->output, oputInfo->name);
-
-        bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
-                DefaultVisual(disp, s), bar->width, bar->height);
-        bar->sfc[1] = cairo_surface_create_similar_image(bar->sfc[0],
-                CAIRO_FORMAT_RGB24, bar->width, bar->height);
-
-        bar->ctx[0] = cairo_create(bar->sfc[0]);
-        bar->ctx[1] = cairo_create(bar->sfc[1]);
 
         XRRFreeOutputInfo(oputInfo);
         XRRFreeCrtcInfo(crtcInfo);
@@ -116,10 +111,15 @@ int createBars() {
         XSelectInput(disp, bar->window,
                 ButtonPressMask | SubstructureNotifyMask);
 
-        XMapWindow(disp, bar->window);
+        bar->sfc[0] = 0;
+        bar->sfc[1] = 0;
+        bar->ctx[0] = 0;
+        bar->ctx[1] = 0;
     }
     XRRFreeScreenResources(res);
     XFlush(disp);
+
+    updateGeom();
 
     return 0;
 }
@@ -149,23 +149,28 @@ void updateGeom() {
 
         int width = crtcInfo->width - conf.marginH * 2;
 
-        bar->width = width;
-        bar->height = conf.height;
-
         XMoveResizeWindow(disp, bar->window, x, y, width, conf.height);
 
         bar->width = width;
         bar->height = conf.height;
 
-        cairo_surface_destroy(bar->sfc[0]);
-        cairo_surface_destroy(bar->sfc[1]);
-        cairo_destroy(bar->ctx[0]);
-        cairo_destroy(bar->ctx[1]);
+        if (bar->sfc[0]) {
+            cairo_surface_destroy(bar->sfc[0]);
+        }
+        if (bar->sfc[1]) {
+            cairo_surface_destroy(bar->sfc[1]);
+        }
+        if (bar->ctx[0]) {
+            cairo_destroy(bar->ctx[0]);
+        }
+        if (bar->ctx[1]) {
+            cairo_destroy(bar->ctx[1]);
+        }
 
         bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
-                DefaultVisual(disp, s), bar->width, bar->height);
+                visual, bar->width, bar->height);
         bar->sfc[1] = cairo_surface_create_similar_image(bar->sfc[0],
-                CAIRO_FORMAT_RGB24, bar->width, bar->height);
+                CAIRO_FORMAT_ARGB32, bar->width, bar->height);
 
         bar->ctx[0] = cairo_create(bar->sfc[0]);
         bar->ctx[1] = cairo_create(bar->sfc[1]);
@@ -173,8 +178,13 @@ void updateGeom() {
         XRRFreeOutputInfo(oputInfo);
         XRRFreeCrtcInfo(crtcInfo);
 
+        XMapWindow(disp, bar->window);
+
         b++;
     }
+
+    XRRFreeScreenResources(res);
+    XFlush(disp);
 }
 
 static void click(struct Click *cd) {

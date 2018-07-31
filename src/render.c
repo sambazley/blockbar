@@ -276,11 +276,15 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         int startx = x;
 
+        if (i == 0) {
+            x += blk->padOut;
+        }
+
         x += drawString(&bars[bar], text, x, blk->pos, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
 
         if (i == *subblockCount - 1) {
-            x += 2;
+            x += 2 + blk->padIn;
         }
 
         (*widths)[i] = x - startx;
@@ -337,9 +341,8 @@ static int drawBlocks(int i) {
         } else if (blk->label && (shortMode ? conf.shortLabels : 1)) {
             x[blk->pos] += conf.padding + blk->padding + blk->padOut;
 
-            color col = {0xff, 0xff, 0xff};
             x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
-                    blk->pos, col, 0, 0, 0, 0, 0);
+                    blk->pos, conf.fg, 0, 0, 0, 0, 0);
 
             x[blk->pos] += conf.padding + blk->padding + blk->padIn;
         }
@@ -370,16 +373,42 @@ static int drawBlocks(int i) {
 
 static void drawBar(int i) {
     cairo_t *ctx = bars[i].ctx[1];
+
+    cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(ctx);
+
     cairo_set_source_rgba(ctx,
                           conf.bg[0]/255.f,
                           conf.bg[1]/255.f,
                           conf.bg[2]/255.f, 1);
+
     cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-    cairo_paint(ctx);
+
+    int r = conf.radius;
+    int w = bars[i].width;
+    int h = bars[i].height;
+    double pi = 3.14159;
+
+    if (r) {
+        int x [] = {w - r, r};
+        int y [] = {h - r, r};
+        double t = pi / 2.;
+        cairo_new_sub_path(ctx);
+        cairo_arc(ctx, x[0], y[0], r,  0,    t);
+        cairo_arc(ctx, x[1], y[0], r,  t,  2*t);
+        cairo_arc(ctx, x[1], y[1], r, 2*t, 3*t);
+        cairo_arc(ctx, x[0], y[1], r, 3*t, 4*t);
+        cairo_close_path(ctx);
+        cairo_fill(ctx);
+    } else {
+        cairo_paint(ctx);
+    }
 
     if (drawBlocks(i) == 0) {
-        cairo_set_source_surface(bars[i].ctx[0], bars[i].sfc[1], 0, 0);
-        cairo_paint(bars[i].ctx[0]);
+        ctx = bars[i].ctx[0];
+        cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+        cairo_set_source_surface(ctx, bars[i].sfc[1], 0, 0);
+        cairo_paint(ctx);
     } else {
         drawBar(i);
     }

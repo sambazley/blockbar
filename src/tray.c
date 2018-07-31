@@ -157,11 +157,12 @@ void redrawTray() {
 
         trapErrors();
 
-        XSetWindowAttributes o;
-        o.background_pixel = conf.bg[0] << 16
-                           | conf.bg[1] << 8
-                           | conf.bg[2];
-        XChangeWindowAttributes(disp, embed, CWBackPixel, &o);
+        XSetWindowAttributes wa;
+        wa.background_pixel = conf.bg[0] << 16
+                            | conf.bg[1] << 8
+                            | conf.bg[2];
+
+        XChangeWindowAttributes(disp, embed, CWBackPixel, &wa);
 
         XMoveResizeWindow(disp, embed, x, y,
                 conf.trayIconSize, conf.trayIconSize);
@@ -184,18 +185,21 @@ int getTrayWidth() {
 }
 
 static void handleDockRequest(Window embed) {
+    Window parent = bars[trayBar].window;
+
     trapErrors();
+
+    XSetWindowAttributes wa;
+    wa.background_pixel = conf.bg[0] << 16
+                        | conf.bg[1] << 8
+                        | conf.bg[2];
+
+    XChangeWindowAttributes(disp, embed, CWBackPixel, &wa);
 
     XChangeSaveSet(disp, embed, SetModeInsert);
     XWithdrawWindow(disp, embed, 0);
-    XReparentWindow(disp, embed, bars[trayBar].window, 0, 0);
+    XReparentWindow(disp, embed, parent, 0, 0);
     XSync(disp, False);
-
-    XSetWindowAttributes o;
-    o.background_pixel = conf.bg[0] << 16
-                       | conf.bg[1] << 8
-                       | conf.bg[2];
-    XChangeWindowAttributes(disp, embed, CWBackPixel, &o);
 
     int index = -1;
 
@@ -214,7 +218,7 @@ static void handleDockRequest(Window embed) {
         index = trayIconCount-1;
     }
 
-    xembedSendMessage(embed, XEMBED_EMBEDDED_NOTIFY, 0, bars[trayBar].window,
+    xembedSendMessage(embed, XEMBED_EMBEDDED_NOTIFY, 0, parent,
             XEMBED_VERSION);
 
     XMapRaised(disp, embed);
