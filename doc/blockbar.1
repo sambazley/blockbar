@@ -49,14 +49,15 @@ The configuration file is JSON file, that has the following sections
 .PP
 The "Color" type can be either:
 .IP 1
-an array in the format of [r, g, b],
-where r, g, and b are integers in the range of 0-255.
+an array in the format of [r, g, b] or [r, g, b, a],
+where r, g, b, and a are integers in the range of 0-255.
 .IP 2
-a string in the format of "#RRGGBB" or "#RGB",
-where RR, GG, and BB are hexadecimal integers in the range of 0x00-0xFF.
-If the string is in the format of "#RGB", the string will be interpreted as
-if it was written as "#RRGGBB".
+a string in the format of "#RRGGBB", "#RGB", "#RRGGBBAA", or "#RGBA",
+where RR, GG, BB, and AA are hexadecimal integers in the range of 0x00-0xFF.
+If the string is in the format of "#RGB" or "#RGBA", the string will be
+interpreted as if it was written as "#RRGGBB" or "#RRGGBBAA" respectively.
 
+.PP
 .TS
 allbox tab(|);
 cB s s s
@@ -108,6 +109,7 @@ Side of the bar that the tray appears on. "left" or "right".
 T}|String|"right"
 .TE
 
+.PP
 .TS
 allbox tab(|);
 cB s s s
@@ -188,6 +190,7 @@ is parsed as a JSON string. The format of this string is:
 .EE
 .in
 
+.PP
 .TS
 allbox tab(#);
 cB s s s
