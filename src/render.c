@@ -46,8 +46,12 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
     int width, height;
     pango_layout_get_pixel_size(layout, &width, &height);
 
-    if (!(bg == 0 || bg[0] < 0 || bg[1] < 0 || bg[2] < 0)) {
-        cairo_set_source_rgb(bar->ctx[1], bg[0]/255.f, bg[1]/255.f, bg[2]/255.f);
+    if (!(bg == 0 || bg[0] < 0 || bg[1] < 0 || bg[2] < 0 || bg[3] < 0)) {
+        cairo_set_source_rgba(bar->ctx[1],
+                              bg[0]/255.f,
+                              bg[1]/255.f,
+                              bg[2]/255.f,
+                              bg[3]/255.f);
 
         if (bgWidth <= 0) {
             if (bgXPad <= 0) {
@@ -84,7 +88,11 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
         }
     }
 
-    cairo_set_source_rgb(bar->ctx[1], fg[0]/255.f, fg[1]/255.f, fg[2]/255.f);
+    cairo_set_source_rgba(bar->ctx[1],
+                          fg[0]/255.f,
+                          fg[1]/255.f,
+                          fg[2]/255.f,
+                          fg[3]/255.f);
     cairo_move_to(bar->ctx[1], x, bar->height/2 - height/2);
     pango_cairo_show_layout(bar->ctx[1], layout);
 
@@ -108,7 +116,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     char *longText = data;
     char *shortText = data;
-    color col = {conf.fg[0], conf.fg[1], conf.fg[2]};
+    color col = {conf.fg[0], conf.fg[1], conf.fg[2], conf.fg[3]};
 
     int j = 0;
     int len = strlen(data);
@@ -122,12 +130,10 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
             if (j == 0) {
                 shortText = data + i + 1;
             } else if (j == 1 && data[i + 1] == '#') {
-                char str [7] = "000000";
-                if (len - i - 2 == 3) {
-                    strncpy(str, data+i+2, 3);
-                    parseColorString(str, col);
-                } else if (len - i - 2 == 6) {
-                    strncpy(str, data+i+2, 6);
+                char str [9] = "00000000";
+                int colLen = len - i - 2;
+                if (colLen == 3 || colLen == 4 || colLen == 6 || colLen == 8) {
+                    strncpy(str, data+i+2, colLen+1);
                     parseColorString(str, col);
                 }
             }
@@ -234,8 +240,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
             }
         }
 
-        color bg = {-1, -1, -1};
-        color fg = {0xff, 0xff, 0xff};
+        color bg = {-1, -1, -1, -1};
+        color fg = {conf.fg[0], conf.fg[1], conf.fg[2], conf.fg[3]};
         int bgwidth = -1, bgheight = -1, bgxpad = -1, bgypad = -1;
 
         parseColorJson(subblock, "background", bg, &err);
@@ -380,9 +386,10 @@ static void drawBar(int i) {
     cairo_set_source_rgba(ctx,
                           conf.bg[0]/255.f,
                           conf.bg[1]/255.f,
-                          conf.bg[2]/255.f, 1);
+                          conf.bg[2]/255.f,
+                          conf.bg[3]/255.f);
 
-    cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+    cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
 
     int r = conf.radius;
     int w = bars[i].width;
@@ -394,8 +401,8 @@ static void drawBar(int i) {
         int y [] = {h - r, r};
         double t = pi / 2.;
         cairo_new_sub_path(ctx);
-        cairo_arc(ctx, x[0], y[0], r,  0,    t);
-        cairo_arc(ctx, x[1], y[0], r,  t,  2*t);
+        cairo_arc(ctx, x[0], y[0], r,   0,   t);
+        cairo_arc(ctx, x[1], y[0], r,   t, 2*t);
         cairo_arc(ctx, x[1], y[1], r, 2*t, 3*t);
         cairo_arc(ctx, x[0], y[1], r, 3*t, 4*t);
         cairo_close_path(ctx);

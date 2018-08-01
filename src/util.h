@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <ujson.h>
 
-typedef int16_t color [3];
+typedef uint8_t color [4];
 
 void parseColorJson(JsonObject *jo, const char *key, color dest,
                     JsonError *err);

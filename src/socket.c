@@ -393,10 +393,12 @@ static int getSetting(int argc, char **argv, char *rsp) {
         rprintf("%d\n", conf.padding);
     }
     IS("background") {
-        rprintf("#%02x%02x%02x\n", conf.bg[0], conf.bg[1], conf.bg[2]);
+        rprintf("#%02x%02x%02x%02x\n",
+                conf.bg[0], conf.bg[1], conf.bg[2], conf.bg[3]);
     }
     IS("foreground") {
-        rprintf("#%02x%02x%02x\n", conf.fg[0], conf.fg[1], conf.fg[2]);
+        rprintf("#%02x%02x%02x%02x\n",
+                conf.fg[0], conf.fg[1], conf.fg[2], conf.fg[3]);
     }
     IS("font") {
         rprintf("%s\n", conf.font);
@@ -477,16 +479,14 @@ static int setSetting(int argc, char **argv, char *rsp) {
         conf.padding = integer;
     }
     IS("background") {
-        if ((strlen(val) != 4 && strlen(val) != 7) || *val != '#' ||
-            parseColorString(val+1, conf.bg) != 0) {
+        if (*val != '#' || parseColorString(val+1, conf.bg) != 0) {
             rprintf("Invalid color\n");
             return 1;
         }
         reparentIcons();
     }
     IS("foreground") {
-        if ((strlen(val) != 4 && strlen(val) != 7) || *val != '#' ||
-            parseColorString(val+1, conf.fg) != 0) {
+        if (*val != '#' || parseColorString(val+1, conf.fg) != 0) {
             rprintf("Invalid color\n");
             return 1;
         }

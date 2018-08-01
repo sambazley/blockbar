@@ -53,14 +53,14 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
         return;
     }
 
-    if (col->used != 3) {
-        fprintf(stderr, "\"%s\" array must contain 3 values\n", key);
+    if (col->used != 3 && col->used != 4) {
+        fprintf(stderr, "\"%s\" array must contain 3 or 4 values\n", key);
         jsonErrorCleanup(err);
         jsonErrorInit(err);
         return;
     }
 
-    for (int j = 0; j < 3; j++) {
+    for (int j = 0; j < col->used; j++) {
         void *val = col->vals[j];
         if (jsonGetType(val) != JSON_NUMBER) {
             fprintf(stderr, "Value in \"%s\" array is not a valid int\n", key);
@@ -72,31 +72,44 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
         JsonNumber *n = (JsonNumber *) val;
         dest[j] = n->data;
     }
+
+    if (col->used == 3) {
+        dest[3] = 0xFF;
+    }
 }
 
 int parseColorString(char *str, color dest) {
     char *end = 0;
 
     int c = strtol(str, &end, 16);
-    int colInt = 0xFFFFFF;
+    int colInt = 0xFFFFFFFF;
 
     if (end && *end) {
         return 1;
     }
 
-    if (strlen(str) == 3) {
-        colInt = ((c & 0xF00) << 12) | ((c & 0xF00) << 8)
-               | ((c & 0x0F0) << 8) | ((c & 0x0F0) << 4)
-               | ((c & 0x00F) << 4) | (c & 0x00F);
+    if (strlen(str) == 3 || strlen(str) == 4) {
+        if (strlen(str) == 3) {
+            c <<= 4;
+            c |= 0xF;
+        }
+
+        colInt = ((c & 0xF000) << 16) | ((c & 0xF000) << 12)
+               | ((c & 0x0F00) << 12) | ((c & 0x0F00) << 8)
+               | ((c & 0x00F0) << 8) | ((c & 0x00F0) << 4)
+               | ((c & 0x000F) << 4) | (c & 0x000F);
     } else if (strlen(str) == 6) {
+        colInt = (c << 8) | 0xFF;
+    } else if (strlen(str) == 8) {
         colInt = c;
     } else {
         return 1;
     }
 
-    dest[0] = colInt >> 16;
-    dest[1] = (colInt >> 8) & 0xFF;
-    dest[2] = colInt & 0xFF;
+    dest[0] = colInt >> 24;
+    dest[1] = (colInt >> 16) & 0xFF;
+    dest[2] = (colInt >> 8) & 0xFF;
+    dest[3] = colInt & 0xFF;
 
     return 0;
 }

@@ -52,10 +52,12 @@ static void loadDefaults() {
     conf.bg[0] = 0;
     conf.bg[1] = 0;
     conf.bg[2] = 0;
+    conf.bg[3] = 0xFF;
 
     conf.fg[0] = 0xFF;
     conf.fg[1] = 0xFF;
     conf.fg[2] = 0xFF;
+    conf.fg[3] = 0xFF;
 
     conf.font = 0;
 }
