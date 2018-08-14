@@ -18,12 +18,15 @@
  */
 
 #include "socket.h"
+#include "bbc.h"
 #include "blocks.h"
 #include "config.h"
 #include "exec.h"
 #include "render.h"
 #include "tray.h"
 #include "util.h"
+#include <poll.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -31,6 +34,8 @@
 #include <unistd.h>
 
 int socketInit() {
+    signal(SIGPIPE, SIG_IGN);
+
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockfd < 0) {
         fprintf(stderr, "Error opening socket\n");
@@ -40,9 +45,9 @@ int socketInit() {
     struct sockaddr_un sockAddr;
 
     sockAddr.sun_family = AF_UNIX;
-    strcpy(sockAddr.sun_path, SOCKETPATH);
+    strcpy(sockAddr.sun_path, socketpath);
 
-    unlink(SOCKETPATH);
+    unlink(socketpath);
     if (bind(sockfd, (struct sockaddr *) &sockAddr, sizeof(sockAddr)) == -1) {
         fprintf(stderr, "Error binding socket\n");
         return -1;
@@ -56,8 +61,15 @@ int socketInit() {
     return sockfd;
 }
 
+#define cmd(x) \
+    static int x(int argc, char **argv, int fd)
+
+#define frprintf(f, fmt, ...) \
+    dprintf(fd, "%c%c", setout, f); \
+    dprintf(fd, fmt, ##__VA_ARGS__);
+
 #define rprintf(fmt, ...) \
-    sprintf(rsp + strlen(rsp), fmt, ##__VA_ARGS__)
+    frprintf(rstdout, fmt, ##__VA_ARGS__)
 
 #define vars(n, usage, eachmon) \
     if (argc != (n)) { \
@@ -99,8 +111,7 @@ int socketInit() {
         return 1; \
     }
 
-
-static int help(int argc, char **argv, char *rsp) {
+cmd(help) {
 #define phelp(key, val) \
     rprintf("\t%-27s%s\n", key, val)
 
@@ -122,7 +133,7 @@ static int help(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int list(int argc, char **argv, char *rsp) {
+cmd(list) {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->id) {
@@ -133,14 +144,14 @@ static int list(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int exec(int argc, char **argv, char *rsp) {
+cmd(exec) {
     vars(3, "", 0);
 
     blockExec(blk, 0);
     return 0;
 }
 
-static int list_properties(int argc, char **argv, char *rsp) {
+cmd(list_properties) {
 #define p(t, v, d) \
     rprintf("%-8s%-17s%s\n", t, v, d);
 
@@ -160,7 +171,7 @@ static int list_properties(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int list_settings(int argc, char **argv, char *rsp) {
+cmd(list_settings) {
 #define p(t, v, d) \
     rprintf("%-8s%-15s%s\n", t, v, d);
 
@@ -184,12 +195,12 @@ static int list_settings(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int getProperty(int argc, char **argv, char *rsp) {
+cmd(getProperty) {
     vars(4, "<property>", 1);
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
-        rprintf("Output must be specified when eachmon=true "
-                "for property \"%s\"\n", argv[3]);
+        frprintf(rstderr, "Output must be specified when eachmon=true "
+                 "for property \"%s\"\n", argv[3]);
         return 1;
     }
 
@@ -234,23 +245,23 @@ static int getProperty(int argc, char **argv, char *rsp) {
         rprintf("%s\n", blk->nodiv ? "true" : "false");
     }
     else {
-        rprintf("Property does not exist, or cannot be returned\n");
+        frprintf(rstderr, "Property does not exist, or cannot be returned\n");
         return 1;
     }
 #undef IS
     return 0;
 }
 
-static int setProperty(int argc, char **argv, char *rsp) {
+cmd(setProperty) {
     vars(argc <= 4 ? 0 : argc, "<property> <value>", 1);
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
-        rprintf("Output must be specified when eachmon=true "
+        frprintf(rstderr, "Output must be specified when eachmon=true "
                 "for property \"%s\"\n", argv[3]);
         return 1;
     }
 
-    char val [BBCBUFFSIZE] = {0};
+    char val [bbcbuffsize] = {0};
 
     for (int i = 4; i < argc; i++) {
         strcat(val, argv[i]);
@@ -266,7 +277,7 @@ static int setProperty(int argc, char **argv, char *rsp) {
     char *end; \
     int integer = strtol(val, &end, 0); \
     if (*end != 0) { \
-        rprintf("Invalid value, expecting integer\n"); \
+        frprintf(rstderr, "Invalid value, expecting integer\n"); \
         return 1; \
     }
 
@@ -277,7 +288,7 @@ static int setProperty(int argc, char **argv, char *rsp) {
         } else if (strcmp("subblocks", val) == 0) {
             blk->mode = SUBBLOCK;
         } else {
-            rprintf("Invalid mode\n");
+            frprintf(rstderr, "Invalid mode\n");
             return 1;
         }
     }
@@ -316,7 +327,7 @@ static int setProperty(int argc, char **argv, char *rsp) {
         } else if (strcmp("right", val) == 0) {
             blk->pos = RIGHT;
         } else {
-            rprintf("Invalid position\n");
+            frprintf(rstderr, "Invalid position\n");
             return 1;
         }
     }
@@ -343,12 +354,12 @@ static int setProperty(int argc, char **argv, char *rsp) {
         } else if (strcmp("false", val) == 0) {
             blk->nodiv = 0;
         } else {
-            rprintf("Invalid value, expecting boolean "
-                    "(\"true\" or \"false\")\n");
+            frprintf(rstderr, "Invalid value, expecting boolean "
+                     "(\"true\" or \"false\")\n");
         }
     }
     else {
-        rprintf("Property does not exist, or cannot be set\n");
+        frprintf(rstderr, "Property does not exist, or cannot be set\n");
         return 1;
     }
 
@@ -360,19 +371,19 @@ static int setProperty(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int property(int argc, char **argv, char *rsp) {
+cmd(property) {
     if (argc == 4) {
-        return getProperty(argc, argv, rsp);
+        return getProperty(argc, argv, fd);
     } else if (argc >= 5) {
-        return setProperty(argc, argv, rsp);
+        return setProperty(argc, argv, fd);
     } else {
-        rprintf("Usage: %s %s <index>[:output] <property> [value]\n",
-                argv[0], argv[1]);
+        frprintf(rstderr, "Usage: %s %s <index>[:output] <property> [value]\n",
+                 argv[0], argv[1]);
         return 1;
     }
 }
 
-static int getSetting(int argc, char **argv, char *rsp) {
+cmd(getSetting) {
 #define IS(x) \
     else if (strcmp(argv[2], x) == 0)
 
@@ -422,7 +433,7 @@ static int getSetting(int argc, char **argv, char *rsp) {
         rprintf("%s\n", conf.traySide == RIGHT ? "right" : "left");
     }
     else {
-        rprintf("Setting does not exist, or cannot be returned\n");
+        frprintf(rstderr, "Setting does not exist, or cannot be returned\n");
         return 1;
     }
 
@@ -431,8 +442,8 @@ static int getSetting(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int setSetting(int argc, char **argv, char *rsp) {
-    char val [BBCBUFFSIZE] = {0};
+cmd(setSetting) {
+    char val [bbcbuffsize] = {0};
 
     for (int i = 3; i < argc; i++) {
         strcat(val, argv[i]);
@@ -448,7 +459,7 @@ static int setSetting(int argc, char **argv, char *rsp) {
     char *end; \
     int integer = strtol(val, &end, 0); \
     if (*end != 0) { \
-        rprintf("Invalid value, expecting integer\n"); \
+        frprintf(rstderr, "Invalid value, expecting integer\n"); \
         return 1; \
     }
 
@@ -480,14 +491,14 @@ static int setSetting(int argc, char **argv, char *rsp) {
     }
     IS("background") {
         if (*val != '#' || parseColorString(val+1, conf.bg) != 0) {
-            rprintf("Invalid color\n");
+            frprintf(rstderr, "Invalid color\n");
             return 1;
         }
         reparentIcons();
     }
     IS("foreground") {
         if (*val != '#' || parseColorString(val+1, conf.fg) != 0) {
-            rprintf("Invalid color\n");
+            frprintf(rstderr, "Invalid color\n");
             return 1;
         }
     }
@@ -506,8 +517,8 @@ static int setSetting(int argc, char **argv, char *rsp) {
         } else if (strcmp(val, "false") == 0) {
             conf.shortLabels = 0;
         } else {
-            rprintf("Invalid value, expecting boolean "
-                    "(\"true\" or \"false\")\n");
+            frprintf(rstderr, "Invalid value, expecting boolean "
+                     "(\"true\" or \"false\")\n");
             return 1;
         }
     }
@@ -517,8 +528,8 @@ static int setSetting(int argc, char **argv, char *rsp) {
         } else if (strcmp(val, "bottom") == 0) {
             conf.top = 0;
         } else {
-            rprintf("Invalid value, expecting position "
-                    "(\"top\" or \"bottom\")\n");
+            frprintf(rstderr, "Invalid value, expecting position "
+                     "(\"top\" or \"bottom\")\n");
             return 1;
         }
         updateGeom();
@@ -549,14 +560,14 @@ static int setSetting(int argc, char **argv, char *rsp) {
         } else if (strcmp(val, "right") == 0) {
             conf.traySide = RIGHT;
         } else {
-            rprintf("Invalid value, expecting side "
-                    "(\"left\" or \"right\")\n");
+            frprintf(rstderr, "Invalid value, expecting side "
+                     "(\"left\" or \"right\")\n");
             return 1;
         }
         redrawTray();
     }
     else {
-        rprintf("Setting does not exist, or cannot be set\n");
+        frprintf(rstderr, "Setting does not exist, or cannot be set\n");
     }
 
 #undef INT
@@ -567,20 +578,21 @@ static int setSetting(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int setting(int argc, char **argv, char *rsp) {
+cmd(setting) {
     if (argc == 3) {
-        return getSetting(argc, argv, rsp);
+        return getSetting(argc, argv, fd);
     } else if (argc >= 4) {
-        return setSetting(argc, argv, rsp);
+        return setSetting(argc, argv, fd);
     } else {
-        rprintf("Usage: %s %s <property> [value]\n", argv[0], argv[1]);
+        frprintf(rstderr, "Usage: %s %s <property> [value]\n",
+                 argv[0], argv[1]);
         return 1;
     }
 }
 
-static int new(int argc, char **argv, char *rsp) {
+cmd(new) {
     if (!(argc == 2 || argc == 3)) {
-        rprintf("Usage: %s %s [eachmon]\n", argv[0], argv[1]);
+        frprintf(rstderr, "Usage: %s %s [eachmon]\n", argv[0], argv[1]);
         return 1;
     }
 
@@ -588,7 +600,7 @@ static int new(int argc, char **argv, char *rsp) {
 
     if (argc == 3) {
         if (strcmp(argv[2], "eachmon")) {
-            rprintf("Third argument must be \"eachmon\" or blank\n");
+            frprintf(rstderr, "Third argument must be \"eachmon\" or blank\n");
             return 1;
         }
         eachmon = 1;
@@ -601,7 +613,7 @@ static int new(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int rm(int argc, char **argv, char *rsp) {
+cmd(rm) {
     vars(3, "", 0);
 
     removeBlock(blk);
@@ -609,7 +621,7 @@ static int rm(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int move_out(int argc, char **argv, char *rsp) {
+cmd(move_out) {
     vars(3, "", 0);
 
     struct Block *swp = 0;
@@ -624,7 +636,7 @@ static int move_out(int argc, char **argv, char *rsp) {
     }
 
     if (swp == 0) {
-        rprintf("Cannot move block out further\n");
+        frprintf(rstderr, "Cannot move block out further\n");
         return 1;
     }
 
@@ -638,7 +650,7 @@ static int move_out(int argc, char **argv, char *rsp) {
     return 0;
 }
 
-static int move_in(int argc, char **argv, char *rsp) {
+cmd(move_in) {
     vars(3, "", 0);
 
     struct Block *swp = 0;
@@ -657,7 +669,7 @@ static int move_in(int argc, char **argv, char *rsp) {
     }
 
     if (swp == 0) {
-        rprintf("Cannot move block in further\n");
+        frprintf(rstderr, "Cannot move block in further\n");
         return 1;
     }
 
@@ -674,7 +686,7 @@ static int move_in(int argc, char **argv, char *rsp) {
 
 #define _CASE(x, y) \
     else if (strcmp(argv[1], x) == 0) { \
-        rsp[0] = y(argc, argv, rsp+1); \
+        ret = y(argc, argv, fd); \
     }
 
 #define CASE(x) \
@@ -682,61 +694,102 @@ static int move_in(int argc, char **argv, char *rsp) {
 
 void socketRecv(int sockfd) {
     int fd = accept(sockfd, NULL, 0);
-    char msg [BBCBUFFSIZE];
-    int n;
 
-    if (fd > 0 && (n = recv(fd, msg, sizeof(msg), 0)) > 0) {
-        msg[n] = '\0';
+    long len = 0;
+    char *cmd = 0;
 
-        char rsp [BBCBUFFSIZE] = {0};
+    int argc = 1;
+    char **argv;
 
-        int argc = 1;
+    char msg [bbcbuffsize];
 
-        for (int i = 0; i < n; i++) {
-            if (msg[i] == ' ') {
-                argc++;
-            }
+    int ret;
+
+    if (fd == -1) {
+        return;
+    }
+
+    struct pollfd fds [] = {
+        {fd, POLLIN | POLLHUP, 0},
+    };
+
+    while (poll(fds, 1, 5) > 0) {
+        if (fds[0].revents & (POLLERR | POLLHUP)) {
+            break;
         }
 
-        char **argv = malloc(sizeof(char *) * argc);
-
-        argc = 0;
-        argv[argc++] = msg;
-
-        for (int i = 0; i < n; i++) {
-            if (msg[i] == ' ') {
-                msg[i] = 0;
-                argv[argc++] = msg + i + 1;
-            }
+        if (!(fds[0].revents & POLLIN)) {
+            continue;
         }
 
-        if (argc < 2) {
-            rprintf("%cNo command specified\n", 1);
-            goto end;
+        int n = read(fd, msg, sizeof(msg));
+
+        if (n <= 0) {
+            break;
         }
 
-        if (0) {}
-        _CASE("--help", help)
-        CASE(list)
-        CASE(exec)
-        _CASE("list-properties", list_properties)
-        _CASE("list-settings", list_settings)
-        CASE(property)
-        CASE(setting)
-        CASE(new)
-        CASE(rm)
-        _CASE("move-out", move_out)
-        _CASE("move-in", move_in)
-        else {
-            rprintf("%cUnknown command\n", 1);
+        cmd = realloc(cmd, len + n + 1);
+        memcpy(cmd + len, msg, n);
+
+        len += n;
+
+        if (msg[n - 1] == '\x04') {
+            len -= 2;
+            break;
         }
+
+        cmd[len] = 0;
+    }
+
+    if (!cmd) {
+        return;
+    }
+
+    for (int i = 0; i < len; i++) {
+        if (cmd[i] == 0) {
+            argc++;
+        }
+    }
+
+    argv = malloc(sizeof(char *) * argc);
+
+    argc = 0;
+
+    argv[argc++] = cmd;
+
+    for (int i = 0; i < len; i++) {
+        if (cmd[i] == 0) {
+            argv[argc++] = cmd + i + 1;
+        }
+    }
+
+    if (argc < 2) {
+        frprintf(rstderr, "No command specified\n");
+        ret = 1;
+        goto end;
+    }
+
+    if (0) {}
+    _CASE("--help", help)
+    CASE(list)
+    CASE(exec)
+    _CASE("list-properties", list_properties)
+    _CASE("list-settings", list_settings)
+    CASE(property)
+    CASE(setting)
+    CASE(new)
+    CASE(rm)
+    _CASE("move-out", move_out)
+    _CASE("move-in", move_in)
+    else {
+        frprintf(rstderr, "Unknown command\n");
+        ret = 1;
+    }
 
 end:
-        free(argv);
+    dprintf(fd, "%c%c", setret, ret);
 
-        if (send(fd, rsp, sizeof(rsp), MSG_NOSIGNAL) == -1) {
-            fprintf(stderr, "Error sending response\n");
-        }
-        close(fd);
-    }
+    free(cmd);
+    free(argv);
+    close(fd);
 }

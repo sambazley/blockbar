@@ -17,6 +17,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
+#include "bbc.h"
 #include <poll.h>
 #include <stdio.h>
 #include <string.h>
@@ -25,45 +26,6 @@
 #include <unistd.h>
 
 int main(int argc, char **argv) {
-    char msg [BBCBUFFSIZE] = {0};
-
-    char *dest = msg;
-    for (int i = 0; i < argc; i++) {
-        if (dest + strlen(argv[i]) - msg >= BBCBUFFSIZE - 1) {
-            fprintf(stderr, "Input too long\n");
-            return 1;
-        }
-
-        dest += sprintf(dest, "%s ", argv[i]);
-    }
-
-    int pipe = 0;
-
-    if (*(dest - 2) == '-') {
-        pipe = 1;
-        dest -= 2;
-    }
-
-    char buf [BBCBUFFSIZE];
-    int len;
-    while (pipe && (len = read(STDIN_FILENO, buf, BBCBUFFSIZE)) > 0) {
-        if (dest + len - msg >= BBCBUFFSIZE - 1) {
-            fprintf(stderr, "Input too long\n");
-            return 1;
-        }
-
-        dest += snprintf(dest, len + 1, "%s", buf);
-    }
-
-    if (!pipe) {
-        *dest-- = 0;
-    }
-
-    if (*(dest - 1) == '\n') {
-        *(dest - 1) = 0;
-        dest--;
-    }
-
     int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (sockfd < 0) {
         fprintf(stderr, "Error opening socket\n");
@@ -73,24 +35,29 @@ int main(int argc, char **argv) {
     struct sockaddr_un sockAddr;
 
     sockAddr.sun_family = AF_UNIX;
-    strcpy(sockAddr.sun_path, SOCKETPATH);
+    strcpy(sockAddr.sun_path, socketpath);
 
     if (connect(sockfd, (struct sockaddr *)&sockAddr, sizeof(sockAddr)) == -1) {
         fprintf(stderr, "Error connecting to socket\n");
         return 1;
     }
 
-    if (send(sockfd, msg, dest-msg, 0) == -1) {
-        fprintf(stderr, "Error sending data\n");
-        return 1;
+    for (int i = 0; i < argc; i++) {
+        if (send(sockfd, argv[i], strlen(argv[i]) + 1, 0) == -1) {
+            fprintf(stderr, "Error sending data\n");
+            return 1;
+        }
     }
+
+    send(sockfd, "\x04", 1, 0);
 
     struct pollfd fds [] = {
         {sockfd, POLLIN, 0},
         {STDOUT_FILENO, POLLHUP, 0},
     };
 
-    char rsp [BBCBUFFSIZE];
+    FILE *out = stdout;
+    char rsp [bbcbuffsize];
     int n, ret = 0;
 
     while (poll(fds, 2, -1) > 0) {
@@ -99,16 +66,30 @@ int main(int argc, char **argv) {
         }
         if (fds[0].revents & POLLIN) {
             if ((n = recv(sockfd, rsp, sizeof(rsp), 0)) > 0) {
-                rsp[n] = '\0';
-
-                printf("%s", rsp+1);
-                fflush(stdout);
-                ret = rsp[0];
+                rsp[n] = 0;
+                for (int i = 0; i < n; i++) {
+                    if (rsp[i] == setout) {
+                        fflush(out);
+                        if (rsp[i + 1] == rstdout) {
+                            out = stdout;
+                        } else if (rsp[i + 1] == rstderr) {
+                            out = stderr;
+                        }
+                        i++;
+                    } else if (rsp[i] == setret) {
+                        ret = rsp[i + 1];
+                        i++;
+                    } else {
+                        fprintf(out, "%c", rsp[i]);
+                    }
+                }
             } else {
                 break;
             }
         }
     }
+
+    fflush(out);
 
     close(sockfd);
 
