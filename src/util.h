@@ -28,6 +28,7 @@ typedef uint8_t color [4];
 void parseColorJson(JsonObject *jo, const char *key, color dest,
                     JsonError *err);
 int parseColorString(char *str, color dest);
+void stringifyColor(color c, char *s);
 
 struct Block *createBlock(int eachmon);
 void removeBlock(struct Block *blk);

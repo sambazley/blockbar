@@ -36,30 +36,26 @@
 int blockCount;
 struct Block *blocks;
 
+static struct Config defaultConf = {
+    .height = 22,
+    .marginV = 0,
+    .marginH = 0,
+    .radius = 0,
+    .padding = 5,
+    .bg = {0, 0, 0, 0xFF},
+    .fg = {0xFF, 0xFF, 0xFF, 0xFF},
+    .font = 0,
+    .shortLabels = 1,
+    .top = 1,
+
+    .trayPadding = 2,
+    .trayIconSize = 18,
+    .trayBar = 0,
+    .traySide = RIGHT,
+};
+
 static void loadDefaults() {
-    conf.height = 22;
-    conf.marginV = 0;
-    conf.marginH = 0;
-    conf.radius = 0;
-    conf.padding = 5;
-    conf.trayPadding = 2;
-    conf.trayIconSize = 18;
-    conf.trayBar = 0;
-    conf.traySide = RIGHT;
-    conf.shortLabels = 1;
-    conf.top = 1;
-
-    conf.bg[0] = 0;
-    conf.bg[1] = 0;
-    conf.bg[2] = 0;
-    conf.bg[3] = 0xFF;
-
-    conf.fg[0] = 0xFF;
-    conf.fg[1] = 0xFF;
-    conf.fg[2] = 0xFF;
-    conf.fg[3] = 0xFF;
-
-    conf.font = 0;
+    memcpy(&conf, &defaultConf, sizeof(struct Config));
 }
 
 static const char *defaultConfigFile() {
@@ -251,4 +247,123 @@ void configParseBlocks(JsonObject *jsonConfig) {
 
 void configCleanup(JsonObject *jsonConfig) {
     jsonCleanup(jsonConfig);
+}
+
+#define ERR_ \
+    if (jsonErrorIsSet(&err)) { \
+        char *out = malloc(strlen(err.msg) + 1); \
+        strcpy(out, err.msg); \
+        jsonErrorCleanup(&err); \
+        return out; \
+    }
+
+#define NUM(name, var) \
+    if (conf.var != defaultConf.var || explicit) { \
+        jsonAddNumber(name, conf.var, jo, &err); \
+        ERR_; \
+    }
+
+#define BOOL(name, var) \
+    if (conf.var != defaultConf.var || explicit) { \
+        jsonAddBoolNull(name, conf.var ? JSON_TRUE : JSON_FALSE, jo, &err); \
+        ERR_; \
+    }
+
+#define STR(name, var, p) \
+    if (var) { \
+        jsonAddString(name, var, p, &err); \
+        ERR_; \
+    } else if (explicit) { \
+        jsonAddString(name, "", p, &err); \
+            ERR_; \
+    }
+
+#define BNUM(name, var) \
+    if (blk->var || explicit) { \
+        jsonAddNumber(name, blk->var, jblk, &err); \
+        ERR_; \
+    }
+
+char *configSave(FILE *file, int explicit) {
+    JsonObject *jo = jsonCreateBaseObject();
+    JsonError err;
+
+    jsonErrorInit(&err);
+
+    char bg [10];
+    char fg [10];
+    stringifyColor(conf.bg, bg);
+    stringifyColor(conf.fg, fg);
+
+    NUM("height", height);
+    NUM("margin-vert", marginV);
+    NUM("margin-horiz", marginH);
+    NUM("radius", radius);
+    NUM("padding", padding);
+
+    if (memcmp(conf.bg, defaultConf.bg, sizeof(color) != 0) || explicit) {
+        jsonAddString("background", bg, jo, &err);
+        ERR_;
+    }
+
+    if (memcmp(conf.fg, defaultConf.fg, sizeof(color) != 0) || explicit) {
+        jsonAddString("foreground", fg, jo, &err);
+        ERR_;
+    }
+
+    STR("font", conf.font, jo);
+
+    BOOL("shortlabels", shortLabels);
+
+    if (conf.top != defaultConf.top || explicit) {
+        jsonAddString("position", conf.top ? "top" : "bottom", jo, &err);
+        ERR_;
+    }
+
+    NUM("traypadding", trayPadding);
+    NUM("trayiconsize", trayIconSize);
+    STR("traybar", conf.trayBar, jo);
+
+    JsonArray *bArr [SIDES];
+    bArr[LEFT] = jsonAddArray("left", jo, &err);
+    ERR_;
+    bArr[RIGHT] = jsonAddArray("right", jo, &err);
+    ERR_;
+
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
+        JsonObject *jblk = jsonAddObject(0, bArr[blk->pos], &err);
+        ERR_;
+
+        if (blk->mode != LEGACY || explicit) {
+            jsonAddString("mode", blk->mode == LEGACY ? "legacy" : "subblocks",
+                    jblk, &err);
+            ERR_;
+        }
+
+        if (blk->eachmon || explicit) {
+            jsonAddBoolNull("eachmon", blk->eachmon ? JSON_TRUE : JSON_FALSE,
+                    jblk, &err);
+            ERR_;
+        }
+
+        STR("label", blk->label, jblk);
+        STR("exec", blk->exec, jblk);
+
+        BNUM("interval", interval);
+        BNUM("padding", padding);
+        BNUM("padding-inside", padIn);
+        BNUM("padding-outside", padOut);
+
+        if (blk->nodiv || explicit) {
+            jsonAddBoolNull("nodiv", blk->nodiv ? JSON_TRUE : JSON_FALSE, jblk,
+                    &err); ERR_;
+        }
+    }
+
+    jsonWriteObject(file, jo, 4);
+
+    jsonCleanup(jo);
+
+    return 0;
 }

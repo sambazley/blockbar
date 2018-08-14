@@ -21,6 +21,12 @@ _bbc()
             settings+=$(echo $s | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/:/g')
         done
         _describe -t commands 'bbc' settings
+    elif [[ "$CURRENT" == "3" && "${words[2]}" == "new" ]]; then
+        list=("--eachmon")
+        _describe -t commands 'bbc' list
+    elif [[ "$CURRENT" == "3" && "${words[2]}" == "dump" ]]; then
+        list=("--explicit")
+        _describe -t commands 'bbc' list
     elif [[ "$CURRENT" == "4" && "${words[2]}" == "property" ]]; then
         props=()
         bbc list-properties | while read prop; do

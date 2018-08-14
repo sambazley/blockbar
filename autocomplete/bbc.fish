@@ -23,6 +23,10 @@ function __fish_bbc
                 echo 'left'
                 echo 'right'
             end
+        else if [ $cmd[2] = 'new' ]
+            echo '--eachmon'
+        else if [ $cmd[2] = 'dump' ]
+            echo '--explicit'
         end
     else if [ (count $cmd) -eq 4 ]
         if [ $cmd[2] = 'property' ]

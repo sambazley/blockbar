@@ -24,7 +24,7 @@
 #include "util.h"
 #include <ujson.h>
 
-struct {
+struct Config {
     int height;
     int marginV;
     int marginH;
@@ -46,5 +46,6 @@ JsonObject *configInit(const char *config);
 void configParseGeneral(JsonObject *jsonConfig);
 void configParseBlocks(JsonObject *jsonConfig);
 void configCleanup(JsonObject *jsonConfig);
+char *configSave(FILE *file, int explicit);
 
 #endif /* CONFIG_H */

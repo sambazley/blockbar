@@ -114,6 +114,10 @@ int parseColorString(char *str, color dest) {
     return 0;
 }
 
+void stringifyColor(color c, char *s) {
+    sprintf(s, "#%02x%02x%02x%02x", c[0], c[1], c[2], c[3]);
+}
+
 struct Block *createBlock(int eachmon) {
     struct Block *blk = 0;
 

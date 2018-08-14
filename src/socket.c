@@ -123,10 +123,11 @@ cmd(help) {
     phelp("list-settings", "List the bar's settings");
     phelp("property <n>[:o] <p> [v]", "Gets or sets a property of a block");
     phelp("setting <p> [v]", "Gets or sets a setting of the bar");
-    phelp("new [eachmon]", "Creates a new block");
+    phelp("new [--eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
     phelp("move-out <n>", "Moves a block towards the outside of the bar");
     phelp("move-in <n>", "Moves a block towards the inside of the bar");
+    phelp("dump [--explicit]", "Dumps the current configuration to stdout");
 
 #undef phelp
 
@@ -592,15 +593,15 @@ cmd(setting) {
 
 cmd(new) {
     if (!(argc == 2 || argc == 3)) {
-        frprintf(rstderr, "Usage: %s %s [eachmon]\n", argv[0], argv[1]);
+        frprintf(rstderr, "Usage: %s %s [--eachmon]\n", argv[0], argv[1]);
         return 1;
     }
 
     int eachmon = 0;
 
     if (argc == 3) {
-        if (strcmp(argv[2], "eachmon")) {
-            frprintf(rstderr, "Third argument must be \"eachmon\" or blank\n");
+        if (strcmp(argv[2], "--eachmon")) {
+            frprintf(rstderr, "Third argument must be \"--eachmon\" or blank\n");
             return 1;
         }
         eachmon = 1;
@@ -682,6 +683,33 @@ cmd(move_in) {
 
     return 0;
 
+}
+
+cmd(dump) {
+    int explicit = 0;
+
+    if (argc == 3) {
+        if (strcmp(argv[2], "--explicit")) {
+            frprintf(rstderr, "Third argument must be \"--explicit\" or blank\n");
+            return 1;
+        }
+        explicit = 1;
+    }
+
+    FILE *file = fdopen(fd, "w");
+
+    dprintf(fd, "%c%c", setout, rstdout);
+    char *err = configSave(file, explicit);
+
+    if (err) {
+        frprintf(rstderr, "Error dumping config:\n%s\n", err);
+        free(err);
+        return 1;
+    }
+
+    rprintf("\n");
+
+    return 0;
 }
 
 #define _CASE(x, y) \
@@ -781,6 +809,7 @@ void socketRecv(int sockfd) {
     CASE(rm)
     _CASE("move-out", move_out)
     _CASE("move-in", move_in)
+    CASE(dump)
     else {
         frprintf(rstderr, "Unknown command\n");
         ret = 1;
