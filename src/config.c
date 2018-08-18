@@ -242,6 +242,7 @@ void configParseBlocks(JsonObject *jsonConfig) {
     jsonErrorInit(&err);
 
     parseBlocks(jsonConfig, "left", LEFT, &err); ERR(&err);
+    parseBlocks(jsonConfig, "center", CENTER, &err); ERR(&err);
     parseBlocks(jsonConfig, "right", RIGHT, &err); ERR(&err);
 }
 
@@ -326,6 +327,8 @@ char *configSave(FILE *file, int explicit) {
 
     JsonArray *bArr [SIDES];
     bArr[LEFT] = jsonAddArray("left", jo, &err);
+    ERR_;
+    bArr[CENTER] = jsonAddArray("center", jo, &err);
     ERR_;
     bArr[RIGHT] = jsonAddArray("right", jo, &err);
     ERR_;

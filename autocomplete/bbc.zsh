@@ -46,7 +46,7 @@ _bbc()
         fi
     elif [[ "$CURRENT" == "5" && "${words[2]}" == "property" ]]; then
         if [[ "${words[4]}" == "pos" ]]; then
-            list=("left" "right")
+            list=("left" "center" "right")
             _describe -t commands 'bbc' list
         fi
     fi

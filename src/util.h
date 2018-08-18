@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <ujson.h>
 
+#define MAX(a, b) (a>b?a:b)
+
 typedef uint8_t color [4];
 
 void parseColorJson(JsonObject *jo, const char *key, color dest,

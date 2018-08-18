@@ -33,8 +33,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#define MAX(a, b) (a>b?a:b)
-
 int interval;
 
 static void printUsage(const char *file) {

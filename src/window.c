@@ -111,10 +111,12 @@ int createBars() {
         XSelectInput(disp, bar->window,
                 ButtonPressMask | SubstructureNotifyMask);
 
-        bar->sfc[0] = 0;
-        bar->sfc[1] = 0;
-        bar->ctx[0] = 0;
-        bar->ctx[1] = 0;
+        bar->sfc[RI_VISIBLE] = 0;
+        bar->sfc[RI_BUFFER] = 0;
+        bar->sfc[RI_CENTER] = 0;
+        bar->ctx[RI_VISIBLE] = 0;
+        bar->ctx[RI_BUFFER] = 0;
+        bar->ctx[RI_CENTER] = 0;
     }
     XRRFreeScreenResources(res);
     XFlush(disp);
@@ -154,26 +156,25 @@ void updateGeom() {
         bar->width = width;
         bar->height = conf.height;
 
-        if (bar->sfc[0]) {
-            cairo_surface_destroy(bar->sfc[0]);
-        }
-        if (bar->sfc[1]) {
-            cairo_surface_destroy(bar->sfc[1]);
-        }
-        if (bar->ctx[0]) {
-            cairo_destroy(bar->ctx[0]);
-        }
-        if (bar->ctx[1]) {
-            cairo_destroy(bar->ctx[1]);
-        }
+        for (int ri = 0; ri < RI_COUNT; ri++) {
+            if (bar->sfc[ri]) {
+                cairo_surface_destroy(bar->sfc[ri]);
+            }
 
-        bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
-                visual, bar->width, bar->height);
-        bar->sfc[1] = cairo_surface_create_similar_image(bar->sfc[0],
-                CAIRO_FORMAT_ARGB32, bar->width, bar->height);
+            if (bar->ctx[ri]) {
+                cairo_destroy(bar->ctx[ri]);
+            }
 
-        bar->ctx[0] = cairo_create(bar->sfc[0]);
-        bar->ctx[1] = cairo_create(bar->sfc[1]);
+            if (ri == 0) {
+                bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
+                    visual, bar->width, bar->height);
+            } else {
+                bar->sfc[ri] = cairo_surface_create_similar_image(bar->sfc[0],
+                    CAIRO_FORMAT_ARGB32, bar->width, bar->height);
+            }
+
+            bar->ctx[ri] = cairo_create(bar->sfc[ri]);
+        }
 
         XRRFreeOutputInfo(oputInfo);
         XRRFreeCrtcInfo(crtcInfo);
@@ -189,6 +190,23 @@ void updateGeom() {
 
 static void click(struct Click *cd) {
     int cx [SIDES] = {0};
+    int centerWidth = 0;
+
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
+
+        int rendered;
+        if (blk->eachmon) {
+            rendered = blk->data.mon[cd->bar].type.legacy.rendered;
+        } else {
+            rendered = blk->data.type.legacy.rendered;
+        }
+
+        if (blk->id && rendered && blk->pos == CENTER) {
+            centerWidth += blk->width[cd->bar];
+        }
+    }
+
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
 
@@ -207,11 +225,13 @@ static void click(struct Click *cd) {
             continue;
         }
 
-        int rx;
-        if (blk->pos == RIGHT) {
-            rx = bars[cd->bar].width - cd->x;
-        } else {
+        int rx = 0;
+        if (blk->pos == LEFT) {
             rx = cd->x;
+        } else if (blk->pos == CENTER) {
+            rx = cd->x - bars[cd->bar].width / 2 + centerWidth / 2;
+        } else if (blk->pos == RIGHT) {
+            rx = bars[cd->bar].width - cd->x;
         }
 
         if (cd->bar == trayBar && blk->pos == conf.traySide) {

@@ -22,14 +22,21 @@
 #include <cairo/cairo-xlib.h>
 #include <X11/Xlib.h>
 
+enum RenderIndex {
+    RI_VISIBLE,
+    RI_BUFFER,
+    RI_CENTER,
+    RI_COUNT
+};
+
 struct Bar {
     Window window;
     int width;
     int height;
     char *output;
 
-    cairo_surface_t *sfc [2];
-    cairo_t *ctx [2];
+    cairo_surface_t *sfc [RI_COUNT];
+    cairo_t *ctx [RI_COUNT];
 };
 
 struct Click {

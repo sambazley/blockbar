@@ -24,6 +24,7 @@
 #include "window.h"
 #include <pango/pangocairo.h>
 #include <stdlib.h>
+#include <string.h>
 #include <ujson.h>
 
 static PangoFontDescription *fontDesc;
@@ -39,7 +40,16 @@ void renderInit() {
 static int
 drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
         int bgWidth, int bgHeight, int bgXPad, int bgYPad, color bg) {
-    PangoLayout *layout = pango_cairo_create_layout(bar->ctx[1]);
+
+    cairo_t *ctx;
+
+    if (pos == RI_CENTER) {
+        ctx = bar->ctx[RI_CENTER];
+    } else {
+        ctx = bar->ctx[RI_BUFFER];
+    }
+
+    PangoLayout *layout = pango_cairo_create_layout(ctx);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
 
@@ -47,7 +57,7 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
     pango_layout_get_pixel_size(layout, &width, &height);
 
     if (!(bg == 0 || bg[0] < 0 || bg[1] < 0 || bg[2] < 0 || bg[3] < 0)) {
-        cairo_set_source_rgba(bar->ctx[1],
+        cairo_set_source_rgba(ctx,
                               bg[0]/255.f,
                               bg[1]/255.f,
                               bg[2]/255.f,
@@ -77,8 +87,8 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
             x = bar->width - x - bgWidth;
         }
 
-        cairo_rectangle(bar->ctx[1], x, bgYPad, bgWidth, bgHeight);
-        cairo_fill(bar->ctx[1]);
+        cairo_rectangle(ctx, x, bgYPad, bgWidth, bgHeight);
+        cairo_fill(ctx);
 
         width = bgWidth;
         x += bgXPad;
@@ -88,13 +98,13 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
         }
     }
 
-    cairo_set_source_rgba(bar->ctx[1],
+    cairo_set_source_rgba(ctx,
                           fg[0]/255.f,
                           fg[1]/255.f,
                           fg[2]/255.f,
                           fg[3]/255.f);
-    cairo_move_to(bar->ctx[1], x, bar->height/2 - height/2);
-    pango_cairo_show_layout(bar->ctx[1], layout);
+    cairo_move_to(ctx, x, bar->height/2 - height/2);
+    pango_cairo_show_layout(ctx, layout);
 
     g_object_unref(layout);
 
@@ -103,7 +113,6 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
 
 static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     char *dataOrig;
-    int startx = x;
 
     if (blk->eachmon) {
         dataOrig = blk->data.mon[bar].type.legacy.execData;
@@ -146,7 +155,8 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     int dl = shortMode ? conf.shortLabels : 1;
 
-    if (dl && blk->pos == LEFT && blk->label && strcmp(blk->label, "") != 0) {
+    if (dl && (blk->pos == LEFT || blk->pos == CENTER)
+            && blk->label && strcmp(blk->label, "") != 0) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
@@ -164,8 +174,6 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     }
 
     x += conf.padding + blk->padding + blk->padIn;
-
-    blk->width[bar] = x - startx;
 
     free(data);
 
@@ -301,18 +309,27 @@ end:
     return x;
 }
 
-static int drawBlocks(int i) {
-    int x [SIDES] = {0};
+static int drawBlocks(int i, int *x) {
+    cairo_t *ctx;
 
     if (i == trayBar) {
         x[conf.traySide] = getTrayWidth();
     }
+
+    int first [SIDES];
+    memset(first, 1, sizeof(int) * SIDES);
 
     for (int j = 0; j < blockCount; j++) {
         struct Block *blk = &blocks[j];
 
         if (!blk->id) {
             continue;
+        }
+
+        if (blk->pos == CENTER) {
+            ctx = bars[i].ctx[RI_CENTER];
+        } else {
+            ctx = bars[i].ctx[RI_BUFFER];
         }
 
         char *execData;
@@ -355,20 +372,27 @@ static int drawBlocks(int i) {
 
         blk->width[i] = x[blk->pos] - divx;
 
-        if (!blk->nodiv && divx != x[blk->pos] &&
-                (j != 0 || (i == trayBar && blk->pos == conf.traySide))) {
-            cairo_set_source_rgb(bars[i].ctx[1], 0.2f, 0.2f, 0.2f);
+        if (!blk->nodiv && divx != x[blk->pos] && (!first[blk->pos] ||
+                    (i == trayBar && blk->pos == conf.traySide))) {
+            cairo_set_source_rgb(ctx, 0.2f, 0.2f, 0.2f);
 
             if (blk->pos == RIGHT) {
                 divx = bars[i].width - divx;
             }
 
-            cairo_rectangle(bars[i].ctx[1], divx, 4, 1, bars[i].height-8);
-            cairo_fill(bars[i].ctx[1]);
+            cairo_rectangle(ctx, divx, 4, 1, bars[i].height-8);
+            cairo_fill(ctx);
         }
+
+        first[blk->pos] = 0;
     }
 
-    if (!shortMode && x[RIGHT] + x[LEFT] >= bars[i].width) {
+    if (!shortMode && x[CENTER]) {
+        if (MAX(x[LEFT], x[RIGHT]) >= bars[i].width / 2 - x[CENTER] / 2) {
+            shortMode = 1;
+            return 1;
+        }
+    } else if (!shortMode && x[RIGHT] + x[LEFT] >= bars[i].width) {
         shortMode = 1;
         return 1;
     }
@@ -378,7 +402,13 @@ static int drawBlocks(int i) {
 }
 
 static void drawBar(int i) {
-    cairo_t *ctx = bars[i].ctx[1];
+    cairo_t *ctx = bars[i].ctx[RI_CENTER];
+
+    cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(ctx);
+    cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+
+    ctx = bars[i].ctx[RI_BUFFER];
 
     cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
     cairo_paint(ctx);
@@ -411,10 +441,19 @@ static void drawBar(int i) {
         cairo_paint(ctx);
     }
 
-    if (drawBlocks(i) == 0) {
-        ctx = bars[i].ctx[0];
+    int x [SIDES] = {0};
+
+    if (drawBlocks(i, x) == 0) {
+        if (x[RI_CENTER]) {
+            cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+            cairo_set_source_surface(ctx, bars[i].sfc[RI_CENTER],
+                                     bars[i].width /2 - x[RI_CENTER] / 2, 0);
+            cairo_paint(ctx);
+        }
+
+        ctx = bars[i].ctx[RI_VISIBLE];
         cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-        cairo_set_source_surface(ctx, bars[i].sfc[1], 0, 0);
+        cairo_set_source_surface(ctx, bars[i].sfc[RI_BUFFER], 0, 0);
         cairo_paint(ctx);
     } else {
         drawBar(i);

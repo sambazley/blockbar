@@ -228,7 +228,19 @@ cmd(getProperty) {
         rprintf("%s\n", execData ? execData : "");
     }
     IS("pos") {
-        rprintf("%s\n", blk->pos == LEFT ? "left" : "right");
+        switch (blk->pos) {
+        case LEFT:
+            rprintf("left\n");
+            break;
+        case CENTER:
+            rprintf("center\n");
+            break;
+        case RIGHT:
+            rprintf("right\n");
+            break;
+        case SIDES:
+            break;
+        }
     }
     IS("interval") {
         rprintf("%d\n", blk->interval);
@@ -327,6 +339,8 @@ cmd(setProperty) {
             blk->pos = LEFT;
         } else if (strcmp("right", val) == 0) {
             blk->pos = RIGHT;
+        } else if (strcmp("center", val) == 0) {
+            blk->pos = CENTER;
         } else {
             frprintf(rstderr, "Invalid position\n");
             return 1;
@@ -431,7 +445,7 @@ cmd(getSetting) {
         rprintf("%s\n", conf.trayBar);
     }
     IS("trayside") {
-        rprintf("%s\n", conf.traySide == RIGHT ? "right" : "left");
+        rprintf("%s\n", conf.traySide == LEFT ? "left" : "right");
     }
     else {
         frprintf(rstderr, "Setting does not exist, or cannot be returned\n");

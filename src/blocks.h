@@ -40,6 +40,7 @@ enum Mode {
 enum Pos {
     LEFT,
     RIGHT,
+    CENTER,
     SIDES
 };
 

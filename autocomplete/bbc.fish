@@ -32,6 +32,7 @@ function __fish_bbc
         if [ $cmd[2] = 'property' ]
             if [ $cmd[4] = 'pos' ]
                 echo 'left'
+                echo 'center'
                 echo 'right'
             end
         end
