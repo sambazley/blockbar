@@ -112,13 +112,13 @@ int main(int argc, const char *argv[]) {
 
     trayInit(trayBar);
 
+    int sockfd = socketInit();
+
     for (int i = 0; i < blockCount; i++) {
         blockExec(&blocks[i], 0);
     }
 
     redraw();
-
-    int sockfd = socketInit();
 
     struct timeval tv, timer1, timer2;
     fd_set fds;
