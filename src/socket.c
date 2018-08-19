@@ -125,8 +125,8 @@ cmd(help) {
     phelp("setting <p> [v]", "Gets or sets a setting of the bar");
     phelp("new [--eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
-    phelp("move-out <n>", "Moves a block towards the outside of the bar");
-    phelp("move-in <n>", "Moves a block towards the inside of the bar");
+    phelp("move-left <n>", "Moves a block left");
+    phelp("move-right <n>", "Moves a block right");
     phelp("dump [--explicit]", "Dumps the current configuration to stdout");
 
 #undef phelp
@@ -636,11 +636,25 @@ cmd(rm) {
     return 0;
 }
 
-cmd(move_out) {
+cmd(move_left) {
     vars(3, "", 0);
 
     struct Block *swp = 0;
-    for (int i = 0; i < blockCount; i++) {
+    int i;
+    int l;
+    int d;
+
+    if (blk->pos == RIGHT) {
+        i = blockCount - 1;
+        l = 0;
+        d = -1;
+    } else {
+        i = 0;
+        l = blockCount;
+        d = 1;
+    }
+
+    for (; i != l; i += d) {
         struct Block *_blk = &blocks[i];
         if (blk->pos == _blk->pos) {
             if (blk == _blk) {
@@ -651,7 +665,7 @@ cmd(move_out) {
     }
 
     if (swp == 0) {
-        frprintf(rstderr, "Cannot move block out further\n");
+        frprintf(rstderr, "Cannot move block further left\n");
         return 1;
     }
 
@@ -665,21 +679,31 @@ cmd(move_out) {
     return 0;
 }
 
-cmd(move_in) {
+cmd(move_right) {
     vars(3, "", 0);
 
     struct Block *swp = 0;
-    for (int i = 0; i < blockCount; i++) {
+    int i;
+    int l;
+    int d;
+
+    if (blk->pos == RIGHT) {
+        i = 0;
+        l = blockCount;
+        d = 1;
+    } else {
+        i = blockCount - 1;
+        l = 0;
+        d = -1;
+    }
+
+    for (; i != l; i += d) {
         struct Block *_blk = &blocks[i];
-        if (_blk == blk) {
-            for (i++; i < blockCount; i++) {
-                struct Block *_blk = &blocks[i];
-                if (blk->pos == _blk->pos) {
-                    swp = _blk;
-                    break;
-                }
+        if (blk->pos == _blk->pos) {
+            if (blk == _blk) {
+                break;
             }
-            break;
+            swp = _blk;
         }
     }
 
@@ -821,8 +845,8 @@ void socketRecv(int sockfd) {
     CASE(setting)
     CASE(new)
     CASE(rm)
-    _CASE("move-out", move_out)
-    _CASE("move-in", move_in)
+    _CASE("move-left", move_left)
+    _CASE("move-right", move_right)
     CASE(dump)
     else {
         frprintf(rstderr, "Unknown command\n");

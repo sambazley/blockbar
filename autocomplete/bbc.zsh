@@ -9,7 +9,7 @@ _bbc()
         done
         _describe -t commands 'bbc' cmds
     elif [[ "$CURRENT" == "3" && "${words[2]}" =~ "(exec)|(property)|\
-            (rm)|(move-out)|(move-in)" ]]; then
+            (rm)|(move-left)|(move-right)" ]]; then
         ids=()
         bbc list | while read id; do
             ids+=$(echo $id | sed -E "s/\t/:/g")
