@@ -335,6 +335,11 @@ char *configSave(FILE *file, int explicit) {
 
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
+
+        if (!blk->id) {
+            continue;
+        }
+
         JsonObject *jblk = jsonAddObject(0, bArr[blk->pos], &err);
         ERR_;
 
