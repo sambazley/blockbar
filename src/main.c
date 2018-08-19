@@ -153,7 +153,7 @@ int main(int argc, const char *argv[]) {
             }
         }
 
-        int fdsRdy = select(nfds+1, &fds, 0, 0, &tv);
+        int fdsRdy = select(nfds+1, &fds, 0, 0, interval == 0 ? 0 : &tv);
 
         pollEvents();
 
