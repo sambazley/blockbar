@@ -148,8 +148,8 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
         parseString(entry, "exec", &(blk->exec), err); ERR(err)
         parseInt(entry, "interval", &(blk->interval), err); ERR(err)
         parseInt(entry, "padding", &(blk->padding), err); ERR(err)
-        parseInt(entry, "padding-inside", &(blk->padIn), err); ERR(err)
-        parseInt(entry, "padding-outside", &(blk->padOut), err); ERR(err)
+        parseInt(entry, "padding-left", &(blk->padLeft), err); ERR(err)
+        parseInt(entry, "padding-right", &(blk->padRight), err); ERR(err)
         parseBool(entry, "nodiv", &(blk->nodiv), err); ERR(err)
 
         blk->pos = pos;
@@ -360,8 +360,8 @@ char *configSave(FILE *file, int explicit) {
 
         BNUM("interval", interval);
         BNUM("padding", padding);
-        BNUM("padding-inside", padIn);
-        BNUM("padding-outside", padOut);
+        BNUM("padding-left", padLeft);
+        BNUM("padding-right", padRight);
 
         if (blk->nodiv || explicit) {
             jsonAddBoolNull("nodiv", blk->nodiv ? JSON_TRUE : JSON_FALSE, jblk,

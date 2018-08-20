@@ -163,8 +163,8 @@ cmd(list_properties) {
     p("string", "pos", "Position of the block (\"left\" or \"right\")");
     p("int", "interval", "Time between each execution of the block's script");
     p("int", "padding", "Padding on both sides of the block");
-    p("int", "padding-inside", "Additional padding on the inside of the block");
-    p("int", "padding-outside", "Additional padding on the outside of the block");
+    p("int", "padding-left", "Additional padding on the left of the block");
+    p("int", "padding-right", "Additional padding on the right of the block");
     p("bool", "nodiv", "Disables the outside divider next to the block");
 
 #undef p
@@ -248,11 +248,11 @@ cmd(getProperty) {
     IS("padding") {
         rprintf("%d\n", blk->padding);
     }
-    IS("padding-inside") {
-        rprintf("%d\n", blk->padIn);
+    IS("padding-left") {
+        rprintf("%d\n", blk->padLeft);
     }
-    IS("padding-outside") {
-        rprintf("%d\n", blk->padOut);
+    IS("padding-right") {
+        rprintf("%d\n", blk->padRight);
     }
     IS("nodiv") {
         rprintf("%s\n", blk->nodiv ? "true" : "false");
@@ -355,13 +355,13 @@ cmd(setProperty) {
         INT;
         blk->padding = integer;
     }
-    IS("padding-inside") {
+    IS("padding-left") {
         INT;
-        blk->padIn = integer;
+        blk->padLeft = integer;
     }
-    IS("padding-outside") {
+    IS("padding-right") {
         INT;
-        blk->padOut = integer;
+        blk->padRight = integer;
     }
     IS("nodiv") {
         if (strcmp("true", val) == 0) {

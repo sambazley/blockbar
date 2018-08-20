@@ -52,7 +52,7 @@ struct Block {
     char *label;
     int eachmon;
 
-    int padding, padIn, padOut;
+    int padding, padLeft, padRight;
     int nodiv;
 
     int interval;

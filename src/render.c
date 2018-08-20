@@ -151,7 +151,13 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         }
     }
 
-    x += conf.padding + blk->padding + blk->padOut;
+    x += conf.padding + blk->padding;
+
+    if (blk->pos == RIGHT) {
+        x += blk->padRight;
+    } else {
+        x += blk->padLeft;
+    }
 
     int dl = shortMode ? conf.shortLabels : 1;
 
@@ -173,7 +179,13 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
-    x += conf.padding + blk->padding + blk->padIn;
+    x += conf.padding + blk->padding;
+
+    if (blk->pos == RIGHT) {
+        x += blk->padLeft;
+    } else {
+        x += blk->padRight;
+    }
 
     free(data);
 
@@ -291,14 +303,22 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         int startx = x;
 
         if (i == 0) {
-            x += blk->padOut;
+            if (blk->pos == RIGHT) {
+                x += blk->padRight;
+            } else {
+                x += blk->padLeft;
+            }
         }
 
         x += drawString(&bars[bar], text, x, blk->pos, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
 
         if (i == *subblockCount - 1) {
-            x += 2 + blk->padIn;
+            if (blk->pos == RIGHT) {
+                x += 2 + blk->padLeft;
+            } else {
+                x += 2 + blk->padRight;
+            }
         }
 
         (*widths)[i] = x - startx;
@@ -362,12 +382,22 @@ static int drawBlocks(int i, int *x) {
                 x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
             }
         } else if (blk->label && (shortMode ? conf.shortLabels : 1)) {
-            x[blk->pos] += conf.padding + blk->padding + blk->padOut;
+            x[blk->pos] += conf.padding + blk->padding;
+            if (blk->pos == RIGHT) {
+                x[blk->pos] += blk->padRight;
+            } else {
+                x[blk->pos] += blk->padLeft;
+            }
 
             x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
                     blk->pos, conf.fg, 0, 0, 0, 0, 0);
 
-            x[blk->pos] += conf.padding + blk->padding + blk->padIn;
+            x[blk->pos] += conf.padding + blk->padding;
+            if (blk->pos == RIGHT) {
+                x[blk->pos] += blk->padLeft;
+            } else {
+                x[blk->pos] += blk->padRight;
+            }
         }
 
         blk->width[i] = x[blk->pos] - divx;
