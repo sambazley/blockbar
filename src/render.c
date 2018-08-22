@@ -329,15 +329,21 @@ end:
     return x;
 }
 
+static void drawDiv(int i, cairo_t *ctx, int x) {
+    cairo_set_source_rgb(ctx, 0.2f, 0.2f, 0.2f);
+    cairo_rectangle(ctx, x, 4, 1, bars[i].height-8);
+    cairo_fill(ctx);
+}
+
 static int drawBlocks(int i, int *x) {
     cairo_t *ctx;
+
+    int last [SIDES];
+    memset(last, -1, sizeof(int) * SIDES);
 
     if (i == trayBar) {
         x[conf.traySide] = getTrayWidth();
     }
-
-    int first [SIDES];
-    memset(first, 1, sizeof(int) * SIDES);
 
     for (int j = 0; j < blockCount; j++) {
         struct Block *blk = &blocks[j];
@@ -371,9 +377,7 @@ static int drawBlocks(int i, int *x) {
             continue;
         }
 
-        *rendered = 1;
-
-        int divx = x[blk->pos];
+        int prex = x[blk->pos];
 
         if (execData) {
             if (blk->mode == LEGACY) {
@@ -400,21 +404,13 @@ static int drawBlocks(int i, int *x) {
             }
         }
 
-        blk->width[i] = x[blk->pos] - divx;
+        *rendered = prex != x[blk->pos];
 
-        if (!blk->nodiv && divx != x[blk->pos] && (!first[blk->pos] ||
-                    (i == trayBar && blk->pos == conf.traySide))) {
-            cairo_set_source_rgb(ctx, 0.2f, 0.2f, 0.2f);
+        blk->width[i] = x[blk->pos] - prex;
 
-            if (blk->pos == RIGHT) {
-                divx = bars[i].width - divx;
-            }
-
-            cairo_rectangle(ctx, divx, 4, 1, bars[i].height-8);
-            cairo_fill(ctx);
+        if ((blk->pos != RIGHT || last[RIGHT] == -1) && *rendered) {
+            last[blk->pos] = j;
         }
-
-        first[blk->pos] = 0;
     }
 
     if (!shortMode && x[CENTER]) {
@@ -428,6 +424,71 @@ static int drawBlocks(int i, int *x) {
     }
 
     shortMode = 0;
+
+    int dx[SIDES] = {0};
+
+    if (i == trayBar) {
+        dx[conf.traySide] = getTrayWidth();
+    }
+
+    for (int j = 0; j < blockCount; j++) {
+        struct Block *blk = &blocks[j];
+
+        if (!blk->id) {
+            continue;
+        }
+
+        int rendered;
+
+        if (blk->eachmon) {
+            rendered = blk->data.mon[i].type.legacy.rendered;
+        } else {
+            rendered = blk->data.type.legacy.rendered;
+        }
+
+        if (!rendered) {
+            continue;
+        }
+
+        if (blk->pos != RIGHT) {
+            dx[blk->pos] += blk->width[i];
+        }
+
+        if (!blk->nodiv && last[blk->pos] != j) {
+            if (blk->pos == CENTER) {
+                ctx = bars[i].ctx[RI_CENTER];
+            } else {
+                ctx = bars[i].ctx[RI_BUFFER];
+            }
+
+            int divx = dx[blk->pos];
+
+            if (blk->pos == RIGHT) {
+                divx = bars[i].width - dx[blk->pos];
+            } else {
+                divx = dx[blk->pos];
+            }
+
+            drawDiv(i, ctx, divx);
+        }
+
+        if (blk->pos == RIGHT) {
+            dx[blk->pos] += blk->width[i];
+        }
+    }
+
+    if (last[conf.traySide] != -1) {
+        int divx;
+
+        if (conf.traySide == RIGHT) {
+            divx = bars[i].width - getTrayWidth();
+        } else {
+            divx = getTrayWidth();
+        }
+
+        drawDiv(i, bars[i].ctx[RI_BUFFER], divx);
+    }
+
     return 0;
 }
 
