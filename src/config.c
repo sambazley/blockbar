@@ -48,6 +48,12 @@ static struct Config defaultConf = {
     .shortLabels = 1,
     .top = 1,
 
+    .divWidth = 1,
+    .divHeight = -1,
+    .divVertMarg = 4,
+    .divCol = {0x33, 0x33, 0x33, 0xFF},
+    .trayDiv = 1,
+
     .trayPadding = 2,
     .trayIconSize = 18,
     .trayBar = 0,
@@ -213,6 +219,12 @@ void configParseGeneral(JsonObject *jsonConfig) {
     parseString(jsonConfig, "font", &conf.font, &err); ERR(&err);
     parseBool(jsonConfig, "shortlabels", &conf.shortLabels, &err); ERR(&err);
     parseString(jsonConfig, "position", &position, &err); ERR(&err);
+
+    parseInt(jsonConfig, "divwidth", &conf.divWidth, &err); ERR(&err);
+    parseInt(jsonConfig, "divheight", &conf.divHeight, &err); ERR(&err);
+    parseInt(jsonConfig, "divvertmargin", &conf.divVertMarg, &err); ERR(&err);
+    parseColorJson(jsonConfig, "divcolor", conf.divCol, &err); ERR(&err);
+    parseBool(jsonConfig, "traydiv", &conf.trayDiv, &err); ERR(&err);
 
     parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err); ERR(&err);
     parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err); ERR(&err);

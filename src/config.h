@@ -36,6 +36,12 @@ struct Config {
     int shortLabels;
     int top;
 
+    int divWidth;
+    int divHeight;
+    int divVertMarg;
+    color divCol;
+    int trayDiv;
+
     int trayPadding;
     int trayIconSize;
     char *trayBar;

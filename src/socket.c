@@ -184,8 +184,13 @@ cmd(list_settings) {
     p("color", "background", "Background color of the bar");
     p("color", "foreground", "Default text color");
     p("string", "font", "Font name and size");
-    p("bool", "shortlabels", "Whether a block's label should render in short mode");
+    p("bool", "shortlabels", "Whether a block's label should render in short mode or not");
     p("string", "position", "Position of the bar on the screen (\"top\" or \"bottom\")");
+    p("int", "divwidth", "Divider width");
+    p("int", "divheight", "Divider height");
+    p("int", "divvertmargin", "Margin above and below dividers");
+    p("color", "divcolor", "Divider color");
+    p("bool", "traydiv", "Whether a divider is drawn next to the tray or not");
     p("int", "traypadding", "Padding to the right of each tray icon");
     p("int", "trayiconsize", "Width and height of each tray icon");
     p("string", "traybar", "Name of the output that the tray appears on");
@@ -435,6 +440,22 @@ cmd(getSetting) {
     IS("position") {
         rprintf("%s\n", conf.top ? "top" : "bottom");
     }
+    IS("divwidth") {
+        rprintf("%d\n", conf.divWidth);
+    }
+    IS("divheight") {
+        rprintf("%d\n", conf.divHeight);
+    }
+    IS("divvertmargin") {
+        rprintf("%d\n", conf.divVertMarg);
+    }
+    IS("divcolor") {
+        rprintf("#%02x%02x%02x%02x\n",
+                conf.divCol[0], conf.divCol[1], conf.divCol[2], conf.divCol[3]);
+    }
+    IS("traydiv") {
+        rprintf("%s\n", conf.trayDiv ? "true" : "false");
+    }
     IS("traypadding") {
         rprintf("%d\n", conf.trayPadding);
     }
@@ -548,6 +569,35 @@ cmd(setSetting) {
             return 1;
         }
         updateGeom();
+    }
+    IS("divwidth") {
+        INT;
+        conf.divWidth = integer;
+    }
+    IS("divheight") {
+        INT;
+        conf.divHeight = integer;
+    }
+    IS("divvertmargin") {
+        INT;
+        conf.divVertMarg = integer;
+    }
+    IS("divcolor") {
+        if (*val != '#' || parseColorString(val+1, conf.divCol) != 0) {
+            frprintf(rstderr, "Invalid color\n");
+            return 1;
+        }
+    }
+    IS("traydiv") {
+        if (strcmp(val, "true") == 0) {
+            conf.trayDiv = 1;
+        } else if (strcmp(val, "false") == 0) {
+            conf.trayDiv = 0;
+        } else {
+            frprintf(rstderr, "Invalid value, expecting boolean "
+                    "(\"true\" or \"false\")\n");
+            return 1;
+        }
     }
     IS("traypadding") {
         INT;

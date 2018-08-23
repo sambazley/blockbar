@@ -330,8 +330,28 @@ end:
 }
 
 static void drawDiv(int i, cairo_t *ctx, int x) {
-    cairo_set_source_rgb(ctx, 0.2f, 0.2f, 0.2f);
-    cairo_rectangle(ctx, x, 4, 1, bars[i].height-8);
+    int height;
+    int y;
+
+    if (conf.divHeight >= 0) {
+        height = conf.divHeight;
+        y = (bars[i].height - conf.divHeight) / 2;
+    } else {
+        height = bars[i].height - conf.divVertMarg * 2;
+        y = conf.divVertMarg;
+    }
+
+    if (height <= 0 || conf.divWidth <= 0 || conf.divCol[3] <= 0) {
+        return;
+    }
+
+    cairo_set_source_rgba(ctx,
+                          conf.divCol[0] / 255.f,
+                          conf.divCol[1] / 255.f,
+                          conf.divCol[2] / 255.f,
+                          conf.divCol[3] / 255.f);
+
+    cairo_rectangle(ctx, x, y, conf.divWidth, height);
     cairo_fill(ctx);
 }
 
@@ -477,7 +497,7 @@ static int drawBlocks(int i, int *x) {
         }
     }
 
-    if (last[conf.traySide] != -1) {
+    if (last[conf.traySide] != -1 && conf.trayDiv) {
         int divx;
 
         if (conf.traySide == RIGHT) {
