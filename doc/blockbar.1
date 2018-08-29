@@ -247,17 +247,29 @@ T}#Integer#1
 
 .SH
 ENVIRONMENT VARIABLES
-When the execution of a block is triggered by a click,
-the following environment variables are set:
+.PP
+The following environment variable should be set before \fBblockbar\fR and
+\fBbbc\fR are executed.
+
 .TP
-.B BLOCK_BUTTON
-The mouse button's number ("1", "2", etc).
+.B BLOCKBAR_SOCKET
+The path of the socket used for the communication between
+\fBbbc\fR and \fBblockbar\fR. If this variable is not set,
+/tmp/blockbar-socket is used instead.
+
+.PP
+The following environment variables can be set when a block is executed.
 .TP
-.B SUBBLOCK
-If the block is in subblocks mode, this variable will be set to the clicked
-subblock's index. Otherwise, this variable will be set to "0".
+\fBBLOCK_BUTTON\fR
+If the block's execution was triggered by a click, this variable will be set
+to the mouse button's number ("1", "2", etc).
 .TP
-.B BAR_OUTPUT
+\fBSUBBLOCK\fR
+If the block's execution was triggered by a click, and the block is in
+subblocks mode, this variable will be set to the clicked subblock's index.
+Otherwise, this variable will be set to "0".
+.TP
+\fBBAR_OUTPUT\fR
 If the block has eachmon=true, this variable will be set to the output's name
 (see xrandr).
 

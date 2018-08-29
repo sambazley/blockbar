@@ -20,6 +20,7 @@
 #include "bbc.h"
 #include <poll.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -30,6 +31,12 @@ int main(int argc, char **argv) {
     if (sockfd < 0) {
         fprintf(stderr, "Error opening socket\n");
         return 1;
+    }
+
+    char *socketpath = getenv("BLOCKBAR_SOCKET");
+
+    if (!socketpath) {
+        socketpath = defsocketpath;
     }
 
     struct sockaddr_un sockAddr;

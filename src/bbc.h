@@ -1,7 +1,7 @@
 #ifndef BBC_H
 #define BBC_H
 
-#define socketpath "/tmp/blockbar-socket"
+#define defsocketpath "/tmp/blockbar-socket"
 #define bbcbuffsize 1024
 
 #define setout 1

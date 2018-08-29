@@ -42,6 +42,11 @@ int socketInit() {
         return -1;
     }
 
+    char *socketpath = getenv("BLOCKBAR_SOCKET");
+    if (!socketpath) {
+        socketpath = defsocketpath;
+    }
+
     struct sockaddr_un sockAddr;
 
     sockAddr.sun_family = AF_UNIX;
