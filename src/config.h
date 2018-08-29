@@ -24,30 +24,56 @@
 #include "util.h"
 #include <ujson.h>
 
-struct Config {
-    int height;
-    int marginV;
-    int marginH;
-    int radius;
-    int padding;
-    color bg;
-    color fg;
-    char *font;
-    int shortLabels;
-    int top;
+enum SettingType {
+    INT,
+    BOOL,
+    STR,
+    COL,
+    POS,
+};
 
-    int divWidth;
-    int divHeight;
-    int divVertMarg;
-    color divCol;
-    int trayDiv;
+union Value {
+    int INT;
+    int BOOL;
+    char *STR;
+    color COL;
+    enum Pos POS;
+};
 
-    int trayPadding;
-    int trayIconSize;
-    char *trayBar;
-    enum Pos traySide;
-} conf;
+struct Setting {
+    char *name;
+    char *desc;
+    enum SettingType type;
+    union Value def, val;
+};
 
+struct Settings {
+    struct Setting height;
+    struct Setting marginvert;
+    struct Setting marginhoriz;
+    struct Setting radius;
+    struct Setting padding;
+    struct Setting background;
+    struct Setting foreground;
+    struct Setting font;
+    struct Setting shortlabels;
+    struct Setting position;
+    struct Setting divwidth;
+    struct Setting divheight;
+    struct Setting divvertmargin;
+    struct Setting divcolor;
+    struct Setting traydiv;
+    struct Setting traypadding;
+    struct Setting trayiconsize;
+    struct Setting traybar;
+    struct Setting trayside;
+};
+
+extern const char *typeStrings [];
+extern struct Settings settings;
+extern int settingCount;
+
+int setSetting(struct Setting *setting, union Value val);
 JsonObject *configInit(const char *config);
 void configParseGeneral(JsonObject *jsonConfig);
 void configParseBlocks(JsonObject *jsonConfig);

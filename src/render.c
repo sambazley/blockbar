@@ -32,8 +32,8 @@ static PangoFontDescription *fontDesc;
 static int shortMode;
 
 void renderInit() {
-    if (conf.font) {
-        fontDesc = pango_font_description_from_string(conf.font);
+    if (settings.font.val.STR) {
+        fontDesc = pango_font_description_from_string(settings.font.val.STR);
     }
 }
 
@@ -125,7 +125,8 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     char *longText = data;
     char *shortText = data;
-    color col = {conf.fg[0], conf.fg[1], conf.fg[2], conf.fg[3]};
+    color col;
+    memcpy(col, settings.foreground.val.COL, sizeof(color));
 
     int j = 0;
     int len = strlen(data);
@@ -151,7 +152,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         }
     }
 
-    x += conf.padding + blk->padding;
+    x += settings.padding.val.INT + blk->padding;
 
     if (blk->pos == RIGHT) {
         x += blk->padRight;
@@ -159,7 +160,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         x += blk->padLeft;
     }
 
-    int dl = shortMode ? conf.shortLabels : 1;
+    int dl = shortMode ? settings.shortlabels.val.INT : 1;
 
     if (dl && (blk->pos == LEFT || blk->pos == CENTER)
             && blk->label && strcmp(blk->label, "") != 0) {
@@ -179,7 +180,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
     }
 
-    x += conf.padding + blk->padding;
+    x += settings.padding.val.INT + blk->padding;
 
     if (blk->pos == RIGHT) {
         x += blk->padLeft;
@@ -261,8 +262,10 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         }
 
         color bg = {-1, -1, -1, -1};
-        color fg = {conf.fg[0], conf.fg[1], conf.fg[2], conf.fg[3]};
+        color fg;
         int bgwidth = -1, bgheight = -1, bgxpad = -1, bgypad = -1;
+
+        memcpy(fg, settings.foreground.val.COL, sizeof(color));
 
         parseColorJson(subblock, "background", bg, &err);
         if (jsonErrorIsSet(&err)) {
@@ -333,25 +336,30 @@ static void drawDiv(int i, cairo_t *ctx, int x) {
     int height;
     int y;
 
-    if (conf.divHeight >= 0) {
-        height = conf.divHeight;
-        y = (bars[i].height - conf.divHeight) / 2;
+    if (settings.divheight.val.INT >= 0) {
+        height = settings.divheight.val.INT;
+        y = (bars[i].height - height) / 2;
     } else {
-        height = bars[i].height - conf.divVertMarg * 2;
-        y = conf.divVertMarg;
+        height = bars[i].height - settings.divvertmargin.val.INT * 2;
+        y = settings.divvertmargin.val.INT;
     }
 
-    if (height <= 0 || conf.divWidth <= 0 || conf.divCol[3] <= 0) {
+    if (height <= 0 ||
+        settings.divwidth.val.INT <= 0 ||
+        settings.divcolor.val.COL[0] < 0 ||
+        settings.divcolor.val.COL[1] < 0 ||
+        settings.divcolor.val.COL[2] < 0 ||
+        settings.divcolor.val.COL[3] <= 0) {
         return;
     }
 
     cairo_set_source_rgba(ctx,
-                          conf.divCol[0] / 255.f,
-                          conf.divCol[1] / 255.f,
-                          conf.divCol[2] / 255.f,
-                          conf.divCol[3] / 255.f);
+                          settings.divcolor.val.COL[0] / 255.f,
+                          settings.divcolor.val.COL[1] / 255.f,
+                          settings.divcolor.val.COL[2] / 255.f,
+                          settings.divcolor.val.COL[3] / 255.f);
 
-    cairo_rectangle(ctx, x, y, conf.divWidth, height);
+    cairo_rectangle(ctx, x, y, settings.divwidth.val.INT, height);
     cairo_fill(ctx);
 }
 
@@ -362,7 +370,7 @@ static int drawBlocks(int i, int *x) {
     memset(last, -1, sizeof(int) * SIDES);
 
     if (i == trayBar) {
-        x[conf.traySide] = getTrayWidth();
+        x[settings.trayside.val.POS] = getTrayWidth();
     }
 
     for (int j = 0; j < blockCount; j++) {
@@ -405,8 +413,9 @@ static int drawBlocks(int i, int *x) {
             } else {
                 x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
             }
-        } else if (blk->label && (shortMode ? conf.shortLabels : 1)) {
-            x[blk->pos] += conf.padding + blk->padding;
+        } else if (blk->label &&
+                (shortMode ? settings.shortlabels.val.INT : 1)) {
+            x[blk->pos] += settings.padding.val.INT + blk->padding;
             if (blk->pos == RIGHT) {
                 x[blk->pos] += blk->padRight;
             } else {
@@ -414,9 +423,9 @@ static int drawBlocks(int i, int *x) {
             }
 
             x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
-                    blk->pos, conf.fg, 0, 0, 0, 0, 0);
+                    blk->pos, settings.foreground.val.COL, 0, 0, 0, 0, 0);
 
-            x[blk->pos] += conf.padding + blk->padding;
+            x[blk->pos] += settings.padding.val.INT + blk->padding;
             if (blk->pos == RIGHT) {
                 x[blk->pos] += blk->padLeft;
             } else {
@@ -448,7 +457,7 @@ static int drawBlocks(int i, int *x) {
     int dx[SIDES] = {0};
 
     if (i == trayBar) {
-        dx[conf.traySide] = getTrayWidth();
+        dx[settings.trayside.val.POS] = getTrayWidth();
     }
 
     for (int j = 0; j < blockCount; j++) {
@@ -497,10 +506,11 @@ static int drawBlocks(int i, int *x) {
         }
     }
 
-    if (last[conf.traySide] != -1 && conf.trayDiv) {
+    if (last[settings.trayside.val.POS] != -1 && settings.traydiv.val.INT &&
+            i == trayBar) {
         int divx;
 
-        if (conf.traySide == RIGHT) {
+        if (settings.trayside.val.POS == RIGHT) {
             divx = bars[i].width - getTrayWidth();
         } else {
             divx = getTrayWidth();
@@ -525,14 +535,14 @@ static void drawBar(int i) {
     cairo_paint(ctx);
 
     cairo_set_source_rgba(ctx,
-                          conf.bg[0]/255.f,
-                          conf.bg[1]/255.f,
-                          conf.bg[2]/255.f,
-                          conf.bg[3]/255.f);
+                          settings.background.val.COL[0]/255.f,
+                          settings.background.val.COL[1]/255.f,
+                          settings.background.val.COL[2]/255.f,
+                          settings.background.val.COL[3]/255.f);
 
     cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
 
-    int r = conf.radius;
+    int r = settings.radius.val.INT;
     int w = bars[i].width;
     int h = bars[i].height;
     double pi = 3.14159;

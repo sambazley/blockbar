@@ -144,17 +144,25 @@ void updateGeom() {
         XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(disp, res, oputInfo->crtc);
         struct Bar *bar = &bars[b];
 
-        int x = crtcInfo->x + conf.marginH;
+        int top = 1;
+        if (strcmp(settings.position.val.STR, "bottom") == 0) {
+            top = 0;
+        }
 
-        int y = conf.top ? conf.marginV
-                         : crtcInfo->height - conf.height - conf.marginV;
+        int x = crtcInfo->x + settings.marginhoriz.val.INT;
 
-        int width = crtcInfo->width - conf.marginH * 2;
+        int y = top ? settings.marginvert.val.INT
+                         : crtcInfo->height
+                         - settings.height.val.INT
+                         - settings.marginvert.val.INT;
 
-        XMoveResizeWindow(disp, bar->window, x, y, width, conf.height);
+        int width = crtcInfo->width - settings.marginhoriz.val.INT * 2;
+
+        XMoveResizeWindow(disp, bar->window, x, y,
+                          width, settings.height.val.INT);
 
         bar->width = width;
-        bar->height = conf.height;
+        bar->height = settings.height.val.INT;
 
         for (int ri = 0; ri < RI_COUNT; ri++) {
             if (bar->sfc[ri]) {
@@ -234,7 +242,7 @@ static void click(struct Click *cd) {
             rx = bars[cd->bar].width - cd->x;
         }
 
-        if (cd->bar == trayBar && blk->pos == conf.traySide) {
+        if (cd->bar == trayBar && blk->pos == settings.trayside.val.POS) {
             rx -= getTrayWidth();
         }
 

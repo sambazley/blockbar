@@ -36,32 +36,98 @@
 int blockCount;
 struct Block *blocks;
 
-static struct Config defaultConf = {
-    .height = 22,
-    .marginV = 0,
-    .marginH = 0,
-    .radius = 0,
-    .padding = 5,
-    .bg = {0, 0, 0, 0xFF},
-    .fg = {0xFF, 0xFF, 0xFF, 0xFF},
-    .font = 0,
-    .shortLabels = 1,
-    .top = 1,
+#define S(n, t, d, v) \
+    .n = { \
+        .name = #n, \
+        .type = t, \
+        .desc = d, \
+        .def.t = v, \
+        .val.t = v, \
+    },
 
-    .divWidth = 1,
-    .divHeight = -1,
-    .divVertMarg = 4,
-    .divCol = {0x33, 0x33, 0x33, 0xFF},
-    .trayDiv = 1,
-
-    .trayPadding = 2,
-    .trayIconSize = 18,
-    .trayBar = 0,
-    .traySide = RIGHT,
+const char *typeStrings [] = {
+    "int",
+    "bool",
+    "string",
+    "color",
+    "position"
 };
 
-static void loadDefaults() {
-    memcpy(&conf, &defaultConf, sizeof(struct Config));
+struct Settings settings = {
+    S(height, INT, "Height of the bar", 22)
+    S(marginvert, INT, "Margin above or below the bar", 0)
+    S(marginhoriz, INT, "Margin on the left and right of the bar", 0)
+    S(radius, INT, "Radius of the curvature of the corners of the bar", 0)
+    S(padding, INT, "Padding on both sides of each block", 5)
+    S(background, COL, "Background color of the bar", ((color) {0, 0, 0, 0xFF}))
+    S(foreground, COL, "Default text color", ((color) {0xFF, 0xFF, 0xFF, 0xFF}))
+    S(font, STR, "Font name and size", 0)
+    S(shortlabels, BOOL, "Whether a block's label should render in short mode or not", 1)
+    S(position, STR, "Position of the bar on the screen (\"top\" or \"bottom\")", "top")
+    S(divwidth, INT, "Divider width", 1)
+    S(divheight, INT, "Divider height", -1)
+    S(divvertmargin, INT, "Margin above and below dividers", 4)
+    S(divcolor, COL, "Divider color", ((color) {0x33, 0x33, 0x33, 0xFF}))
+    S(traydiv, BOOL, "Whether a divider is drawn next to the tray or not", 1)
+    S(traypadding, INT, "Padding to the right of each tray icon", 2)
+    S(trayiconsize, INT, "Width and height of each tray icon", 18)
+    S(traybar, STR, "Name of the output that the tray appears on", 0)
+    S(trayside, POS, "Side that the tray appears on the bar (\"left\" or \"right\")", RIGHT)
+};
+
+#undef S
+
+int settingCount;
+
+int setSetting(struct Setting *setting, union Value val) {
+    if (setting->type == INT || setting->type == BOOL) {
+        if (setting == &settings.divvertmargin) {
+            settings.divheight.val.INT = -1;
+        }
+        setting->val.INT = val.INT;
+    } else if (setting->type == POS) {
+        if (val.POS < LEFT || val.POS > CENTER) {
+            return 1;
+        }
+
+        if (setting == &settings.trayside && val.POS == CENTER) {
+            return 1;
+        }
+
+        setting->val.POS = val.POS;
+    } else if (setting->type == STR) {
+        if (!val.STR) {
+            return 1;
+        }
+
+        if (setting == &settings.position) {
+            if (strcmp(val.STR, "top") && strcmp(val.STR, "bottom")) {
+                return 1;
+            }
+        }
+
+        if (setting->val.STR) {
+            free(setting->val.STR);
+        }
+
+        setting->val.STR = malloc(strlen(val.STR) + 1);
+        strcpy(setting->val.STR, val.STR);
+    } else if (setting->type == COL) {
+        memcpy(setting->val.COL, val.COL, sizeof(color));
+    }
+
+    return 0;
+}
+
+static void initSettings() {
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
+
+        if (setting->type == STR) {
+            setting->val.STR = 0;
+            setSetting(setting, setting->def);
+        }
+    }
 }
 
 static const char *defaultConfigFile() {
@@ -171,7 +237,8 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
 }
 
 JsonObject *configInit(const char *config) {
-    loadDefaults();
+    settingCount = sizeof(settings) / sizeof(struct Setting);
+    initSettings();
 
     const char *file;
 
@@ -207,45 +274,53 @@ void configParseGeneral(JsonObject *jsonConfig) {
     JsonError err;
     jsonErrorInit(&err);
 
-    char *position = 0;
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
+        union Value val = setting->val;
 
-    parseInt(jsonConfig, "height", &conf.height, &err); ERR(&err);
-    parseInt(jsonConfig, "margin-vert", &conf.marginV, &err); ERR(&err);
-    parseInt(jsonConfig, "margin-horiz", &conf.marginH, &err); ERR(&err);
-    parseInt(jsonConfig, "radius", &conf.radius, &err); ERR(&err);
-    parseInt(jsonConfig, "padding", &conf.padding, &err); ERR(&err);
-    parseColorJson(jsonConfig, "background", conf.bg, &err); ERR(&err);
-    parseColorJson(jsonConfig, "foreground", conf.fg, &err); ERR(&err);
-    parseString(jsonConfig, "font", &conf.font, &err); ERR(&err);
-    parseBool(jsonConfig, "shortlabels", &conf.shortLabels, &err); ERR(&err);
-    parseString(jsonConfig, "position", &position, &err); ERR(&err);
-
-    parseInt(jsonConfig, "divwidth", &conf.divWidth, &err); ERR(&err);
-    parseInt(jsonConfig, "divheight", &conf.divHeight, &err); ERR(&err);
-    parseInt(jsonConfig, "divvertmargin", &conf.divVertMarg, &err); ERR(&err);
-    parseColorJson(jsonConfig, "divcolor", conf.divCol, &err); ERR(&err);
-    parseBool(jsonConfig, "traydiv", &conf.trayDiv, &err); ERR(&err);
-
-    parseInt(jsonConfig, "traypadding", &conf.trayPadding, &err); ERR(&err);
-    parseInt(jsonConfig, "trayiconsize", &conf.trayIconSize, &err); ERR(&err);
-    parseString(jsonConfig, "traybar", &conf.trayBar, &err); ERR(&err);
-
-    char *trayside = 0;
-    parseString(jsonConfig, "trayside", &trayside, &err); ERR(&err);
-
-    conf.traySide = RIGHT;
-    if (trayside) {
-        if (strcmp(trayside, "left") == 0) {
-            conf.traySide = LEFT;
+        if (jsonGetPairIndex(jsonConfig, setting->name) == -1) {
+            continue;
         }
-        free(trayside);
-    }
 
-    if (position) {
-        if (strcmp(position, "bottom") == 0) {
-            conf.top = 0;
+        switch (setting->type) {
+        case INT:
+            parseInt(jsonConfig, setting->name, &(val.INT), &err);
+            ERR(&err);
+            break;
+        case BOOL:
+            parseBool(jsonConfig, setting->name, &(val.BOOL), &err);
+            ERR(&err);
+            break;
+        case STR:
+            parseString(jsonConfig, setting->name, &(val.STR), &err);
+            ERR(&err);
+            break;
+        case COL:
+            parseColorJson(jsonConfig, setting->name, val.COL, &err);
+            ERR(&err);
+            break;
+        case POS:
+            {
+                char *str = 0;
+                parseString(jsonConfig, setting->name, &str, &err);
+                val.POS = -1;
+                ERR(&err);
+                if (str) {
+                    if (strcmp(str, "left") == 0) {
+                        val.POS = LEFT;
+                    } else if (strcmp(str, "right") == 0) {
+                        val.POS = RIGHT;
+                    } else if (strcmp(str, "center") == 0) {
+                        val.POS = CENTER;
+                    }
+                    free(str);
+                }
+            }
         }
-        free(position);
+
+        if (setSetting(setting, val)) {
+           fprintf(stderr, "Invalid value for setting \"%s\"\n", setting->name);
+        }
     }
 }
 
@@ -270,18 +345,6 @@ void configCleanup(JsonObject *jsonConfig) {
         return out; \
     }
 
-#define NUM(name, var) \
-    if (conf.var != defaultConf.var || explicit) { \
-        jsonAddNumber(name, conf.var, jo, &err); \
-        ERR_; \
-    }
-
-#define BOOL(name, var) \
-    if (conf.var != defaultConf.var || explicit) { \
-        jsonAddBoolNull(name, conf.var ? JSON_TRUE : JSON_FALSE, jo, &err); \
-        ERR_; \
-    }
-
 #define STR(name, var, p) \
     if (var) { \
         jsonAddString(name, var, p, &err); \
@@ -291,7 +354,7 @@ void configCleanup(JsonObject *jsonConfig) {
             ERR_; \
     }
 
-#define BNUM(name, var) \
+#define NUM(name, var) \
     if (blk->var || explicit) { \
         jsonAddNumber(name, blk->var, jblk, &err); \
         ERR_; \
@@ -303,39 +366,63 @@ char *configSave(FILE *file, int explicit) {
 
     jsonErrorInit(&err);
 
-    char bg [10];
-    char fg [10];
-    stringifyColor(conf.bg, bg);
-    stringifyColor(conf.fg, fg);
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
 
-    NUM("height", height);
-    NUM("margin-vert", marginV);
-    NUM("margin-horiz", marginH);
-    NUM("radius", radius);
-    NUM("padding", padding);
-
-    if (memcmp(conf.bg, defaultConf.bg, sizeof(color) != 0) || explicit) {
-        jsonAddString("background", bg, jo, &err);
-        ERR_;
+        switch (setting->type) {
+        case INT:
+            if (setting->val.INT != setting->def.INT || explicit) {
+                jsonAddNumber(setting->name, setting->val.INT, jo, &err);
+                ERR_;
+            }
+            break;
+        case BOOL:
+            if (setting->val.BOOL != setting->def.BOOL || explicit) {
+                jsonAddBoolNull(setting->name,
+                                setting->val.BOOL ? JSON_TRUE : JSON_FALSE,
+                                jo, &err);
+                ERR_;
+            }
+            break;
+        case STR:
+            if ((setting->val.STR && setting->def.STR &&
+                    strcmp(setting->val.STR, setting->def.STR)) ||
+                    !setting->def.STR != !setting->val.STR || explicit) {
+                jsonAddString(setting->name, setting->val.STR, jo, &err);
+                ERR_;
+            } else if (explicit) {
+                jsonAddString(setting->name, "", jo, &err);
+            }
+            break;
+        case COL:
+            if (memcmp(setting->val.COL, setting->def.COL, sizeof(color))
+                    || explicit) {
+                char col [10];
+                stringifyColor(setting->val.COL, col);
+                jsonAddString(setting->name, col, jo, &err);
+            }
+            break;
+        case POS:
+            if (setting->val.POS != setting->def.POS || explicit) {
+                char *str = "";
+                switch (setting->val.POS) {
+                case LEFT:
+                    str = "left";
+                    break;
+                case RIGHT:
+                    str = "right";
+                    break;
+                case CENTER:
+                    str = "center";
+                    break;
+                case SIDES:
+                    break;
+                }
+                jsonAddString(setting->name, str, jo, &err);
+            }
+            break;
+        }
     }
-
-    if (memcmp(conf.fg, defaultConf.fg, sizeof(color) != 0) || explicit) {
-        jsonAddString("foreground", fg, jo, &err);
-        ERR_;
-    }
-
-    STR("font", conf.font, jo);
-
-    BOOL("shortlabels", shortLabels);
-
-    if (conf.top != defaultConf.top || explicit) {
-        jsonAddString("position", conf.top ? "top" : "bottom", jo, &err);
-        ERR_;
-    }
-
-    NUM("traypadding", trayPadding);
-    NUM("trayiconsize", trayIconSize);
-    STR("traybar", conf.trayBar, jo);
 
     JsonArray *bArr [SIDES];
     bArr[LEFT] = jsonAddArray("left", jo, &err);
@@ -370,10 +457,10 @@ char *configSave(FILE *file, int explicit) {
         STR("label", blk->label, jblk);
         STR("exec", blk->exec, jblk);
 
-        BNUM("interval", interval);
-        BNUM("padding", padding);
-        BNUM("padding-left", padLeft);
-        BNUM("padding-right", padRight);
+        NUM("interval", interval);
+        NUM("padding", padding);
+        NUM("padding-left", padLeft);
+        NUM("padding-right", padRight);
 
         if (blk->nodiv || explicit) {
             jsonAddBoolNull("nodiv", blk->nodiv ? JSON_TRUE : JSON_FALSE, jblk,

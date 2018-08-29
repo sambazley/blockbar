@@ -173,35 +173,15 @@ cmd(list_properties) {
 }
 
 cmd(list_settings) {
-#define p(t, v, d) \
-    rprintf("%-8s%-15s%s\n", t, v, d);
-
-    p("int", "height", "Height of the bar");
-    p("int", "margin-vert", "Margin above or below the bar");
-    p("int", "margin-horiz", "Margin on the left and right of the bar");
-    p("int", "radius", "Radius of the curvature of the corners of the bar");
-    p("int", "padding", "Padding on both sides of each block");
-    p("color", "background", "Background color of the bar");
-    p("color", "foreground", "Default text color");
-    p("string", "font", "Font name and size");
-    p("bool", "shortlabels", "Whether a block's label should render in short mode or not");
-    p("string", "position", "Position of the bar on the screen (\"top\" or \"bottom\")");
-    p("int", "divwidth", "Divider width");
-    p("int", "divheight", "Divider height");
-    p("int", "divvertmargin", "Margin above and below dividers");
-    p("color", "divcolor", "Divider color");
-    p("bool", "traydiv", "Whether a divider is drawn next to the tray or not");
-    p("int", "traypadding", "Padding to the right of each tray icon");
-    p("int", "trayiconsize", "Width and height of each tray icon");
-    p("string", "traybar", "Name of the output that the tray appears on");
-    p("string", "trayside", "Side that the tray appears on the bar (\"left\" or \"right\")");
-
-#undef p
-
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
+        rprintf("%-9s%-15s%s\n", typeStrings[setting->type], setting->name,
+                setting->desc);
+    }
     return 0;
 }
 
-cmd(getProperty) {
+cmd(_getProperty) {
     vars(4, "<property>", 1);
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
@@ -270,7 +250,7 @@ cmd(getProperty) {
     return 0;
 }
 
-cmd(setProperty) {
+cmd(_setProperty) {
     vars(argc <= 4 ? 0 : argc, "<property> <value>", 1);
 
     if (output == -1 && blk->eachmon && strcmp(argv[3], "execdata") == 0) {
@@ -377,8 +357,7 @@ cmd(setProperty) {
             frprintf(rstderr, "Invalid value, expecting boolean "
                      "(\"true\" or \"false\")\n");
         }
-    }
-    else {
+    } else {
         frprintf(rstderr, "Property does not exist, or cannot be set\n");
         return 1;
     }
@@ -393,9 +372,9 @@ cmd(setProperty) {
 
 cmd(property) {
     if (argc == 4) {
-        return getProperty(argc, argv, fd);
+        return _getProperty(argc, argv, fd);
     } else if (argc >= 5) {
-        return setProperty(argc, argv, fd);
+        return _setProperty(argc, argv, fd);
     } else {
         frprintf(rstderr, "Usage: %s %s <index>[:output] <property> [value]\n",
                  argv[0], argv[1]);
@@ -403,251 +382,153 @@ cmd(property) {
     }
 }
 
-cmd(getSetting) {
-#define IS(x) \
-    else if (strcmp(argv[2], x) == 0)
+cmd(_getSetting) {
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
 
-    if (0) {}
-    IS("height") {
-        rprintf("%d\n", conf.height);
-    }
-    IS("margin-vert") {
-        rprintf("%d\n", conf.marginV);
-    }
-    IS("margin-horiz") {
-        rprintf("%d\n", conf.marginH);
-    }
-    IS("radius") {
-        rprintf("%d\n", conf.radius);
-    }
-    IS("padding") {
-        rprintf("%d\n", conf.padding);
-    }
-    IS("background") {
-        rprintf("#%02x%02x%02x%02x\n",
-                conf.bg[0], conf.bg[1], conf.bg[2], conf.bg[3]);
-    }
-    IS("foreground") {
-        rprintf("#%02x%02x%02x%02x\n",
-                conf.fg[0], conf.fg[1], conf.fg[2], conf.fg[3]);
-    }
-    IS("font") {
-        rprintf("%s\n", conf.font);
-    }
-    IS("shortlabels") {
-        rprintf("%s\n", conf.shortLabels ? "true" : "false");
-    }
-    IS("position") {
-        rprintf("%s\n", conf.top ? "top" : "bottom");
-    }
-    IS("divwidth") {
-        rprintf("%d\n", conf.divWidth);
-    }
-    IS("divheight") {
-        rprintf("%d\n", conf.divHeight);
-    }
-    IS("divvertmargin") {
-        rprintf("%d\n", conf.divVertMarg);
-    }
-    IS("divcolor") {
-        rprintf("#%02x%02x%02x%02x\n",
-                conf.divCol[0], conf.divCol[1], conf.divCol[2], conf.divCol[3]);
-    }
-    IS("traydiv") {
-        rprintf("%s\n", conf.trayDiv ? "true" : "false");
-    }
-    IS("traypadding") {
-        rprintf("%d\n", conf.trayPadding);
-    }
-    IS("trayiconsize") {
-        rprintf("%d\n", conf.trayIconSize);
-    }
-    IS("traybar") {
-        rprintf("%s\n", conf.trayBar);
-    }
-    IS("trayside") {
-        rprintf("%s\n", conf.traySide == LEFT ? "left" : "right");
-    }
-    else {
-        frprintf(rstderr, "Setting does not exist, or cannot be returned\n");
-        return 1;
-    }
-
-#undef IS
-
-    return 0;
-}
-
-cmd(setSetting) {
-    char val [bbcbuffsize] = {0};
-
-    for (int i = 3; i < argc; i++) {
-        strcat(val, argv[i]);
-        strcat(val, " ");
-    }
-
-    val[strlen(val) - 1] = 0;
-
-#define IS(x) \
-    else if (strcmp(argv[2], x) == 0)
-
-#define INT \
-    char *end; \
-    int integer = strtol(val, &end, 0); \
-    if (*end != 0) { \
-        frprintf(rstderr, "Invalid value, expecting integer\n"); \
-        return 1; \
-    }
-
-    if (0) {}
-    IS("height") {
-        INT;
-        conf.height = integer;
-        updateGeom();
-        redrawTray();
-    }
-    IS("margin-vert") {
-        INT;
-        conf.marginV = integer;
-        updateGeom();
-    }
-    IS("margin-horiz") {
-        INT;
-        conf.marginH = integer;
-        updateGeom();
-        redrawTray();
-    }
-    IS("radius") {
-        INT;
-        conf.radius = integer;
-    }
-    IS("padding") {
-        INT;
-        conf.padding = integer;
-    }
-    IS("background") {
-        if (*val != '#' || parseColorString(val+1, conf.bg) != 0) {
-            frprintf(rstderr, "Invalid color\n");
-            return 1;
-        }
-        reparentIcons();
-    }
-    IS("foreground") {
-        if (*val != '#' || parseColorString(val+1, conf.fg) != 0) {
-            frprintf(rstderr, "Invalid color\n");
-            return 1;
-        }
-    }
-    IS("font") {
-        if (conf.font) {
-            free(conf.font);
-        }
-
-        conf.font = malloc(strlen(val) + 1);
-        strcpy(conf.font, val);
-        renderInit();
-    }
-    IS("shortlabels") {
-        if (strcmp(val, "true") == 0) {
-            conf.shortLabels = 1;
-        } else if (strcmp(val, "false") == 0) {
-            conf.shortLabels = 0;
-        } else {
-            frprintf(rstderr, "Invalid value, expecting boolean "
-                     "(\"true\" or \"false\")\n");
-            return 1;
-        }
-    }
-    IS("position") {
-        if (strcmp(val, "top") == 0) {
-            conf.top = 1;
-        } else if (strcmp(val, "bottom") == 0) {
-            conf.top = 0;
-        } else {
-            frprintf(rstderr, "Invalid value, expecting position "
-                     "(\"top\" or \"bottom\")\n");
-            return 1;
-        }
-        updateGeom();
-    }
-    IS("divwidth") {
-        INT;
-        conf.divWidth = integer;
-    }
-    IS("divheight") {
-        INT;
-        conf.divHeight = integer;
-    }
-    IS("divvertmargin") {
-        INT;
-        conf.divVertMarg = integer;
-    }
-    IS("divcolor") {
-        if (*val != '#' || parseColorString(val+1, conf.divCol) != 0) {
-            frprintf(rstderr, "Invalid color\n");
-            return 1;
-        }
-    }
-    IS("traydiv") {
-        if (strcmp(val, "true") == 0) {
-            conf.trayDiv = 1;
-        } else if (strcmp(val, "false") == 0) {
-            conf.trayDiv = 0;
-        } else {
-            frprintf(rstderr, "Invalid value, expecting boolean "
-                    "(\"true\" or \"false\")\n");
-            return 1;
-        }
-    }
-    IS("traypadding") {
-        INT;
-        conf.trayPadding = integer;
-        redrawTray();
-    }
-    IS("traybar") {
-        for (int i = 0; i < barCount; i++) {
-            struct Bar bar = bars[i];
-            if (strcmp(bar.output, val) == 0) {
-                trayInit(i);
-                break;
+        if (strcmp(argv[2], setting->name) == 0) {
+            switch (setting->type) {
+            case INT:
+                rprintf("%d\n", setting->val.INT);
+                return 0;
+            case BOOL:
+                rprintf("%s\n", setting->val.BOOL ? "true" : "false");
+                return 0;
+            case STR:
+                rprintf("%s\n", setting->val.STR);
+                return 0;
+            case COL:
+                rprintf("#%02x%02x%02x%02x\n",
+                        setting->val.COL[0],
+                        setting->val.COL[1],
+                        setting->val.COL[2],
+                        setting->val.COL[3]);
+                return 0;
+            case POS:
+                if (setting->val.POS == LEFT) {
+                    rprintf("left\n");
+                } else if (setting->val.POS == RIGHT) {
+                    rprintf("right\n");
+                } else if (setting->val.POS == CENTER) {
+                    rprintf("center\n");
+                }
+                return 0;
             }
         }
-        reparentIcons();
     }
-    IS("trayiconsize") {
-        INT;
-        conf.trayIconSize = integer;
-        redrawTray();
+
+    frprintf(rstderr, "Setting does not exist\n");
+    return 1;
+}
+
+cmd(_setSetting) {
+    char str [bbcbuffsize] = {0};
+
+    for (int i = 3; i < argc; i++) {
+        strcat(str, argv[i]);
+        strcat(str, " ");
     }
-    IS("trayside") {
-        if (strcmp(val, "left") == 0) {
-            conf.traySide = LEFT;
-        } else if (strcmp(val, "right") == 0) {
-            conf.traySide = RIGHT;
-        } else {
-            frprintf(rstderr, "Invalid value, expecting side "
-                     "(\"left\" or \"right\")\n");
-            return 1;
+
+    str[strlen(str) - 1] = 0;
+
+    union Value val;
+
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
+
+        if (strcmp(argv[2], setting->name) == 0) {
+            switch (setting->type) {
+            case INT:
+                {
+                    char *end;
+                    val.INT = strtol(str, &end, 0);
+
+                    if (*end != 0) {
+                        frprintf(rstderr, "Invalid value, expecting integer\n");
+                        return 1;
+                    }
+                }
+
+                break;
+            case BOOL:
+                if (strcmp(str, "true") == 0) {
+                    val.BOOL = 1;
+                } else if (strcmp(str, "false") == 0) {
+                    val.BOOL = 0;
+                } else {
+                    frprintf(rstderr, "Invalid value, expecting boolean\n");
+                    return 1;
+                }
+                break;
+            case STR:
+                val.STR = str;
+                break;
+            case COL:
+                if (*str != '#' || parseColorString(str+1, val.COL) != 0) {
+                    frprintf(rstderr, "Invalid color\n");
+                    return 1;
+                }
+                break;
+            case POS:
+                if (strcmp(str, "left") == 0) {
+                    val.POS = LEFT;
+                } else if (strcmp(str, "right") == 0) {
+                    val.POS = RIGHT;
+                } else if (strcmp(str, "center") == 0) {
+                    val.POS = CENTER;
+                } else {
+                    frprintf(rstderr, "Invalid postion\n");
+                    return 1;
+                }
+                break;
+            }
+
+            if (setSetting(setting, val)) {
+                frprintf(rstderr, "\"%s\" cannot be set to %s\n", setting->name, str);
+                return 1;
+            }
+
+#define E(x) \
+    || setting == &settings.x
+
+            if (0
+                E(height)
+                E(marginvert)
+                E(marginhoriz)
+                E(position)) {
+                updateGeom();
+            }
+
+            if (0
+                E(height)
+                E(marginhoriz)
+                E(traypadding)
+                E(trayiconsize)
+                E(trayside)) {
+                redrawTray();
+            }
+
+            if (0
+                E(background)
+                E(traybar)) {
+                reparentIcons();
+            }
+#undef E
+            redraw();
+
+            return 0;
         }
-        redrawTray();
-    }
-    else {
-        frprintf(rstderr, "Setting does not exist, or cannot be set\n");
     }
 
-#undef INT
-#undef IS
-
-    redraw();
-
-    return 0;
+    frprintf(rstderr, "Setting does not exist\n");
+    return 1;
 }
 
 cmd(setting) {
     if (argc == 3) {
-        return getSetting(argc, argv, fd);
+        return _getSetting(argc, argv, fd);
     } else if (argc >= 4) {
-        return setSetting(argc, argv, fd);
+        return _setSetting(argc, argv, fd);
     } else {
         frprintf(rstderr, "Usage: %s %s <property> [value]\n",
                  argv[0], argv[1]);

@@ -100,10 +100,10 @@ int main(int argc, const char *argv[]) {
 
     int trayBar = 0;
 
-    if (conf.trayBar != 0) {
+    if (settings.traybar.val.STR != 0) {
         for (int i = 0; i < barCount; i++) {
             struct Bar bar = bars[i];
-            if (strcmp(bar.output, conf.trayBar) == 0) {
+            if (strcmp(bar.output, settings.traybar.val.STR) == 0) {
                 trayBar = i;
                 break;
             }

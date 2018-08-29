@@ -148,24 +148,25 @@ void redrawTray() {
             continue;
         }
 
-        int x = conf.trayIconSize*iconsDrawn + conf.trayPadding*(iconsDrawn+1);
-        int y = bars[trayBar].height / 2 - conf.trayIconSize / 2;
+        int x = settings.trayiconsize.val.INT * iconsDrawn
+              + settings.traypadding.val.INT * (iconsDrawn + 1);
+        int y = bars[trayBar].height / 2 - settings.trayiconsize.val.INT / 2;
 
-        if (conf.traySide == RIGHT) {
-            x = bars[trayBar].width - x - conf.trayIconSize;
+        if (settings.trayside.val.POS == RIGHT) {
+            x = bars[trayBar].width - x - settings.trayiconsize.val.INT;
         }
 
         trapErrors();
 
         XSetWindowAttributes wa;
-        wa.background_pixel = conf.bg[0] << 16
-                            | conf.bg[1] << 8
-                            | conf.bg[2];
+        wa.background_pixel = settings.background.val.COL[0] << 16
+                            | settings.background.val.COL[1] << 8
+                            | settings.background.val.COL[2];
 
         XChangeWindowAttributes(disp, embed, CWBackPixel, &wa);
 
         XMoveResizeWindow(disp, embed, x, y,
-                conf.trayIconSize, conf.trayIconSize);
+                settings.trayiconsize.val.INT, settings.trayiconsize.val.INT);
 
         if (untrapErrors()) {
             trayIcons[i] = 0;
@@ -178,7 +179,7 @@ void redrawTray() {
 
 int getTrayWidth() {
     if (iconsDrawn > 0) {
-        return (conf.trayIconSize + conf.trayPadding)*iconsDrawn + conf.padding;
+        return (settings.trayiconsize.val.INT + settings.traypadding.val.INT)*iconsDrawn + settings.padding.val.INT;
     } else {
         return 0;
     }
@@ -190,9 +191,9 @@ static void handleDockRequest(Window embed) {
     trapErrors();
 
     XSetWindowAttributes wa;
-    wa.background_pixel = conf.bg[0] << 16
-                        | conf.bg[1] << 8
-                        | conf.bg[2];
+    wa.background_pixel = settings.background.val.COL[0] << 16
+                        | settings.background.val.COL[1] << 8
+                        | settings.background.val.COL[2];
 
     XChangeWindowAttributes(disp, embed, CWBackPixel, &wa);
 
