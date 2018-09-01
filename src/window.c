@@ -337,4 +337,6 @@ void cleanupBars() {
         cairo_destroy(bar->ctx[1]);
         XDestroyWindow(disp, bar->window);
     }
+
+    free(bars);
 }

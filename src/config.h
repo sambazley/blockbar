@@ -73,7 +73,9 @@ extern const char *typeStrings [];
 extern struct Settings settings;
 extern int settingCount;
 
+void cleanupSettings();
 int setSetting(struct Setting *setting, union Value val);
+
 JsonObject *configInit(const char *config);
 void configParseGeneral(JsonObject *jsonConfig);
 void configParseBlocks(JsonObject *jsonConfig);

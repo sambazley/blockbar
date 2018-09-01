@@ -25,7 +25,7 @@
 extern int trayBar;
 
 void trayInit(int barIndex);
-void trayCleanup();
+void cleanupTray();
 
 void redrawTray();
 

@@ -130,6 +130,18 @@ static void initSettings() {
     }
 }
 
+void cleanupSettings() {
+    for (int i = 0; i < settingCount; i++) {
+        struct Setting *setting = &((struct Setting *) &settings)[i];
+
+        if (setting->type == STR) {
+            if (setting->val.STR) {
+                free(setting->val.STR);
+            }
+        }
+    }
+}
+
 static const char *defaultConfigFile() {
     char *cfgDir;
     char *cfgDirEnv = getenv("XDG_CONFIG_HOME");
@@ -161,28 +173,30 @@ static const char *defaultConfigFile() {
     return ret;
 }
 
-static void
+static int
 parseInt(JsonObject *jo, const char *key, int *dest, JsonError *err) {
     if (jsonGetPairIndex(jo, key) == -1) {
-        return;
+        return 1;
     }
 
     jsonGetInt(jo, key, dest, err);
+    return 0;
 }
 
-static void
+static int
 parseBool(JsonObject *jo, const char *key, int *dest, JsonError *err) {
     if (jsonGetPairIndex(jo, key) == -1) {
-        return;
+        return 1;
     }
 
     jsonGetBool(jo, key, (unsigned *) dest, 0, err);
+    return 0;
 }
 
-static void
+static int
 parseString(JsonObject *jo, const char *key, char **dest, JsonError *err) {
     if (jsonGetPairIndex(jo, key) == -1) {
-        return;
+        return 1;
     }
 
     char *str;
@@ -190,6 +204,8 @@ parseString(JsonObject *jo, const char *key, char **dest, JsonError *err) {
 
     *dest = malloc(strlen(str) + 1);
     strcpy(*dest, str);
+
+    return 0;
 }
 
 static void
@@ -276,7 +292,8 @@ void configParseGeneral(JsonObject *jsonConfig) {
 
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
-        union Value val = setting->val;
+        int f = 1;
+        union Value val;
 
         if (jsonGetPairIndex(jsonConfig, setting->name) == -1) {
             continue;
@@ -284,19 +301,19 @@ void configParseGeneral(JsonObject *jsonConfig) {
 
         switch (setting->type) {
         case INT:
-            parseInt(jsonConfig, setting->name, &(val.INT), &err);
+            f = parseInt(jsonConfig, setting->name, &(val.INT), &err);
             ERR(&err);
             break;
         case BOOL:
-            parseBool(jsonConfig, setting->name, &(val.BOOL), &err);
+            f = parseBool(jsonConfig, setting->name, &(val.BOOL), &err);
             ERR(&err);
             break;
         case STR:
-            parseString(jsonConfig, setting->name, &(val.STR), &err);
+            f = parseString(jsonConfig, setting->name, &(val.STR), &err);
             ERR(&err);
             break;
         case COL:
-            parseColorJson(jsonConfig, setting->name, val.COL, &err);
+            f = parseColorJson(jsonConfig, setting->name, val.COL, &err);
             ERR(&err);
             break;
         case POS:
@@ -308,18 +325,25 @@ void configParseGeneral(JsonObject *jsonConfig) {
                 if (str) {
                     if (strcmp(str, "left") == 0) {
                         val.POS = LEFT;
+                        f = 0;
                     } else if (strcmp(str, "right") == 0) {
                         val.POS = RIGHT;
+                        f = 0;
                     } else if (strcmp(str, "center") == 0) {
                         val.POS = CENTER;
+                        f = 0;
                     }
                     free(str);
                 }
             }
         }
 
-        if (setSetting(setting, val)) {
+        if (f || setSetting(setting, val)) {
            fprintf(stderr, "Invalid value for setting \"%s\"\n", setting->name);
+        }
+
+        if (!f && setting->type == STR && val.STR) {
+            free(val.STR);
         }
     }
 }

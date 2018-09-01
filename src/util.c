@@ -24,11 +24,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-void parseColorJson(JsonObject *jo, const char *key, color dest,
+int parseColorJson(JsonObject *jo, const char *key, color dest,
                     JsonError *err) {
     int index = jsonGetPairIndex(jo, key);
     if (index == -1) {
-        return;
+        return 1;
     }
 
     void *val = jo->pairs[index].val;
@@ -38,10 +38,10 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
         jsonGetString(jo, key, &str, err);
 
         if (str && *str == '#') {
-            parseColorString(str+1, dest);
+            return parseColorString(str+1, dest);
         }
 
-        return;
+        return 1;
     }
 
     JsonArray *col;
@@ -50,14 +50,14 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
         fprintf(stderr, "Error parsing array \"%s\"\n", key);
         jsonErrorCleanup(err);
         jsonErrorInit(err);
-        return;
+        return 1;
     }
 
     if (col->used != 3 && col->used != 4) {
         fprintf(stderr, "\"%s\" array must contain 3 or 4 values\n", key);
         jsonErrorCleanup(err);
         jsonErrorInit(err);
-        return;
+        return 1;
     }
 
     for (int j = 0; j < col->used; j++) {
@@ -66,7 +66,7 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
             fprintf(stderr, "Value in \"%s\" array is not a valid int\n", key);
             jsonErrorCleanup(err);
             jsonErrorInit(err);
-            return;
+            return 1;
         }
 
         JsonNumber *n = (JsonNumber *) val;
@@ -76,6 +76,8 @@ void parseColorJson(JsonObject *jo, const char *key, color dest,
     if (col->used == 3) {
         dest[3] = 0xFF;
     }
+
+    return 0;
 }
 
 int parseColorString(char *str, color dest) {
@@ -144,6 +146,9 @@ struct Block *createBlock(int eachmon) {
         memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
     }
 
+    blk->label = 0;
+    blk->exec = 0;
+
     blk->width = malloc(sizeof(int) * barCount);
 
     return blk;
@@ -152,8 +157,46 @@ struct Block *createBlock(int eachmon) {
 void removeBlock(struct Block *blk) {
     blk->id = 0;
 
+    if (blk->mode == SUBBLOCK) {
+        if (blk->eachmon) {
+            for (int i = 0; i < barCount; i++) {
+                int *widths = blk->data.mon[i].type.subblock.widths;
+                if (widths) {
+                    free(widths);
+                }
+            }
+        } else {
+            int *widths = blk->data.type.subblock.widths;
+            if (widths) {
+                free(widths);
+            }
+        }
+    }
+
     if (blk->eachmon) {
+        for (int i = 0; i < barCount; i++) {
+            char *execData = blk->data.mon[i].type.legacy.execData;
+
+            if (execData) {
+                free(execData);
+            }
+        }
+
         free(blk->data.mon);
+    } else {
+        char *execData = blk->data.type.legacy.execData;
+
+        if (execData) {
+            free(execData);
+        }
+    }
+
+    if (blk->label) {
+        free(blk->label);
+    }
+
+    if (blk->exec) {
+        free(blk->exec);
     }
 
     free(blk->width);

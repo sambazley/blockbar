@@ -125,7 +125,7 @@ void trayInit(int barIndex) {
     XSendEvent(disp, DefaultRootWindow(disp), False, StructureNotifyMask, &ev);
 }
 
-void trayCleanup() {
+void cleanupTray() {
     for (int i = 0; i < trayIconCount; i++) {
         Window embed = trayIcons[i];
         if (embed == 0) {
@@ -135,6 +135,10 @@ void trayCleanup() {
         XUnmapWindow(disp, embed);
         XReparentWindow(disp, embed, DefaultRootWindow(disp), 0, 0);
         XSync(disp, False);
+    }
+
+    if (trayIcons) {
+        free(trayIcons);
     }
 }
 
@@ -214,7 +218,7 @@ static void handleDockRequest(Window embed) {
 
     if (index == -1) {
         trayIconCount++;
-        trayIcons = realloc(trayIcons, sizeof(embed) * trayIconCount);
+        trayIcons = realloc(trayIcons, sizeof(Window) * trayIconCount);
         trayIcons[trayIconCount-1] = embed;
         index = trayIconCount-1;
     }

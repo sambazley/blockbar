@@ -24,6 +24,7 @@
 #include "socket.h"
 #include "tray.h"
 #include "window.h"
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +40,7 @@ static void printUsage(const char *file) {
     fprintf(stderr, "Usage: %s [config_file]\n", file);
 }
 
-static void blocksCleanup() {
+static void cleanupBlocks() {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->id) {
@@ -48,7 +49,34 @@ static void blocksCleanup() {
     }
 }
 
+static void onexit() {
+    static int exited = 0;
+
+    if (exited) {
+        return;
+    }
+
+    exited = 1;
+
+    cleanupTray();
+    cleanupBlocks();
+    cleanupBars();
+    cleanupSettings();
+
+    if (blocks) {
+        free(blocks);
+    }
+
+    if (procs) {
+        free(procs);
+    }
+
+    exit(0);
+}
+
 static void tickBlock(struct Block *blk, int interval) {
+    if (!blk->id) return;
+
     if (blk->interval == 0) return;
 
     if (blk->timePassed >= blk->interval) {
@@ -68,6 +96,10 @@ static void getTime(struct timeval *tv) {
                               + (b.tv_usec - a.tv_usec))
 
 int main(int argc, const char *argv[]) {
+    signal(SIGTERM, onexit);
+    signal(SIGINT, onexit);
+    atexit(onexit);
+
     const char *config = "";
     if (argc == 2) {
         if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
@@ -213,10 +245,6 @@ int main(int argc, const char *argv[]) {
 
         redraw();
     }
-
-    trayCleanup();
-
-    blocksCleanup();
 
     return 0;
 }
