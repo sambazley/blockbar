@@ -19,10 +19,10 @@
 
 #include "socket.h"
 #include "bbc.h"
-#include "blocks.h"
 #include "config.h"
 #include "exec.h"
 #include "render.h"
+#include "types.h"
 #include "tray.h"
 #include "util.h"
 #include <poll.h>
@@ -143,7 +143,7 @@ cmd(list) {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->id) {
-            rprintf("%u\t%s\n", blk->id, blocks[i].exec);
+            rprintf("%u\t%s\n", blk->id, blocks[i].properties.exec.val.STR);
         }
     }
 
@@ -159,19 +159,14 @@ cmd(exec) {
 
 cmd(list_properties) {
 #define p(t, v, d) \
-    rprintf("%-8s%-17s%s\n", t, v, d);
+    rprintf("%-9s%-17s%s\n", t, v, d);
 
-    p("string", "mode", "Block mode (\"legacy\" or \"subblocks\")");
-    p("string", "label", "Block's label");
-    p("string", "exec", "Script to be executed");
+    for (int i = 0; i < propertyCount; i++) {
+        struct Setting *setting = &((struct Setting *) &defProperties)[i];
+        p(typeStrings[setting->type], setting->name, setting->desc);
+    }
+
     p("string", "execdata", "Data that is displayed");
-    p("string", "pos", "Position of the block (\"left\" or \"right\")");
-    p("int", "interval", "Time between each execution of the block's script");
-    p("int", "padding", "Padding on both sides of the block");
-    p("int", "padding-left", "Additional padding on the left of the block");
-    p("int", "padding-right", "Additional padding on the right of the block");
-    p("bool", "nodiv", "Disables the outside divider next to the block");
-
 #undef p
 
     return 0;
@@ -186,6 +181,112 @@ cmd(list_settings) {
     return 0;
 }
 
+static int printSetting(struct Setting *setting, char *str, int fd) {
+    if (strcmp(str, setting->name) == 0) {
+        switch (setting->type) {
+        case INT:
+            rprintf("%d\n", setting->val.INT);
+            return 0;
+        case BOOL:
+            rprintf("%s\n", setting->val.BOOL ? "true" : "false");
+            return 0;
+        case STR:
+            rprintf("%s\n", setting->val.STR);
+            return 0;
+        case COL:
+            rprintf("#%02x%02x%02x%02x\n",
+                    setting->val.COL[0],
+                    setting->val.COL[1],
+                    setting->val.COL[2],
+                    setting->val.COL[3]);
+            return 0;
+        case POS:
+            if (setting->val.POS == LEFT) {
+                rprintf("left\n");
+            } else if (setting->val.POS == RIGHT) {
+                rprintf("right\n");
+            } else if (setting->val.POS == CENTER) {
+                rprintf("center\n");
+            }
+            return 0;
+        case MODE:
+            if (setting->val.MODE == LEGACY) {
+                rprintf("legacy\n");
+            } else if (setting->val.MODE == SUBBLOCK) {
+                rprintf("subblocks\n");
+            }
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int parseSetting(struct Setting *setting, char *v, int fd) {
+    union Value val;
+
+    switch (setting->type) {
+    case INT:
+        {
+            char *end;
+            val.INT = strtol(v, &end, 0);
+
+            if (*end != 0) {
+                frprintf(rstderr, "Invalid value, expecting integer\n");
+                return 1;
+            }
+        }
+
+        break;
+    case BOOL:
+        if (strcmp(v, "true") == 0) {
+            val.BOOL = 1;
+        } else if (strcmp(v, "false") == 0) {
+            val.BOOL = 0;
+        } else {
+            frprintf(rstderr, "Invalid value, expecting boolean\n");
+            return 1;
+        }
+        break;
+    case STR:
+        val.STR = v;
+        break;
+    case COL:
+        if (*v != '#' || parseColorString(v + 1, val.COL) != 0) {
+            frprintf(rstderr, "Invalid color\n");
+            return 1;
+        }
+        break;
+    case POS:
+        if (strcmp(v, "left") == 0) {
+            val.POS = LEFT;
+        } else if (strcmp(v, "right") == 0) {
+            val.POS = RIGHT;
+        } else if (strcmp(v, "center") == 0) {
+            val.POS = CENTER;
+        } else {
+            frprintf(rstderr, "Invalid postion\n");
+            return 1;
+        }
+        break;
+    case MODE:
+        if (strcmp(v, "legacy") == 0) {
+            val.MODE = LEGACY;
+        } else if (strcmp(v, "subblocks") == 0) {
+            val.MODE = SUBBLOCK;
+        } else {
+            frprintf(rstderr, "Invalid mode\n");
+            return 1;
+        }
+    }
+
+    if (setSetting(setting, val)) {
+        frprintf(rstderr, "\"%s\" cannot be set to %s\n", setting->name, v);
+        return 1;
+    }
+
+    return 0;
+}
+
 cmd(_getProperty) {
     vars(4, "<property>", 1);
 
@@ -195,20 +296,7 @@ cmd(_getProperty) {
         return 1;
     }
 
-#define IS(x) \
-    else if (strcmp(argv[3], x) == 0)
-
-    if (0) {}
-    IS("mode") {
-        rprintf("%s\n", blk->mode == LEGACY ? "legacy" : "subblocks");
-    }
-    IS("label") {
-        rprintf("%s\n", blk->label ? blk->label : "");
-    }
-    IS("exec") {
-        rprintf("%s\n", blk->exec ? blk->exec : "");
-    }
-    IS("execdata") {
+    if (strcmp("execdata", argv[3]) == 0) {
         char *execData;
         if (blk->eachmon) {
             execData = blk->data.mon[output].type.legacy.execData;
@@ -216,43 +304,20 @@ cmd(_getProperty) {
             execData = blk->data.type.legacy.execData;
         }
         rprintf("%s\n", execData ? execData : "");
+
+        return 0;
     }
-    IS("pos") {
-        switch (blk->pos) {
-        case LEFT:
-            rprintf("left\n");
-            break;
-        case CENTER:
-            rprintf("center\n");
-            break;
-        case RIGHT:
-            rprintf("right\n");
-            break;
-        case SIDES:
-            break;
+
+    for (int i = 0; i < propertyCount; i++) {
+        struct Setting *property = &((struct Setting *) &(blk->properties))[i];
+
+        if (printSetting(property, argv[3], fd) == 0) {
+            return 0;
         }
     }
-    IS("interval") {
-        rprintf("%d\n", blk->interval);
-    }
-    IS("padding") {
-        rprintf("%d\n", blk->padding);
-    }
-    IS("padding-left") {
-        rprintf("%d\n", blk->padLeft);
-    }
-    IS("padding-right") {
-        rprintf("%d\n", blk->padRight);
-    }
-    IS("nodiv") {
-        rprintf("%s\n", blk->nodiv ? "true" : "false");
-    }
-    else {
-        frprintf(rstderr, "Property does not exist, or cannot be returned\n");
-        return 1;
-    }
-#undef IS
-    return 0;
+
+    frprintf(rstderr, "Property does not exist, or cannot be returned\n");
+    return 1;
 }
 
 cmd(_setProperty) {
@@ -264,52 +329,16 @@ cmd(_setProperty) {
         return 1;
     }
 
-    char val [bbcbuffsize] = {0};
+    char str [bbcbuffsize] = {0};
 
     for (int i = 4; i < argc; i++) {
-        strcat(val, argv[i]);
-        strcat(val, " ");
+        strcat(str, argv[i]);
+        strcat(str, " ");
     }
 
-    val[strlen(val) - 1] = 0;
+    str[strlen(str) - 1] = 0;
 
-#define IS(x) \
-    else if (strcmp(argv[3], x) == 0)
-
-#define INT \
-    char *end; \
-    int integer = strtol(val, &end, 0); \
-    if (*end != 0) { \
-        frprintf(rstderr, "Invalid value, expecting integer\n"); \
-        return 1; \
-    }
-
-    if (0) {}
-    IS("mode") {
-        if (strcmp("legacy", val) == 0) {
-            blk->mode = LEGACY;
-        } else if (strcmp("subblocks", val) == 0) {
-            blk->mode = SUBBLOCK;
-        } else {
-            frprintf(rstderr, "Invalid mode\n");
-            return 1;
-        }
-    }
-    IS("label") {
-        if (blk->label) {
-            free(blk->label);
-        }
-        blk->label = malloc(strlen(val) + 1);
-        strcpy(blk->label, val);
-    }
-    IS("exec") {
-        if (blk->exec) {
-            free(blk->exec);
-        }
-        blk->exec = malloc(strlen(val) + 1);
-        strcpy(blk->exec, val);
-    }
-    IS("execdata") {
+    if (strcmp("execdata", argv[3]) == 0) {
         char **execData;
         if (blk->eachmon) {
             execData = &(blk->data.mon[output].type.legacy.execData);
@@ -321,57 +350,36 @@ cmd(_setProperty) {
             free(*execData);
         }
 
-        *execData = malloc(strlen(val) + 1);
-        strcpy(*execData, val);
-    }
-    IS("pos") {
-        if (strcmp("left", val) == 0) {
-            blk->pos = LEFT;
-        } else if (strcmp("right", val) == 0) {
-            blk->pos = RIGHT;
-        } else if (strcmp("center", val) == 0) {
-            blk->pos = CENTER;
-        } else {
-            frprintf(rstderr, "Invalid position\n");
-            return 1;
-        }
-    }
-    IS("interval") {
-        INT;
-        blk->interval = integer;
-        updateTickInterval();
-    }
-    IS("padding") {
-        INT;
-        blk->padding = integer;
-    }
-    IS("padding-left") {
-        INT;
-        blk->padLeft = integer;
-    }
-    IS("padding-right") {
-        INT;
-        blk->padRight = integer;
-    }
-    IS("nodiv") {
-        if (strcmp("true", val) == 0) {
-            blk->nodiv = 1;
-        } else if (strcmp("false", val) == 0) {
-            blk->nodiv = 0;
-        } else {
-            frprintf(rstderr, "Invalid value, expecting boolean "
-                     "(\"true\" or \"false\")\n");
-        }
+        *execData = malloc(strlen(str) + 1);
+        strcpy(*execData, str);
+
+        goto end;
     } else {
-        frprintf(rstderr, "Property does not exist, or cannot be set\n");
-        return 1;
+        for (int i = 0; i < propertyCount; i++) {
+            struct Setting *property =
+                &((struct Setting *) &(blk->properties))[i];
+
+            if (strcmp(argv[3], property->name) == 0) {
+                int r = parseSetting(property, str, fd);
+
+                if (r == 0) {
+                    if (strcmp("interval", property->name) == 0) {
+                        updateTickInterval();
+                    }
+
+                    goto end;
+                } else if (r == 1) {
+                    return 1;
+                }
+            }
+        }
     }
 
-#undef INT
-#undef IS
+    frprintf(rstderr, "Property does not exist, or cannot be set\n");
+    return 1;
 
+end:
     redraw();
-
     return 0;
 }
 
@@ -391,34 +399,8 @@ cmd(_getSetting) {
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
-        if (strcmp(argv[2], setting->name) == 0) {
-            switch (setting->type) {
-            case INT:
-                rprintf("%d\n", setting->val.INT);
-                return 0;
-            case BOOL:
-                rprintf("%s\n", setting->val.BOOL ? "true" : "false");
-                return 0;
-            case STR:
-                rprintf("%s\n", setting->val.STR);
-                return 0;
-            case COL:
-                rprintf("#%02x%02x%02x%02x\n",
-                        setting->val.COL[0],
-                        setting->val.COL[1],
-                        setting->val.COL[2],
-                        setting->val.COL[3]);
-                return 0;
-            case POS:
-                if (setting->val.POS == LEFT) {
-                    rprintf("left\n");
-                } else if (setting->val.POS == RIGHT) {
-                    rprintf("right\n");
-                } else if (setting->val.POS == CENTER) {
-                    rprintf("center\n");
-                }
-                return 0;
-            }
+        if (printSetting(setting, argv[2], fd) == 0) {
+            return 0;
         }
     }
 
@@ -436,93 +418,52 @@ cmd(_setSetting) {
 
     str[strlen(str) - 1] = 0;
 
-    union Value val;
+#define E(x) \
+    || setting == &settings.x
 
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
         if (strcmp(argv[2], setting->name) == 0) {
-            switch (setting->type) {
-            case INT:
-                {
-                    char *end;
-                    val.INT = strtol(str, &end, 0);
+            int r = parseSetting(setting, str, fd);
 
-                    if (*end != 0) {
-                        frprintf(rstderr, "Invalid value, expecting integer\n");
-                        return 1;
-                    }
+            if (r == 0) {
+                if (0
+                    E(height)
+                    E(marginvert)
+                    E(marginhoriz)
+                    E(position)) {
+                    updateGeom();
                 }
 
-                break;
-            case BOOL:
-                if (strcmp(str, "true") == 0) {
-                    val.BOOL = 1;
-                } else if (strcmp(str, "false") == 0) {
-                    val.BOOL = 0;
-                } else {
-                    frprintf(rstderr, "Invalid value, expecting boolean\n");
-                    return 1;
+                if (0
+                    E(height)
+                    E(marginhoriz)
+                    E(traypadding)
+                    E(trayiconsize)
+                    E(trayside)) {
+                    redrawTray();
                 }
-                break;
-            case STR:
-                val.STR = str;
-                break;
-            case COL:
-                if (*str != '#' || parseColorString(str+1, val.COL) != 0) {
-                    frprintf(rstderr, "Invalid color\n");
-                    return 1;
-                }
-                break;
-            case POS:
-                if (strcmp(str, "left") == 0) {
-                    val.POS = LEFT;
-                } else if (strcmp(str, "right") == 0) {
-                    val.POS = RIGHT;
-                } else if (strcmp(str, "center") == 0) {
-                    val.POS = CENTER;
-                } else {
-                    frprintf(rstderr, "Invalid postion\n");
-                    return 1;
-                }
-                break;
-            }
 
-            if (setSetting(setting, val)) {
-                frprintf(rstderr, "\"%s\" cannot be set to %s\n", setting->name, str);
+                if (0
+                    E(background)
+                    E(traybar)) {
+                    reparentIcons();
+                }
+
+                if (0
+                    E(font)) {
+                    renderInit();
+                }
+
+                redraw();
+
+                return 0;
+            } else if (r == 1) {
                 return 1;
             }
-
-#define E(x) \
-    || setting == &settings.x
-
-            if (0
-                E(height)
-                E(marginvert)
-                E(marginhoriz)
-                E(position)) {
-                updateGeom();
-            }
-
-            if (0
-                E(height)
-                E(marginhoriz)
-                E(traypadding)
-                E(trayiconsize)
-                E(trayside)) {
-                redrawTray();
-            }
-
-            if (0
-                E(background)
-                E(traybar)) {
-                reparentIcons();
-            }
-#undef E
-            redraw();
-
-            return 0;
         }
+#undef E
     }
 
     frprintf(rstderr, "Setting does not exist\n");
@@ -580,7 +521,7 @@ cmd(move_left) {
     int l;
     int d;
 
-    if (blk->pos == RIGHT) {
+    if (blk->properties.pos.val.POS == RIGHT) {
         i = blockCount - 1;
         l = 0;
         d = -1;
@@ -592,7 +533,7 @@ cmd(move_left) {
 
     for (; i != l; i += d) {
         struct Block *_blk = &blocks[i];
-        if (blk->pos == _blk->pos) {
+        if (blk->properties.pos.val.POS == _blk->properties.pos.val.POS) {
             if (blk == _blk) {
                 break;
             }
@@ -623,7 +564,7 @@ cmd(move_right) {
     int l;
     int d;
 
-    if (blk->pos == RIGHT) {
+    if (blk->properties.pos.val.POS == RIGHT) {
         i = 0;
         l = blockCount;
         d = 1;
@@ -635,7 +576,7 @@ cmd(move_right) {
 
     for (; i != l; i += d) {
         struct Block *_blk = &blocks[i];
-        if (blk->pos == _blk->pos) {
+        if (blk->properties.pos.val.POS == _blk->properties.pos.val.POS) {
             if (blk == _blk) {
                 break;
             }

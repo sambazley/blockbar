@@ -47,7 +47,7 @@ static void execute(struct Block *blk, int bar) {
         close(out[1]);
 
         char *shell = "/bin/sh";
-        execl(shell, shell, "-c", blk->exec, (char *) 0);
+        execl(shell, shell, "-c", blk->properties.exec.val.STR, (char *) 0);
     }
 
     close(out[1]);
@@ -73,7 +73,7 @@ static void execute(struct Block *blk, int bar) {
 }
 
 void blockExec(struct Block *blk, struct Click *cd) {
-    if (!blk->exec) return;
+    if (!blk->properties.exec.val.STR) return;
 
     char button [2] = {0};
     char subblock [4] = {0};

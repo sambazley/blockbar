@@ -36,6 +36,15 @@
 int blockCount;
 struct Block *blocks;
 
+const char *typeStrings [] = {
+    "int",
+    "bool",
+    "string",
+    "color",
+    "position",
+    "mode"
+};
+
 #define S(n, t, d, v) \
     .n = { \
         .name = #n, \
@@ -44,14 +53,6 @@ struct Block *blocks;
         .def.t = v, \
         .val.t = v, \
     },
-
-const char *typeStrings [] = {
-    "int",
-    "bool",
-    "string",
-    "color",
-    "position"
-};
 
 struct Settings settings = {
     S(height, INT, "Height of the bar", 22)
@@ -75,17 +76,34 @@ struct Settings settings = {
     S(trayside, POS, "Side that the tray appears on the bar (\"left\" or \"right\")", RIGHT)
 };
 
+struct Properties defProperties = {
+    S(mode, MODE, "The block's mode", LEGACY)
+    S(label, STR, "The block's label", "")
+    S(exec, STR, "Command to be executed", "")
+    S(pos, POS, "Position of the block", LEFT)
+    S(interval, INT, "Time between each execution of the block's script", 0)
+    S(padding, INT, "Additional padding on both sides of the block", 0)
+    S(paddingleft, INT, "Additional padding on the left of the block", 0)
+    S(paddingright, INT, "Additonal padding on the right of the block", 0)
+    S(nodiv, BOOL, "Disables the divider to the right of the block", 0)
+};
+
 #undef S
 
 int settingCount;
+int propertyCount;
 
 int setSetting(struct Setting *setting, union Value val) {
-    if (setting->type == INT || setting->type == BOOL) {
+    switch (setting->type) {
+    case INT:
+    case BOOL:
+    case MODE:
         if (setting == &settings.divvertmargin) {
             settings.divheight.val.INT = -1;
         }
         setting->val.INT = val.INT;
-    } else if (setting->type == POS) {
+        break;
+    case POS:
         if (val.POS < LEFT || val.POS > CENTER) {
             return 1;
         }
@@ -95,7 +113,8 @@ int setSetting(struct Setting *setting, union Value val) {
         }
 
         setting->val.POS = val.POS;
-    } else if (setting->type == STR) {
+        break;
+    case STR:
         if (!val.STR) {
             return 1;
         }
@@ -112,8 +131,10 @@ int setSetting(struct Setting *setting, union Value val) {
 
         setting->val.STR = malloc(strlen(val.STR) + 1);
         strcpy(setting->val.STR, val.STR);
-    } else if (setting->type == COL) {
+        break;
+    case COL:
         memcpy(setting->val.COL, val.COL, sizeof(color));
+        break;
     }
 
     return 0;
@@ -123,11 +144,83 @@ static void initSettings() {
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
-        if (setting->type == STR) {
-            setting->val.STR = 0;
-            setSetting(setting, setting->def);
+        memset(&(setting->val), 0, sizeof(setting->val));
+        setSetting(setting, setting->def);
+    }
+}
+
+static int parseSetting(JsonObject *jo, struct Setting *setting,
+        union Value *val, JsonError *err) {
+    switch (setting->type) {
+    case INT:
+        jsonGetInt(jo, setting->name, &(val->INT), err);
+        if (jsonErrorIsSet(err)) {
+            return 1;
+        }
+        break;
+    case BOOL:
+        jsonGetBool(jo, setting->name, (unsigned *) &(val->BOOL), 0, err);
+        if (jsonErrorIsSet(err)) {
+            return 1;
+        }
+        break;
+    case STR:
+        jsonGetString(jo, setting->name, &(val->STR), err);
+        if (jsonErrorIsSet(err)) {
+            return 1;
+        }
+        break;
+    case COL:
+        {
+            int e = parseColorJson(jo, setting->name, val->COL, err);
+            if (e || jsonErrorIsSet(err)) {
+                return 1;
+            }
+            break;
+        }
+    case POS:
+        {
+            char *str = 0;
+            jsonGetString(jo, setting->name, &str, err);
+            if (jsonErrorIsSet(err)) {
+                return 1;
+            }
+            if (str) {
+                if (strcmp(str, "left") == 0) {
+                    val->POS = LEFT;
+                } else if (strcmp(str, "right") == 0) {
+                    val->POS = RIGHT;
+                } else if (strcmp(str, "center") == 0) {
+                    val->POS = CENTER;
+                } else {
+                    free(str);
+                    return 1;
+                }
+            }
+            break;
+        }
+    case MODE:
+        {
+            char *str = 0;
+            jsonGetString(jo, setting->name, &str, err);
+            if (jsonErrorIsSet(err)) {
+                return 1;
+            }
+            if (str) {
+                if (strcmp(str, "legacy") == 0) {
+                    val->MODE = LEGACY;
+                } else if (strcmp(str, "subblocks") == 0) {
+                    val->MODE = SUBBLOCK;
+                } else {
+                    free(str);
+                    return 1;
+                }
+            }
+            break;
         }
     }
+
+    return 0;
 }
 
 void cleanupSettings() {
@@ -173,41 +266,6 @@ static const char *defaultConfigFile() {
     return ret;
 }
 
-static int
-parseInt(JsonObject *jo, const char *key, int *dest, JsonError *err) {
-    if (jsonGetPairIndex(jo, key) == -1) {
-        return 1;
-    }
-
-    jsonGetInt(jo, key, dest, err);
-    return 0;
-}
-
-static int
-parseBool(JsonObject *jo, const char *key, int *dest, JsonError *err) {
-    if (jsonGetPairIndex(jo, key) == -1) {
-        return 1;
-    }
-
-    jsonGetBool(jo, key, (unsigned *) dest, 0, err);
-    return 0;
-}
-
-static int
-parseString(JsonObject *jo, const char *key, char **dest, JsonError *err) {
-    if (jsonGetPairIndex(jo, key) == -1) {
-        return 1;
-    }
-
-    char *str;
-    jsonGetString(jo, key, &str, err);
-
-    *dest = malloc(strlen(str) + 1);
-    strcpy(*dest, str);
-
-    return 0;
-}
-
 static void
 parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
     JsonArray *arr;
@@ -221,39 +279,56 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
     for (int i = 0; i < arr->used; i++) {
         JsonObject *entry = arr->vals[i];
         if (jsonGetType(entry) != JSON_OBJECT) {
-            printf("Skipping invalid block entry\n");
+            fprintf(stderr, "Skipping invalid block entry\n");
             continue;
         }
 
-        int eachmon = 0;
-        parseBool(entry, "eachmon", &eachmon, err); ERR(err)
+        unsigned int eachmon = 0;
+        if (jsonGetPairIndex(entry, "eachmon") != -1) {
+            jsonGetBool(entry, "eachmon", &eachmon, 0, err);
+            ERR(err);
+        }
 
         struct Block *blk = createBlock(eachmon);
 
-        char *mode = 0;
-        parseString(entry, "mode", &mode, err); ERR(err)
-        parseString(entry, "label", &(blk->label), err); ERR(err)
-        parseString(entry, "exec", &(blk->exec), err); ERR(err)
-        parseInt(entry, "interval", &(blk->interval), err); ERR(err)
-        parseInt(entry, "padding", &(blk->padding), err); ERR(err)
-        parseInt(entry, "padding-left", &(blk->padLeft), err); ERR(err)
-        parseInt(entry, "padding-right", &(blk->padRight), err); ERR(err)
-        parseBool(entry, "nodiv", &(blk->nodiv), err); ERR(err)
+        for (int i = 0; i < propertyCount; i++) {
+            struct Setting *property =
+                &((struct Setting *) &(blk->properties))[i];
 
-        blk->pos = pos;
+            union Value val;
 
-        blk->mode = LEGACY;
-        if (mode) {
-            if (strcmp(mode, "subblocks") == 0) {
-                blk->mode = SUBBLOCK;
+            if (strcmp("pos", property->name) == 0) {
+                continue;
             }
-            free(mode);
+
+            if (jsonGetPairIndex(entry, property->name) == -1) {
+                continue;
+            }
+
+            int e = parseSetting(entry, property, &val, err);
+
+            if (jsonErrorIsSet(err)) {
+                e = 2;
+            }
+
+            if (e || setSetting(property, val)) {
+                fprintf(stderr, "Invalid value for property \"%s\"\n",
+                        property->name);
+
+                if (e == 2) {
+                    jsonErrorCleanup(err);
+                    jsonErrorInit(err);
+                }
+            }
         }
+
+        blk->properties.pos.val.POS = pos;
     }
 }
 
 JsonObject *configInit(const char *config) {
     settingCount = sizeof(settings) / sizeof(struct Setting);
+    propertyCount = sizeof(defProperties) / sizeof(struct Setting);
     initSettings();
 
     const char *file;
@@ -292,58 +367,25 @@ void configParseGeneral(JsonObject *jsonConfig) {
 
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
-        int f = 1;
         union Value val;
 
         if (jsonGetPairIndex(jsonConfig, setting->name) == -1) {
             continue;
         }
 
-        switch (setting->type) {
-        case INT:
-            f = parseInt(jsonConfig, setting->name, &(val.INT), &err);
-            ERR(&err);
-            break;
-        case BOOL:
-            f = parseBool(jsonConfig, setting->name, &(val.BOOL), &err);
-            ERR(&err);
-            break;
-        case STR:
-            f = parseString(jsonConfig, setting->name, &(val.STR), &err);
-            ERR(&err);
-            break;
-        case COL:
-            f = parseColorJson(jsonConfig, setting->name, val.COL, &err);
-            ERR(&err);
-            break;
-        case POS:
-            {
-                char *str = 0;
-                parseString(jsonConfig, setting->name, &str, &err);
-                val.POS = -1;
-                ERR(&err);
-                if (str) {
-                    if (strcmp(str, "left") == 0) {
-                        val.POS = LEFT;
-                        f = 0;
-                    } else if (strcmp(str, "right") == 0) {
-                        val.POS = RIGHT;
-                        f = 0;
-                    } else if (strcmp(str, "center") == 0) {
-                        val.POS = CENTER;
-                        f = 0;
-                    }
-                    free(str);
-                }
-            }
+        int e = parseSetting(jsonConfig, setting, &val, &err);
+
+        if (jsonErrorIsSet(&err)) {
+            e = 2;
         }
 
-        if (f || setSetting(setting, val)) {
+        if (e || setSetting(setting, val)) {
            fprintf(stderr, "Invalid value for setting \"%s\"\n", setting->name);
-        }
 
-        if (!f && setting->type == STR && val.STR) {
-            free(val.STR);
+           if (e == 2) {
+                jsonErrorCleanup(&err);
+                jsonErrorInit(&err);
+           }
         }
     }
 }
@@ -361,27 +403,80 @@ void configCleanup(JsonObject *jsonConfig) {
     jsonCleanup(jsonConfig);
 }
 
+static void addSetting(struct Setting *setting, int explicit,
+        JsonObject *jo, JsonError *err) {
+    switch (setting->type) {
+    case INT:
+        if (setting->val.INT != setting->def.INT || explicit) {
+            jsonAddNumber(setting->name, setting->val.INT, jo, err);
+        }
+        break;
+    case BOOL:
+        if (setting->val.BOOL != setting->def.BOOL || explicit) {
+            jsonAddBoolNull(setting->name,
+                            setting->val.BOOL ? JSON_TRUE : JSON_FALSE,
+                            jo, err);
+        }
+        break;
+    case STR:
+        if ((setting->val.STR && setting->def.STR &&
+                strcmp(setting->val.STR, setting->def.STR)) ||
+                !setting->def.STR != !setting->val.STR || explicit) {
+            jsonAddString(setting->name, setting->val.STR, jo, err);
+        } else if (explicit) {
+            jsonAddString(setting->name, "", jo, err);
+        }
+        break;
+    case COL:
+        if (memcmp(setting->val.COL, setting->def.COL, sizeof(color))
+                || explicit) {
+            char col [10];
+            stringifyColor(setting->val.COL, col);
+            jsonAddString(setting->name, col, jo, err);
+        }
+        break;
+    case POS:
+        if (setting->val.POS != setting->def.POS || explicit) {
+            char *str = "";
+            switch (setting->val.POS) {
+            case LEFT:
+                str = "left";
+                break;
+            case RIGHT:
+                str = "right";
+                break;
+            case CENTER:
+                str = "center";
+                break;
+            case SIDES:
+                break;
+            }
+            jsonAddString(setting->name, str, jo, err);
+        }
+        break;
+    case MODE:
+        if (setting->val.MODE != setting->def.MODE || explicit) {
+            char *str = "";
+            switch (setting->val.MODE) {
+            case LEGACY:
+                str = "legacy";
+                break;
+            case SUBBLOCK:
+                str = "subblocks";
+                break;
+            }
+            jsonAddString(setting->name, str, jo, err);
+        }
+        break;
+    }
+}
+
 #define ERR_ \
     if (jsonErrorIsSet(&err)) { \
         char *out = malloc(strlen(err.msg) + 1); \
         strcpy(out, err.msg); \
         jsonErrorCleanup(&err); \
         return out; \
-    }
-
-#define STR(name, var, p) \
-    if (var) { \
-        jsonAddString(name, var, p, &err); \
-        ERR_; \
-    } else if (explicit) { \
-        jsonAddString(name, "", p, &err); \
-            ERR_; \
-    }
-
-#define NUM(name, var) \
-    if (blk->var || explicit) { \
-        jsonAddNumber(name, blk->var, jblk, &err); \
-        ERR_; \
     }
 
 char *configSave(FILE *file, int explicit) {
@@ -393,58 +488,10 @@ char *configSave(FILE *file, int explicit) {
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
-        switch (setting->type) {
-        case INT:
-            if (setting->val.INT != setting->def.INT || explicit) {
-                jsonAddNumber(setting->name, setting->val.INT, jo, &err);
-                ERR_;
-            }
-            break;
-        case BOOL:
-            if (setting->val.BOOL != setting->def.BOOL || explicit) {
-                jsonAddBoolNull(setting->name,
-                                setting->val.BOOL ? JSON_TRUE : JSON_FALSE,
-                                jo, &err);
-                ERR_;
-            }
-            break;
-        case STR:
-            if ((setting->val.STR && setting->def.STR &&
-                    strcmp(setting->val.STR, setting->def.STR)) ||
-                    !setting->def.STR != !setting->val.STR || explicit) {
-                jsonAddString(setting->name, setting->val.STR, jo, &err);
-                ERR_;
-            } else if (explicit) {
-                jsonAddString(setting->name, "", jo, &err);
-            }
-            break;
-        case COL:
-            if (memcmp(setting->val.COL, setting->def.COL, sizeof(color))
-                    || explicit) {
-                char col [10];
-                stringifyColor(setting->val.COL, col);
-                jsonAddString(setting->name, col, jo, &err);
-            }
-            break;
-        case POS:
-            if (setting->val.POS != setting->def.POS || explicit) {
-                char *str = "";
-                switch (setting->val.POS) {
-                case LEFT:
-                    str = "left";
-                    break;
-                case RIGHT:
-                    str = "right";
-                    break;
-                case CENTER:
-                    str = "center";
-                    break;
-                case SIDES:
-                    break;
-                }
-                jsonAddString(setting->name, str, jo, &err);
-            }
-            break;
+        addSetting(setting, explicit, jo, &err);
+
+        if (jsonErrorIsSet(&err)) {
+            ERR_;
         }
     }
 
@@ -463,32 +510,29 @@ char *configSave(FILE *file, int explicit) {
             continue;
         }
 
-        JsonObject *jblk = jsonAddObject(0, bArr[blk->pos], &err);
+        JsonObject *jblk = jsonAddObject(0, bArr[blk->properties.pos.val.POS],
+                &err);
         ERR_;
 
-        if (blk->mode != LEGACY || explicit) {
-            jsonAddString("mode", blk->mode == LEGACY ? "legacy" : "subblocks",
-                    jblk, &err);
-            ERR_;
+        for (int j = 0; j < propertyCount; j++) {
+            struct Setting *property =
+                &((struct Setting *) &(blk->properties))[j];
+
+            if (strcmp("pos", property->name) == 0) {
+                continue;
+            }
+
+            addSetting(property, explicit, jblk, &err);
+
+            if (jsonErrorIsSet(&err)) {
+                ERR_;
+            }
         }
 
         if (blk->eachmon || explicit) {
             jsonAddBoolNull("eachmon", blk->eachmon ? JSON_TRUE : JSON_FALSE,
                     jblk, &err);
             ERR_;
-        }
-
-        STR("label", blk->label, jblk);
-        STR("exec", blk->exec, jblk);
-
-        NUM("interval", interval);
-        NUM("padding", padding);
-        NUM("padding-left", padLeft);
-        NUM("padding-right", padRight);
-
-        if (blk->nodiv || explicit) {
-            jsonAddBoolNull("nodiv", blk->nodiv ? JSON_TRUE : JSON_FALSE, jblk,
-                    &err); ERR_;
         }
     }
 

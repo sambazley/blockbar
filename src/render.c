@@ -18,9 +18,9 @@
  */
 
 #include "render.h"
-#include "blocks.h"
 #include "config.h"
 #include "tray.h"
+#include "types.h"
 #include "window.h"
 #include <pango/pangocairo.h>
 #include <stdlib.h>
@@ -120,6 +120,9 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         dataOrig = blk->data.type.legacy.execData;
     }
 
+    enum Pos pos = blk->properties.pos.val.POS;
+    char *label = blk->properties.label.val.STR;
+
     char *data = malloc(strlen(dataOrig) + 1);
     strcpy(data, dataOrig);
 
@@ -152,19 +155,18 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         }
     }
 
-    x += settings.padding.val.INT + blk->padding;
+    x += settings.padding.val.INT + blk->properties.padding.val.INT;
 
-    if (blk->pos == RIGHT) {
-        x += blk->padRight;
+    if (pos == RIGHT) {
+        x += blk->properties.paddingright.val.INT;
     } else {
-        x += blk->padLeft;
+        x += blk->properties.paddingleft.val.INT;
     }
 
     int dl = shortMode ? settings.shortlabels.val.INT : 1;
 
-    if (dl && (blk->pos == LEFT || blk->pos == CENTER)
-            && blk->label && strcmp(blk->label, "") != 0) {
-        x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
+    if (dl && (pos == LEFT || pos == CENTER) && label && strcmp(label, "")) {
+        x += drawString(&bars[bar], label, x, pos, col, 0, 0, 0, 0, 0);
     }
 
     char *text;
@@ -174,18 +176,18 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         text = longText;
     }
 
-    x += drawString(&bars[bar], text, x, blk->pos, col, 0,0,0,0,0);
+    x += drawString(&bars[bar], text, x, pos, col, 0,0,0,0,0);
 
-    if (dl && blk->pos == RIGHT && blk->label && strcmp(blk->label, "") != 0) {
-        x += drawString(&bars[bar], blk->label, x, blk->pos, col, 0,0,0,0,0);
+    if (dl && pos == RIGHT && label && strcmp(label, "") != 0) {
+        x += drawString(&bars[bar], label, x, pos, col, 0,0,0,0,0);
     }
 
-    x += settings.padding.val.INT + blk->padding;
+    x += settings.padding.val.INT + blk->properties.padding.val.INT;
 
-    if (blk->pos == RIGHT) {
-        x += blk->padLeft;
+    if (pos == RIGHT) {
+        x += blk->properties.paddingleft.val.INT;
     } else {
-        x += blk->padRight;
+        x += blk->properties.paddingright.val.INT;
     }
 
     free(data);
@@ -195,7 +197,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
 static int drawSubblocks(struct Block *blk, int x, int bar) {
     char *data;
-    char *exec = blk->exec;
+    char *exec = blk->properties.exec.val.STR;
     int **widths;
     int *subblockCount;
 
@@ -306,21 +308,21 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         int startx = x;
 
         if (i == 0) {
-            if (blk->pos == RIGHT) {
-                x += blk->padRight;
+            if (blk->properties.pos.val.POS == RIGHT) {
+                x += blk->properties.paddingright.val.INT;
             } else {
-                x += blk->padLeft;
+                x += blk->properties.paddingleft.val.INT;
             }
         }
 
-        x += drawString(&bars[bar], text, x, blk->pos, fg,
+        x += drawString(&bars[bar], text, x, blk->properties.pos.val.POS, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
 
         if (i == *subblockCount - 1) {
-            if (blk->pos == RIGHT) {
-                x += 2 + blk->padLeft;
+            if (blk->properties.pos.val.POS == RIGHT) {
+                x += 2 + blk->properties.paddingleft.val.INT;
             } else {
-                x += 2 + blk->padRight;
+                x += 2 + blk->properties.paddingright.val.INT;
             }
         }
 
@@ -375,12 +377,13 @@ static int drawBlocks(int i, int *x) {
 
     for (int j = 0; j < blockCount; j++) {
         struct Block *blk = &blocks[j];
+        enum Pos pos = blk->properties.pos.val.POS;
 
         if (!blk->id) {
             continue;
         }
 
-        if (blk->pos == CENTER) {
+        if (pos == CENTER) {
             ctx = bars[i].ctx[RI_CENTER];
         } else {
             ctx = bars[i].ctx[RI_BUFFER];
@@ -395,50 +398,48 @@ static int drawBlocks(int i, int *x) {
             execData = blk->data.type.legacy.execData;
             rendered = &(blk->data.type.legacy.rendered);
         }
+
         *rendered = 0;
 
-        if (execData == 0 && blk->label == 0) {
+        if ((execData == 0 || strcmp(execData, "") == 0) &&
+                strcmp(blk->properties.label.val.STR, "") == 0) {
             continue;
         }
 
-        if (execData && strcmp(execData, "") == 0) {
-            continue;
-        }
-
-        int prex = x[blk->pos];
+        int prex = x[pos];
 
         if (execData) {
-            if (blk->mode == LEGACY) {
-                x[blk->pos] = drawLegacyBlock(blk, x[blk->pos], i);
+            if (blk->properties.mode.val.MODE == LEGACY) {
+                x[pos] = drawLegacyBlock(blk, x[pos], i);
             } else {
-                x[blk->pos] = drawSubblocks(blk, x[blk->pos], i);
+                x[pos] = drawSubblocks(blk, x[pos], i);
             }
-        } else if (blk->label &&
+        } else if (blk->properties.label.val.STR &&
                 (shortMode ? settings.shortlabels.val.INT : 1)) {
-            x[blk->pos] += settings.padding.val.INT + blk->padding;
-            if (blk->pos == RIGHT) {
-                x[blk->pos] += blk->padRight;
+            x[pos]+= settings.padding.val.INT + blk->properties.padding.val.INT;
+            if (pos == RIGHT) {
+                x[pos] += blk->properties.paddingright.val.INT;
             } else {
-                x[blk->pos] += blk->padLeft;
+                x[pos] += blk->properties.paddingleft.val.INT;
             }
 
-            x[blk->pos] += drawString(&bars[i], blk->label, x[blk->pos],
-                    blk->pos, settings.foreground.val.COL, 0, 0, 0, 0, 0);
+            x[pos] += drawString(&bars[i], blk->properties.label.val.STR,
+                    x[pos], pos, settings.foreground.val.COL, 0, 0, 0, 0, 0);
 
-            x[blk->pos] += settings.padding.val.INT + blk->padding;
-            if (blk->pos == RIGHT) {
-                x[blk->pos] += blk->padLeft;
+            x[pos]+= settings.padding.val.INT + blk->properties.padding.val.INT;
+            if (pos == RIGHT) {
+                x[pos] += blk->properties.paddingleft.val.INT;
             } else {
-                x[blk->pos] += blk->padRight;
+                x[pos] += blk->properties.paddingright.val.INT;
             }
         }
 
-        *rendered = prex != x[blk->pos];
+        *rendered = prex != x[pos];
 
-        blk->width[i] = x[blk->pos] - prex;
+        blk->width[i] = x[pos] - prex;
 
-        if ((blk->pos != RIGHT || last[RIGHT] == -1) && *rendered) {
-            last[blk->pos] = j;
+        if ((pos != RIGHT || last[RIGHT] == -1) && *rendered) {
+            last[pos] = j;
         }
     }
 
@@ -462,6 +463,7 @@ static int drawBlocks(int i, int *x) {
 
     for (int j = 0; j < blockCount; j++) {
         struct Block *blk = &blocks[j];
+        enum Pos pos = blk->properties.pos.val.POS;
 
         if (!blk->id) {
             continue;
@@ -479,30 +481,30 @@ static int drawBlocks(int i, int *x) {
             continue;
         }
 
-        if (blk->pos != RIGHT) {
-            dx[blk->pos] += blk->width[i];
+        if (pos != RIGHT) {
+            dx[pos] += blk->width[i];
         }
 
-        if (!blk->nodiv && last[blk->pos] != j) {
-            if (blk->pos == CENTER) {
+        if (!blk->properties.nodiv.val.INT && last[pos] != j) {
+            if (pos == CENTER) {
                 ctx = bars[i].ctx[RI_CENTER];
             } else {
                 ctx = bars[i].ctx[RI_BUFFER];
             }
 
-            int divx = dx[blk->pos];
+            int divx = dx[pos];
 
-            if (blk->pos == RIGHT) {
-                divx = bars[i].width - dx[blk->pos];
+            if (pos == RIGHT) {
+                divx = bars[i].width - dx[pos];
             } else {
-                divx = dx[blk->pos];
+                divx = dx[pos];
             }
 
             drawDiv(i, ctx, divx);
         }
 
-        if (blk->pos == RIGHT) {
-            dx[blk->pos] += blk->width[i];
+        if (pos == RIGHT) {
+            dx[pos] += blk->width[i];
         }
     }
 

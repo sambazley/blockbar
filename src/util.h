@@ -20,12 +20,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stdint.h>
+#include "types.h"
 #include <ujson.h>
 
 #define MAX(a, b) (a>b?a:b)
-
-typedef uint8_t color [4];
 
 int parseColorJson(JsonObject *jo, const char *key, color dest,
                     JsonError *err);

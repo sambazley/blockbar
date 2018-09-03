@@ -20,58 +20,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "blocks.h"
+#include "types.h"
 #include "util.h"
 #include <ujson.h>
-
-enum SettingType {
-    INT,
-    BOOL,
-    STR,
-    COL,
-    POS,
-};
-
-union Value {
-    int INT;
-    int BOOL;
-    char *STR;
-    color COL;
-    enum Pos POS;
-};
-
-struct Setting {
-    char *name;
-    char *desc;
-    enum SettingType type;
-    union Value def, val;
-};
-
-struct Settings {
-    struct Setting height;
-    struct Setting marginvert;
-    struct Setting marginhoriz;
-    struct Setting radius;
-    struct Setting padding;
-    struct Setting background;
-    struct Setting foreground;
-    struct Setting font;
-    struct Setting shortlabels;
-    struct Setting position;
-    struct Setting divwidth;
-    struct Setting divheight;
-    struct Setting divvertmargin;
-    struct Setting divcolor;
-    struct Setting traydiv;
-    struct Setting traypadding;
-    struct Setting trayiconsize;
-    struct Setting traybar;
-    struct Setting trayside;
-};
-
-extern const char *typeStrings [];
-extern struct Settings settings;
-extern int settingCount;
 
 void cleanupSettings();
 int setSetting(struct Setting *setting, union Value val);
@@ -81,5 +32,14 @@ void configParseGeneral(JsonObject *jsonConfig);
 void configParseBlocks(JsonObject *jsonConfig);
 void configCleanup(JsonObject *jsonConfig);
 char *configSave(FILE *file, int explicit);
+
+extern const char *typeStrings [];
+extern struct Settings settings;
+extern int settingCount;
+extern struct Properties defProperties;
+extern int propertyCount;
+
+extern int blockCount;
+extern struct Block *blocks;
 
 #endif /* CONFIG_H */

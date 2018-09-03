@@ -18,7 +18,7 @@
  */
 
 #include "util.h"
-#include "blocks.h"
+#include "config.h"
 #include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -146,8 +146,14 @@ struct Block *createBlock(int eachmon) {
         memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
     }
 
-    blk->label = 0;
-    blk->exec = 0;
+    memcpy(&(blk->properties), &defProperties, sizeof(blk->properties));
+
+    for (int i = 0; i < propertyCount; i++) {
+        struct Setting *property = &((struct Setting *) &(blk->properties))[i];
+        memset(&(property->val), 0, sizeof(property->val));
+
+        setSetting(property, property->def);
+    }
 
     blk->width = malloc(sizeof(int) * barCount);
 
@@ -157,7 +163,7 @@ struct Block *createBlock(int eachmon) {
 void removeBlock(struct Block *blk) {
     blk->id = 0;
 
-    if (blk->mode == SUBBLOCK) {
+    if (blk->properties.mode.val.MODE == SUBBLOCK) {
         if (blk->eachmon) {
             for (int i = 0; i < barCount; i++) {
                 int *widths = blk->data.mon[i].type.subblock.widths;
@@ -191,12 +197,12 @@ void removeBlock(struct Block *blk) {
         }
     }
 
-    if (blk->label) {
-        free(blk->label);
+    if (blk->properties.label.val.STR) {
+        free(blk->properties.label.val.STR);
     }
 
-    if (blk->exec) {
-        free(blk->exec);
+    if (blk->properties.exec.val.STR) {
+        free(blk->properties.exec.val.STR);
     }
 
     free(blk->width);
@@ -227,7 +233,7 @@ void updateTickInterval() {
     int time = 0;
 
     for (int i = 0; i < blockCount; i++) {
-        time = gcd(time, blocks[i].interval);
+        time = gcd(time, blocks[i].properties.interval.val.INT);
     }
 
     extern int interval;

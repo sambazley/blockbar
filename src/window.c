@@ -18,7 +18,6 @@
  */
 
 #include "window.h"
-#include "blocks.h"
 #include "config.h"
 #include "exec.h"
 #include "tray.h"
@@ -210,13 +209,14 @@ static void click(struct Click *cd) {
             rendered = blk->data.type.legacy.rendered;
         }
 
-        if (blk->id && rendered && blk->pos == CENTER) {
+        if (blk->id && rendered && blk->properties.pos.val.POS == CENTER) {
             centerWidth += blk->width[cd->bar];
         }
     }
 
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
+        enum Pos pos = blk->properties.pos.val.POS;
 
         if (!blk->id) {
             continue;
@@ -234,15 +234,15 @@ static void click(struct Click *cd) {
         }
 
         int rx = 0;
-        if (blk->pos == LEFT) {
+        if (pos == LEFT) {
             rx = cd->x;
-        } else if (blk->pos == CENTER) {
+        } else if (pos == CENTER) {
             rx = cd->x - bars[cd->bar].width / 2 + centerWidth / 2;
-        } else if (blk->pos == RIGHT) {
+        } else if (pos == RIGHT) {
             rx = bars[cd->bar].width - cd->x;
         }
 
-        if (cd->bar == trayBar && blk->pos == settings.trayside.val.POS) {
+        if (cd->bar == trayBar && pos == settings.trayside.val.POS) {
             rx -= getTrayWidth();
         }
 
@@ -250,12 +250,12 @@ static void click(struct Click *cd) {
             continue;
         }
 
-        cx[blk->pos] += blk->width[cd->bar];
+        cx[pos] += blk->width[cd->bar];
 
-        if (cx[blk->pos] > rx) {
+        if (cx[pos] > rx) {
             cd->block = blk;
 
-            if (blk->mode == SUBBLOCK) {
+            if (blk->properties.mode.val.MODE == SUBBLOCK) {
                 int subblockCount;
                 if (blk->eachmon) {
                     subblockCount =
@@ -264,7 +264,7 @@ static void click(struct Click *cd) {
                     subblockCount = blk->data.type.subblock.subblockCount;
                 }
 
-                int sbx = cx[blk->pos] - blk->width[cd->bar];
+                int sbx = cx[pos] - blk->width[cd->bar];
                 for (int j = 0; j < subblockCount; j++) {
                     if (blk->eachmon) {
                         sbx += blk->data.mon[cd->bar].type.subblock.widths[j];

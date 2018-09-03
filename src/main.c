@@ -17,7 +17,6 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#include "blocks.h"
 #include "config.h"
 #include "exec.h"
 #include "render.h"
@@ -77,9 +76,9 @@ static void onexit() {
 static void tickBlock(struct Block *blk, int interval) {
     if (!blk->id) return;
 
-    if (blk->interval == 0) return;
+    if (blk->properties.interval.val.INT == 0) return;
 
-    if (blk->timePassed >= blk->interval) {
+    if (blk->timePassed >= blk->properties.interval.val.INT) {
         blk->timePassed = 0;
         blockExec(blk, 0);
     }

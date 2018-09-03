@@ -20,7 +20,7 @@
 #ifndef EXEC_H
 #define EXEC_H
 
-#include "blocks.h"
+#include "types.h"
 #include "window.h"
 
 struct Proc {
