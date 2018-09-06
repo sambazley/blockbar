@@ -63,17 +63,17 @@ struct Settings settings = {
     S(background, COL, "Background color of the bar", ((color) {0, 0, 0, 0xFF}))
     S(foreground, COL, "Default text color", ((color) {0xFF, 0xFF, 0xFF, 0xFF}))
     S(font, STR, "Font name and size", 0)
-    S(shortlabels, BOOL, "Whether a block's label should render in short mode or not", 1)
+    S(shortlabels, BOOL, "Whether a block's label should render in short mode", 1)
     S(position, STR, "Position of the bar on the screen (\"top\" or \"bottom\")", "top")
     S(divwidth, INT, "Divider width", 1)
     S(divheight, INT, "Divider height", -1)
     S(divvertmargin, INT, "Margin above and below dividers", 4)
     S(divcolor, COL, "Divider color", ((color) {0x33, 0x33, 0x33, 0xFF}))
-    S(traydiv, BOOL, "Whether a divider is drawn next to the tray or not", 1)
+    S(traydiv, BOOL, "Whether a divider is drawn next to the tray", 1)
     S(traypadding, INT, "Padding to the right of each tray icon", 2)
     S(trayiconsize, INT, "Width and height of each tray icon", 18)
     S(traybar, STR, "Name of the output that the tray appears on", 0)
-    S(trayside, POS, "Side that the tray appears on the bar (\"left\" or \"right\")", RIGHT)
+    S(trayside, POS, "Position of the tray on the bar (\"left\" or \"right\")", RIGHT)
 };
 
 struct Properties defProperties = {

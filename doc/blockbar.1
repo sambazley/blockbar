@@ -3,8 +3,9 @@
 blockbar \- Blocks based status bar for X window managers
 
 .SH SYNOPSIS
-.B blockbar
-[\fIconfig_file\fR | \fB-h\fR | \fB\-\-help\fR]
+\fBblockbar\fR [\fIconfig_file\fR | \fB-h\fR | \fB\-\-help\fR]
+
+\fBbbc\fR [\fIcommand\fR]
 
 .SH OPTIONS
 .TP
@@ -251,27 +252,94 @@ ENVIRONMENT VARIABLES
 The following environment variable should be set before \fBblockbar\fR and
 \fBbbc\fR are executed.
 
-.TP
-.B BLOCKBAR_SOCKET
+.SS BLOCKBAR_SOCKET
 The path of the socket used for the communication between
 \fBbbc\fR and \fBblockbar\fR. If this variable is not set,
 /tmp/blockbar-socket is used instead.
 
 .PP
 The following environment variables can be set when a block is executed.
-.TP
-\fBBLOCK_BUTTON\fR
+
+.SS BLOCK_BUTTON
 If the block's execution was triggered by a click, this variable will be set
 to the mouse button's number ("1", "2", etc).
-.TP
-\fBSUBBLOCK\fR
+
+.SS SUBBLOCK
 If the block's execution was triggered by a click, and the block is in
 subblocks mode, this variable will be set to the clicked subblock's index.
 Otherwise, this variable will be set to "0".
-.TP
-\fBBAR_OUTPUT\fR
-If the block has eachmon=true, this variable will be set to the output's name
-(see xrandr).
+
+.SS BAR_OUTPUT
+If the block has \fIeachmon\fR=true, this variable will be set to the output's
+name (see xrandr).
+
+.SH
+BBC COMMANDS
+
+.SS list
+\fIlist\fR
+
+Lists blocks by their indices and \fIexec\fR value.
+
+.SS exec
+\fIexec\fR <\fIindex\fR>
+
+Executes a block's script.
+
+.SS list-properties
+\fIlist-properties\fR
+
+Lists the type, name, and description of each block property.
+
+.SS list-settings
+\fIlist-settings\fR
+
+Lists the type, name, and description of each of the bar's settings.
+
+.SS property
+\fIproperty\fR <\fIindex\fR>[:\fIoutput\fR] <\fIproperty\fR> [\fIvalue\fR]
+
+Gets or sets the value of a property of a block.
+If the block has \fIeachmon\fR=true, the output value will need to be set.
+If a valid \fIvalue\fR is provided, the property's value will be changed,
+otherwise, an error will be returned if the \fIvalue\fR is invalid, or the
+current value of the property will be returned if no \fIvalue\fR is provided.
+
+.SS setting
+\fIsetting\fR <\fIsetting\fR> [\fIvalue\fR]
+
+Gets or sets the value of a setting of the bar.
+If a valid \fIvalue\fR is provided, the setting's value will be changed,
+otherwise, an error will be returned if the \fIvalue\fR is invalid, or the
+current value of the setting will be returned if no \fIvalue\fR is provided.
+
+.SS new
+\fInew\fR [\fB--eachmon\fR]
+
+Creates a new block and returns the new block's index. If \fB--eachmon\fR is
+passed, the block will be created with \fIeachmon\fR=true.
+
+.SS rm
+\fIrm\fR <\fIindex\fR>
+
+Removes a block.
+
+.SS move-left
+\fImove-left\fR <\fIindex\fR>
+
+Moves a block to the left.
+
+.SS move-right
+\fImove-right\fR <\fIindex\fR>
+
+Moves a block to the right.
+
+.SS dump
+\fIdump\fR [\fB--explicit\fR]
+
+Dumps the current configuration to stdout. By default, only properties and
+settings that differ from their default values will be dumped, however,
+if \fB--explicit\fR is passed, all properties and settings will be dumped.
 
 .SH
 AUTHOR

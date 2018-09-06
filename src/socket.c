@@ -122,12 +122,12 @@ cmd(help) {
 
     rprintf("Usage: %s <command>\n\n", argv[0]);
     rprintf("Commands:\n");
-    phelp("list", "List blocks by their indices and \"exec\" value");
-    phelp("exec <n>", "Execute block's script");
-    phelp("list-properties", "List a block's properties");
-    phelp("list-settings", "List the bar's settings");
+    phelp("list", "Lists blocks by their indices and \"exec\" value");
+    phelp("exec <n>", "Executes block's script");
+    phelp("list-properties", "Lists a block's properties");
+    phelp("list-settings", "Lists the bar's settings");
     phelp("property <n>[:o] <p> [v]", "Gets or sets a property of a block");
-    phelp("setting <p> [v]", "Gets or sets a setting of the bar");
+    phelp("setting <s> [v]", "Gets or sets a setting of the bar");
     phelp("new [--eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
     phelp("move-left <n>", "Moves a block left");
@@ -162,8 +162,8 @@ cmd(list_properties) {
     rprintf("%-9s%-17s%s\n", t, v, d);
 
     for (int i = 0; i < propertyCount; i++) {
-        struct Setting *setting = &((struct Setting *) &defProperties)[i];
-        p(typeStrings[setting->type], setting->name, setting->desc);
+        struct Setting *property = &((struct Setting *) &defProperties)[i];
+        p(typeStrings[property->type], property->name, property->desc);
     }
 
     p("string", "execdata", "Data that is displayed");
@@ -476,7 +476,7 @@ cmd(setting) {
     } else if (argc >= 4) {
         return _setSetting(argc, argv, fd);
     } else {
-        frprintf(rstderr, "Usage: %s %s <property> [value]\n",
+        frprintf(rstderr, "Usage: %s %s <setting> [value]\n",
                  argv[0], argv[1]);
         return 1;
     }
