@@ -239,6 +239,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         return x;
     }
 
+    x += blk->properties.padding.val.INT;
+
     *widths = realloc(*widths, sizeof(int) * subblocks->used);
     *subblockCount = subblocks->used;
 
@@ -328,6 +330,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
             }
         }
     }
+
+    x += blk->properties.padding.val.INT;
 
 end:
     jsonCleanup(jo);
