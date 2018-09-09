@@ -18,8 +18,10 @@
  */
 
 #include "exec.h"
+#include "config.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 int procCount;
@@ -72,38 +74,120 @@ static void execute(struct Block *blk, int bar) {
     proc->bar = bar;
 }
 
+static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
+    if (cd) {
+        bar = cd->bar;
+    }
+
+    if (blk->eachmon || cd) {
+        setenv("BAR_OUTPUT", bars[bar].output, 1);
+    } else {
+        setenv("BAR_OUTPUT", "", 1);
+    }
+
+    setenv("SUBBLOCK_WIDTHS", "", 1);
+
+    int rendered;
+
+    if (blk->eachmon) {
+        rendered = blk->data.mon[bar].type.legacy.rendered;
+    } else {
+        rendered = blk->data.type.legacy.rendered;
+    }
+
+    if (!rendered) {
+        setenv("BLOCK_X", "", 1);
+        setenv("BLOCK_WIDTH", "", 1);
+        return;
+    }
+
+    char x [12] = {0};
+    sprintf(x, "%d", blk->x[bar] + bars[bar].x);
+    setenv("BLOCK_X", x, 1);
+
+    char w [12] = {0};
+    sprintf(w, "%d", blk->width[bar]);
+    setenv("BLOCK_WIDTH", w, 1);
+
+    if (blk->properties.mode.val.MODE == SUBBLOCK) {
+        int sbc;
+        int *widths;
+        if (blk->eachmon) {
+            sbc = blk->data.mon[bar].type.subblock.subblockCount;
+            widths = blk->data.mon[bar].type.subblock.widths;
+        } else {
+            sbc = blk->data.type.subblock.subblockCount;
+            widths = blk->data.type.subblock.widths;
+        }
+
+        char *sbw = 0;
+
+        for (int i = 0; i < sbc; i++) {
+            char str [13] = {0};
+            sprintf(str, "%d\n", widths[i]);
+
+            if (sbw == 0) {
+                sbw = malloc(strlen(str) + 1);
+                *sbw = 0;
+            } else {
+                sbw = realloc(sbw, strlen(sbw) + strlen(str) + 1);
+            }
+
+            strcat(sbw, str);
+        }
+
+        if (sbw) {
+            sbw[strlen(sbw) - 1] = 0;
+
+            setenv("SUBBLOCK_WIDTHS", sbw, 1);
+
+            free(sbw);
+        }
+    }
+}
+
 void blockExec(struct Block *blk, struct Click *cd) {
     if (!blk->properties.exec.val.STR) return;
 
-    char button [2] = {0};
-    char subblock [4] = {0};
+    char button [12] = {0};
+    char subblock [12] = {0};
+    char clickx [12] = {0};
+
     if (cd != 0) {
-        button[0] = cd->button + '0';
-        sprintf(subblock, "%u", cd->subblock);
+        sprintf(button, "%d", cd->button);
+        sprintf(subblock, "%d", cd->subblock);
+        sprintf(clickx, "%d", cd->x + bars[cd->bar].x);
     }
+
     setenv("BLOCK_BUTTON", button, 1);
     setenv("SUBBLOCK", subblock, 1);
+    setenv("CLICK_X", clickx, 1);
 
     if (blk->eachmon) {
         if (cd) {
-            setenv("BAR_OUTPUT", bars[cd->bar].output, 1);
+            barEnvs(blk, cd->bar, cd);
             execute(blk, cd->bar);
 
             setenv("BLOCK_BUTTON", "", 1);
-            for (int i = 0; i < barCount; i++) {
-                if (i == cd->bar) continue;
+            setenv("SUBBLOCK", "", 1);
+            setenv("CLICK_X", "", 1);
 
-                setenv("BAR_OUTPUT", bars[i].output, 1);
+            for (int i = 0; i < barCount; i++) {
+                if (i == cd->bar) {
+                    continue;
+                }
+
+                barEnvs(blk, i, 0);
                 execute(blk, i);
             }
         } else {
             for (int i = 0; i < barCount; i++) {
-                setenv("BAR_OUTPUT", bars[i].output, 1);
+                barEnvs(blk, i, 0);
                 execute(blk, i);
             }
         }
     } else {
-        setenv("BAR_OUTPUT", "", 1);
+        barEnvs(blk, 0, cd);
         execute(blk, 0);
     }
 }

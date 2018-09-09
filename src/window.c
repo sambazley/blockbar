@@ -160,6 +160,7 @@ void updateGeom() {
         XMoveResizeWindow(disp, bar->window, x, y,
                           width, settings.height.val.INT);
 
+        bar->x = x;
         bar->width = width;
         bar->height = settings.height.val.INT;
 

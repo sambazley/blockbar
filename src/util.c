@@ -144,6 +144,8 @@ struct Block *createBlock(int eachmon) {
     if (eachmon) {
         blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
         memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
+    } else {
+        blk->data.type.legacy.rendered = 0;
     }
 
     memcpy(&(blk->properties), &defProperties, sizeof(blk->properties));
@@ -156,6 +158,7 @@ struct Block *createBlock(int eachmon) {
     }
 
     blk->width = malloc(sizeof(int) * barCount);
+    blk->x = malloc(sizeof(int) * barCount);
 
     return blk;
 }
@@ -206,6 +209,7 @@ void removeBlock(struct Block *blk) {
     }
 
     free(blk->width);
+    free(blk->x);
 }
 
 struct Block *getBlock(int id) {

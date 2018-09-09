@@ -31,6 +31,7 @@ enum RenderIndex {
 
 struct Bar {
     Window window;
+    int x;
     int width;
     int height;
     char *output;

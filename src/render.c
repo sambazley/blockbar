@@ -318,6 +318,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         x += drawString(&bars[bar], text, x, blk->properties.pos.val.POS, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
 
+        (*widths)[i] = x - startx;
+
         if (i == *subblockCount - 1) {
             if (blk->properties.pos.val.POS == RIGHT) {
                 x += 2 + blk->properties.paddingleft.val.INT;
@@ -325,8 +327,6 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
                 x += 2 + blk->properties.paddingright.val.INT;
             }
         }
-
-        (*widths)[i] = x - startx;
     }
 
 end:
@@ -438,6 +438,16 @@ static int drawBlocks(int i, int *x) {
 
         blk->width[i] = x[pos] - prex;
 
+        if (*rendered) {
+            if (pos == RIGHT) {
+                blk->x[i] = bars[i].width - x[pos];
+            } else {
+                blk->x[i] = prex;
+            }
+        } else {
+            blk->x[i] = -1;
+        }
+
         if ((pos != RIGHT || last[RIGHT] == -1) && *rendered) {
             last[pos] = j;
         }
@@ -483,6 +493,10 @@ static int drawBlocks(int i, int *x) {
 
         if (pos != RIGHT) {
             dx[pos] += blk->width[i];
+        }
+
+        if (pos == CENTER) {
+            blk->x[i] = blk->x[i] + bars[i].width / 2 - x[CENTER] / 2;
         }
 
         if (!blk->properties.nodiv.val.INT && last[pos] != j) {

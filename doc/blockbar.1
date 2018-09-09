@@ -258,7 +258,8 @@ The path of the socket used for the communication between
 /tmp/blockbar-socket is used instead.
 
 .PP
-The following environment variables can be set when a block is executed.
+The following environment variables can be set by \fBblockbar\fR when a block
+is executed.
 
 .SS BLOCK_BUTTON
 If the block's execution was triggered by a click, this variable will be set
@@ -267,11 +268,26 @@ to the mouse button's number ("1", "2", etc).
 .SS SUBBLOCK
 If the block's execution was triggered by a click, and the block is in
 subblocks mode, this variable will be set to the clicked subblock's index.
-Otherwise, this variable will be set to "0".
+If the block is not in subblocks mode, this variable will be set to "0".
 
 .SS BAR_OUTPUT
-If the block has \fIeachmon\fR=true, this variable will be set to the output's
-name (see xrandr).
+If the block has \fIeachmon\fR=true, or the block was clicked, this variable
+will be set to the output's name (see xrandr).
+
+.SS CLICK_X
+If the block's execution was triggered by a click, this variable will be set
+to the x coordinate of the cursor.
+
+.SS BLOCK_X
+The x coordinate of the block.
+
+.SS BLOCK_WIDTH
+The width of the block, including padding. If the block is in subblocks mode,
+this is the total width of all subblocks.
+
+.SS SUBBLOCK_WIDTH
+If the block is in subblocks mode, this variable will be set to a list of
+each subblock's width, separated by a \\n character.
 
 .SH
 BBC COMMANDS

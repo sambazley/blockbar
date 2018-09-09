@@ -93,6 +93,7 @@ struct Block {
     int eachmon;
     int timePassed;
     int *width;
+    int *x;
 
     struct Properties properties;
 
