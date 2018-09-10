@@ -5,7 +5,7 @@ include_directories(ujson/src)
 
 project(blockbar)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Og -ggdb -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -Og -ggdb -Wall -D_WITH_DPRINTF")
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 
@@ -20,11 +20,12 @@ set(SOURCE
     src/window.c
 )
 
-add_executable(blockbar ${SOURCE})
-add_executable(bbc src/bbc.c)
-
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(pangocairo REQUIRED pangocairo)
+link_directories(${pangocairo_LIBRARY_DIRS})
+
+add_executable(blockbar ${SOURCE})
+add_executable(bbc src/bbc.c)
 
 find_library(cairo cairo)
 find_library(X11 X11)

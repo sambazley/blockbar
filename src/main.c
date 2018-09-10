@@ -33,6 +33,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifndef CLOCK_MONOTONIC_RAW
+#   define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
+#endif
+
 int interval;
 
 static void printUsage(const char *file) {

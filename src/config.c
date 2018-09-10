@@ -45,13 +45,13 @@ const char *typeStrings [] = {
     "mode"
 };
 
-#define S(n, t, d, v) \
+#define S(n, t, d, ...) \
     .n = { \
         .name = #n, \
         .type = t, \
         .desc = d, \
-        .def.t = v, \
-        .val.t = v, \
+        .def.t = __VA_ARGS__, \
+        .val.t = __VA_ARGS__, \
     },
 
 struct Settings settings = {
@@ -60,15 +60,15 @@ struct Settings settings = {
     S(marginhoriz, INT, "Margin on the left and right of the bar", 0)
     S(radius, INT, "Radius of the curvature of the corners of the bar", 0)
     S(padding, INT, "Padding on both sides of each block", 5)
-    S(background, COL, "Background color of the bar", ((color) {0, 0, 0, 0xFF}))
-    S(foreground, COL, "Default text color", ((color) {0xFF, 0xFF, 0xFF, 0xFF}))
+    S(background, COL, "Background color of the bar", {0, 0, 0, 0xFF})
+    S(foreground, COL, "Default text color", {0xFF, 0xFF, 0xFF, 0xFF})
     S(font, STR, "Font name and size", 0)
     S(shortlabels, BOOL, "Whether a block's label should render in short mode", 1)
     S(position, STR, "Position of the bar on the screen (\"top\" or \"bottom\")", "top")
     S(divwidth, INT, "Divider width", 1)
     S(divheight, INT, "Divider height", -1)
     S(divvertmargin, INT, "Margin above and below dividers", 4)
-    S(divcolor, COL, "Divider color", ((color) {0x33, 0x33, 0x33, 0xFF}))
+    S(divcolor, COL, "Divider color", {0x33, 0x33, 0x33, 0xFF})
     S(traydiv, BOOL, "Whether a divider is drawn next to the tray", 1)
     S(traypadding, INT, "Padding to the right of each tray icon", 2)
     S(trayiconsize, INT, "Width and height of each tray icon", 18)
