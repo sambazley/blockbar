@@ -147,7 +147,10 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
 }
 
 void blockExec(struct Block *blk, struct Click *cd) {
-    if (!blk->properties.exec.val.STR) return;
+    if (!blk->properties.exec.val.STR ||
+            strcmp(blk->properties.exec.val.STR, "") == 0) {
+        return;
+    }
 
     char button [12] = {0};
     char subblock [12] = {0};
