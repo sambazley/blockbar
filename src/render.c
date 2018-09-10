@@ -324,9 +324,9 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         if (i == *subblockCount - 1) {
             if (blk->properties.pos.val.POS == RIGHT) {
-                x += 2 + blk->properties.paddingleft.val.INT;
+                x += blk->properties.paddingleft.val.INT;
             } else {
-                x += 2 + blk->properties.paddingright.val.INT;
+                x += blk->properties.paddingright.val.INT;
             }
         }
     }
