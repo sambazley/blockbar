@@ -244,7 +244,19 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
     *widths = realloc(*widths, sizeof(int) * subblocks->used);
     *subblockCount = subblocks->used;
 
-    for (int i = 0; i < subblocks->used; i++) {
+    int start, end, diff;
+
+    if (blk->properties.pos.val.POS == RIGHT) {
+        start = subblocks->used - 1;
+        end = -1;
+        diff = -1;
+    } else {
+        start = 0;
+        end = subblocks->used;
+        diff = 1;
+    }
+
+    for (int i = start; i != end; i += diff) {
         void *val = subblocks->vals[i];
         if (jsonGetType(val) != JSON_OBJECT) {
             fprintf(stderr, "Expecting object in \"subblocks\" array\n");
@@ -324,7 +336,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         (*widths)[i] = x - startx;
 
-        if (i == *subblockCount - 1) {
+        if (i == end - diff) {
             x -= 1;
 
             if (blk->properties.pos.val.POS == RIGHT) {

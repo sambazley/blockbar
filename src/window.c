@@ -272,7 +272,11 @@ static void click(struct Click *cd) {
                     sbx += sbd->widths[j];
 
                     if (sbx > rx) {
-                        cd->subblock = j;
+                        if (pos == RIGHT) {
+                            cd->subblock = sbd->subblockCount - j - 1;
+                        } else {
+                            cd->subblock = j;
+                        }
                         break;
                     }
                 }
