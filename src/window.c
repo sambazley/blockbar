@@ -240,7 +240,7 @@ static void click(struct Click *cd) {
         } else if (pos == CENTER) {
             rx = cd->x - bars[cd->bar].width / 2 + centerWidth / 2;
         } else if (pos == RIGHT) {
-            rx = bars[cd->bar].width - cd->x;
+            rx = bars[cd->bar].width - cd->x - 1;
         }
 
         if (cd->bar == trayBar && pos == settings.trayside.val.POS) {
@@ -257,27 +257,27 @@ static void click(struct Click *cd) {
             cd->block = blk;
 
             if (blk->properties.mode.val.MODE == SUBBLOCK) {
-                int subblockCount;
+                struct SubblockData *sbd;
+
+                cd->subblock = -1;
+
                 if (blk->eachmon) {
-                    subblockCount =
-                        blk->data.mon[cd->bar].type.subblock.subblockCount;
+                    sbd = &(blk->data.mon[cd->bar].type.subblock);
                 } else {
-                    subblockCount = blk->data.type.subblock.subblockCount;
+                    sbd = &(blk->data.type.subblock);
                 }
 
                 int sbx = cx[pos] - blk->width[cd->bar];
-                for (int j = 0; j < subblockCount; j++) {
-                    if (blk->eachmon) {
-                        sbx += blk->data.mon[cd->bar].type.subblock.widths[j];
-                    } else {
-                        sbx += blk->data.type.subblock.widths[j];
-                    }
+                for (int j = 0; j < sbd->subblockCount; j++) {
+                    sbx += sbd->widths[j];
 
                     if (sbx > rx) {
                         cd->subblock = j;
                         break;
                     }
                 }
+
+                if (cd->subblock == -1) return;
             }
 
             goto found;

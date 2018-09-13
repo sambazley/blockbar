@@ -178,8 +178,8 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
 
     x += drawString(&bars[bar], text, x, pos, col, 0,0,0,0,0);
 
-    if (dl && pos == RIGHT && label && strcmp(label, "") != 0) {
-        x += drawString(&bars[bar], label, x, pos, col, 0,0,0,0,0);
+    if (dl && pos == RIGHT && label && strcmp(label, "")) {
+        x += drawString(&bars[bar], label, x, pos, col, 0, 0, 0, 0, 0);
     }
 
     x += settings.padding.val.INT + blk->properties.padding.val.INT;
@@ -318,11 +318,15 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         }
 
         x += drawString(&bars[bar], text, x, blk->properties.pos.val.POS, fg,
-                bgwidth, bgheight, bgxpad, bgypad, bg) + 1;
+                bgwidth, bgheight, bgxpad, bgypad, bg);
+
+        x += 1;
 
         (*widths)[i] = x - startx;
 
         if (i == *subblockCount - 1) {
+            x -= 1;
+
             if (blk->properties.pos.val.POS == RIGHT) {
                 x += blk->properties.paddingleft.val.INT;
             } else {
@@ -339,6 +343,7 @@ end:
 }
 
 static void drawDiv(int i, cairo_t *ctx, int x) {
+    int width = settings.divwidth.val.INT;
     int height;
     int y;
 
@@ -365,7 +370,7 @@ static void drawDiv(int i, cairo_t *ctx, int x) {
                           settings.divcolor.val.COL[2] / 255.f,
                           settings.divcolor.val.COL[3] / 255.f);
 
-    cairo_rectangle(ctx, x, y, settings.divwidth.val.INT, height);
+    cairo_rectangle(ctx, x - width / 2 - 1, y, width, height);
     cairo_fill(ctx);
 }
 
@@ -410,6 +415,10 @@ static int drawBlocks(int i, int *x) {
             continue;
         }
 
+        if (pos == RIGHT) {
+            x[pos] += 1;
+        }
+
         int prex = x[pos];
 
         if (execData) {
@@ -440,19 +449,28 @@ static int drawBlocks(int i, int *x) {
 
         *rendered = prex != x[pos];
 
-        blk->width[i] = x[pos] - prex;
-
-        if (*rendered) {
+        if (!*rendered) {
             if (pos == RIGHT) {
-                blk->x[i] = bars[i].width - x[pos];
-            } else {
-                blk->x[i] = prex;
+                x[pos] -= 1;
             }
-        } else {
             blk->x[i] = -1;
+            blk->width[i] = 0;
+            continue;
         }
 
-        if ((pos != RIGHT || last[RIGHT] == -1) && *rendered) {
+        blk->width[i] = x[pos] - prex + 1;
+
+        if (pos != RIGHT) {
+            x[pos] += 1;
+        }
+
+        if (pos == RIGHT) {
+            blk->x[i] = bars[i].width - x[pos];
+        } else {
+            blk->x[i] = prex;
+        }
+
+        if (pos != RIGHT || last[RIGHT] == -1) {
             last[pos] = j;
         }
     }
@@ -526,14 +544,15 @@ static int drawBlocks(int i, int *x) {
         }
     }
 
+    int trayWidth = getTrayWidth();
     if (last[settings.trayside.val.POS] != -1 && settings.traydiv.val.INT &&
-            i == trayBar) {
+            i == trayBar && trayWidth) {
         int divx;
 
         if (settings.trayside.val.POS == RIGHT) {
-            divx = bars[i].width - getTrayWidth();
+            divx = bars[i].width - trayWidth;
         } else {
-            divx = getTrayWidth();
+            divx = trayWidth;
         }
 
         drawDiv(i, bars[i].ctx[RI_BUFFER], divx);
