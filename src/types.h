@@ -46,6 +46,7 @@ struct Settings {
     struct Setting height;
     struct Setting marginvert;
     struct Setting marginhoriz;
+    struct Setting xoffset;
     struct Setting radius;
     struct Setting padding;
     struct Setting background;

@@ -433,6 +433,7 @@ cmd(_setSetting) {
                     E(height)
                     E(marginvert)
                     E(marginhoriz)
+                    E(xoffset)
                     E(position)) {
                     updateGeom();
                 }

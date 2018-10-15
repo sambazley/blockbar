@@ -58,6 +58,7 @@ struct Settings settings = {
     S(height, INT, "Height of the bar", 22)
     S(marginvert, INT, "Margin above or below the bar", 0)
     S(marginhoriz, INT, "Margin on the left and right of the bar", 0)
+    S(xoffset, INT, "Horizontal offset of the bar", 0)
     S(radius, INT, "Radius of the curvature of the corners of the bar", 0)
     S(padding, INT, "Padding on both sides of each block", 5)
     S(background, COL, "Background color of the bar", {0, 0, 0, 0xFF})

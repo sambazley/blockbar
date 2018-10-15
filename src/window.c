@@ -148,7 +148,8 @@ void updateGeom() {
             top = 0;
         }
 
-        int x = crtcInfo->x + settings.marginhoriz.val.INT;
+        int x = crtcInfo->x + settings.marginhoriz.val.INT
+                            + settings.xoffset.val.INT;
 
         int y = top ? settings.marginvert.val.INT
                          : crtcInfo->height
