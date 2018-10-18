@@ -58,6 +58,8 @@ struct Settings {
     struct Setting divheight;
     struct Setting divvertmargin;
     struct Setting divcolor;
+    struct Setting borderwidth;
+    struct Setting bordercolor;
     struct Setting traydiv;
     struct Setting traypadding;
     struct Setting trayiconsize;

@@ -70,6 +70,8 @@ struct Settings settings = {
     S(divheight, INT, "Divider height", -1)
     S(divvertmargin, INT, "Margin above and below dividers", 4)
     S(divcolor, COL, "Divider color", {0x33, 0x33, 0x33, 0xFF})
+    S(borderwidth, INT, "Width of the border", 0)
+    S(bordercolor, COL, "Color of the border", {0, 0, 0, 0})
     S(traydiv, BOOL, "Whether a divider is drawn next to the tray", 1)
     S(traypadding, INT, "Padding to the right of each tray icon", 2)
     S(trayiconsize, INT, "Width and height of each tray icon", 18)
