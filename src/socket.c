@@ -512,6 +512,8 @@ cmd(rm) {
 
     removeBlock(blk);
 
+    redraw();
+
     return 0;
 }
 
