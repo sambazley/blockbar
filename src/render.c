@@ -37,9 +37,26 @@ void renderInit() {
     }
 }
 
-static int
-drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
-        int bgWidth, int bgHeight, int bgXPad, int bgYPad, color bg) {
+static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
+    if (r) {
+        int mx [] = {w - r, r};
+        int my [] = {h - r, r};
+        double t = 3.14159 / 2.;
+        cairo_new_sub_path(ctx);
+        cairo_arc(ctx, x+mx[0], y+my[0], r,   0,   t);
+        cairo_arc(ctx, x+mx[1], y+my[0], r,   t, 2*t);
+        cairo_arc(ctx, x+mx[1], y+my[1], r, 2*t, 3*t);
+        cairo_arc(ctx, x+mx[0], y+my[1], r, 3*t, 4*t);
+        cairo_close_path(ctx);
+    } else {
+        cairo_rectangle(ctx, x, y, w, h);
+    }
+    cairo_fill(ctx);
+}
+
+static int drawString(struct Bar *bar, const char *str, int x, int pos,
+        color fg, int bgWidth, int bgHeight, int bgXPad, int bgYPad,
+        color bg) {
 
     cairo_t *ctx;
 
@@ -79,8 +96,7 @@ drawString(struct Bar *bar, const char *str, int x, int pos, color fg,
             x = bar->width - x - bgWidth;
         }
 
-        cairo_rectangle(ctx, x, bgYPad, bgWidth, bgHeight);
-        cairo_fill(ctx);
+        drawRect(ctx, x, bgYPad, bgWidth, bgHeight, 0);
 
         width = bgWidth;
         x += bgXPad;
@@ -376,8 +392,7 @@ static void drawDiv(int i, cairo_t *ctx, int x) {
                           settings.divcolor.val.COL[2] / 255.f,
                           settings.divcolor.val.COL[3] / 255.f);
 
-    cairo_rectangle(ctx, x - width / 2 - 1, y, width, height);
-    cairo_fill(ctx);
+    drawRect(ctx, x - width / 2 - 1, y, width, height, 0);
 }
 
 static int drawBlocks(int i, int *x) {
@@ -585,7 +600,6 @@ static void drawBar(int i) {
     int r = settings.radius.val.INT;
     int w = bars[i].width;
     int h = bars[i].height;
-    double pi = 3.14159;
 
     if (b) {
         cairo_set_source_rgba(ctx,
@@ -594,17 +608,7 @@ static void drawBar(int i) {
                               settings.bordercolor.val.COL[2]/255.f,
                               settings.bordercolor.val.COL[3]/255.f);
 
-        int x [] = {w - r, r};
-        int y [] = {h - r, r};
-        double t = pi / 2.;
-
-        cairo_new_sub_path(ctx);
-        cairo_arc(ctx, x[0], y[0], r,   0,   t);
-        cairo_arc(ctx, x[1], y[0], r,   t, 2*t);
-        cairo_arc(ctx, x[1], y[1], r, 2*t, 3*t);
-        cairo_arc(ctx, x[0], y[1], r, 3*t, 4*t);
-        cairo_close_path(ctx);
-        cairo_fill(ctx);
+        drawRect(ctx, 0, 0, w, h, r);
     }
 
     cairo_set_source_rgba(ctx,
@@ -614,16 +618,7 @@ static void drawBar(int i) {
                           settings.background.val.COL[3]/255.f);
 
     if (r || b) {
-        int x [] = {w - r - b, r + b};
-        int y [] = {h - r - b, r + b};
-        double t = pi / 2.;
-        cairo_new_sub_path(ctx);
-        cairo_arc(ctx, x[0], y[0], r,   0,   t);
-        cairo_arc(ctx, x[1], y[0], r,   t, 2*t);
-        cairo_arc(ctx, x[1], y[1], r, 2*t, 3*t);
-        cairo_arc(ctx, x[0], y[1], r, 3*t, 4*t);
-        cairo_close_path(ctx);
-        cairo_fill(ctx);
+        drawRect(ctx, b, b, w - b * 2, h - b * 2, r);
     } else {
         cairo_paint(ctx);
     }
