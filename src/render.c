@@ -56,7 +56,7 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
 
 static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
         int pos, color fg, int bgWidth, int bgHeight, int bgXPad, int bgYPad,
-        color bg) {
+        int bgRad, color bg) {
 
     cairo_t *ctx;
 
@@ -96,7 +96,7 @@ static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
             x = bar->width - x - bgWidth;
         }
 
-        drawRect(ctx, x, bgYPad, bgWidth, bgHeight, 0);
+        drawRect(ctx, x, bgYPad, bgWidth, bgHeight, bgRad);
 
         width = bgWidth;
         x += bgXPad;
@@ -121,7 +121,7 @@ static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
 
 static int drawString(struct Bar *bar, const char *str, int x,
         int pos, color fg) {
-    return drawStringWithBackground(bar, str, x, pos, fg, 0, 0, 0, 0, 0);
+    return drawStringWithBackground(bar, str, x, pos, fg, 0, 0, 0, 0, 0, 0);
 }
 
 static int drawLegacyBlock(struct Block *blk, int x, int bar) {
@@ -292,7 +292,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         color bg = {-1, -1, -1, -1};
         color fg;
-        int bgwidth = -1, bgheight = -1, bgxpad = 5, bgypad = 1;
+        int bgwidth = -1, bgheight = -1, bgxpad = 5, bgypad = 1, bgrad = 0;
+        int margin = 1;
 
         memcpy(fg, settings.foreground.val.COL, sizeof(color));
 
@@ -329,6 +330,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
         INT(bgheight);
         INT(bgxpad);
         INT(bgypad);
+        INT(bgrad);
+        INT(margin);
 
         bgypad += settings.borderwidth.val.INT;
 
@@ -336,7 +339,7 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         int startx = x;
 
-        if (i == 0) {
+        if (i == start) {
             if (blk->properties.pos.val.POS == RIGHT) {
                 x += blk->properties.paddingright.val.INT;
             } else {
@@ -346,15 +349,15 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
 
         x += drawStringWithBackground(&bars[bar], text, x,
                 blk->properties.pos.val.POS, fg,
-                bgwidth, bgheight, bgxpad, bgypad, bg);
+                bgwidth, bgheight, bgxpad, bgypad, bgrad, bg);
 
-        x += 1;
+        if (i != end - diff) {
+            x += margin;
+        }
 
         (*widths)[i] = x - startx;
 
         if (i == end - diff) {
-            x -= 1;
-
             if (blk->properties.pos.val.POS == RIGHT) {
                 x += blk->properties.paddingleft.val.INT;
             } else {
