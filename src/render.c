@@ -54,8 +54,8 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
     cairo_fill(ctx);
 }
 
-static int drawString(struct Bar *bar, const char *str, int x, int pos,
-        color fg, int bgWidth, int bgHeight, int bgXPad, int bgYPad,
+static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
+        int pos, color fg, int bgWidth, int bgHeight, int bgXPad, int bgYPad,
         color bg) {
 
     cairo_t *ctx;
@@ -119,6 +119,11 @@ static int drawString(struct Bar *bar, const char *str, int x, int pos,
     return width;
 }
 
+static int drawString(struct Bar *bar, const char *str, int x,
+        int pos, color fg) {
+    return drawStringWithBackground(bar, str, x, pos, fg, 0, 0, 0, 0, 0);
+}
+
 static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     char *dataOrig;
 
@@ -174,7 +179,7 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
     int dl = shortMode ? settings.shortlabels.val.INT : 1;
 
     if (dl && (pos == LEFT || pos == CENTER) && label && strcmp(label, "")) {
-        x += drawString(&bars[bar], label, x, pos, col, 0, 0, 0, 0, 0);
+        x += drawString(&bars[bar], label, x, pos, col);
     }
 
     char *text;
@@ -184,10 +189,10 @@ static int drawLegacyBlock(struct Block *blk, int x, int bar) {
         text = longText;
     }
 
-    x += drawString(&bars[bar], text, x, pos, col, 0,0,0,0,0);
+    x += drawString(&bars[bar], text, x, pos, col);
 
     if (dl && pos == RIGHT && label && strcmp(label, "")) {
-        x += drawString(&bars[bar], label, x, pos, col, 0, 0, 0, 0, 0);
+        x += drawString(&bars[bar], label, x, pos, col);
     }
 
     x += settings.padding.val.INT + blk->properties.padding.val.INT;
@@ -339,7 +344,8 @@ static int drawSubblocks(struct Block *blk, int x, int bar) {
             }
         }
 
-        x += drawString(&bars[bar], text, x, blk->properties.pos.val.POS, fg,
+        x += drawStringWithBackground(&bars[bar], text, x,
+                blk->properties.pos.val.POS, fg,
                 bgwidth, bgheight, bgxpad, bgypad, bg);
 
         x += 1;
@@ -458,7 +464,7 @@ static int drawBlocks(int i, int *x) {
             }
 
             x[pos] += drawString(&bars[i], blk->properties.label.val.STR,
-                    x[pos], pos, settings.foreground.val.COL, 0, 0, 0, 0, 0);
+                    x[pos], pos, settings.foreground.val.COL);
 
             x[pos]+= settings.padding.val.INT + blk->properties.padding.val.INT;
             if (pos == RIGHT) {
