@@ -185,12 +185,12 @@ void removeBlock(struct Block *blk) {
 
     free(blk->data);
 
-    if (blk->properties.exec.val.STR) {
-        free(blk->properties.exec.val.STR);
-    }
+    for (int i = 0; i < propertyCount; i++) {
+        struct Setting *property = &((struct Setting *) &(blk->properties))[i];
 
-    if (blk->properties.module.val.STR) {
-        free(blk->properties.module.val.STR);
+        if (property->type == STR && property->val.STR) {
+            free(property->val.STR);
+        }
     }
 
     free(blk->width);
