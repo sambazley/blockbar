@@ -85,14 +85,12 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
         setenv("BAR_OUTPUT", "", 1);
     }
 
-    setenv("SUBBLOCK_WIDTHS", "", 1);
-
     int rendered;
 
     if (blk->eachmon) {
-        rendered = blk->data.mon[bar].type.legacy.rendered;
+        rendered = blk->data[bar].rendered;
     } else {
-        rendered = blk->data.type.legacy.rendered;
+        rendered = blk->data->rendered;
     }
 
     if (!rendered) {
@@ -108,42 +106,6 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
     char w [12] = {0};
     sprintf(w, "%d", blk->width[bar]);
     setenv("BLOCK_WIDTH", w, 1);
-
-    if (blk->properties.mode.val.MODE == SUBBLOCK) {
-        int sbc;
-        int *widths;
-        if (blk->eachmon) {
-            sbc = blk->data.mon[bar].type.subblock.subblockCount;
-            widths = blk->data.mon[bar].type.subblock.widths;
-        } else {
-            sbc = blk->data.type.subblock.subblockCount;
-            widths = blk->data.type.subblock.widths;
-        }
-
-        char *sbw = 0;
-
-        for (int i = 0; i < sbc; i++) {
-            char str [13] = {0};
-            sprintf(str, "%d\n", widths[i]);
-
-            if (sbw == 0) {
-                sbw = malloc(strlen(str) + 1);
-                *sbw = 0;
-            } else {
-                sbw = realloc(sbw, strlen(sbw) + strlen(str) + 1);
-            }
-
-            strcat(sbw, str);
-        }
-
-        if (sbw) {
-            sbw[strlen(sbw) - 1] = 0;
-
-            setenv("SUBBLOCK_WIDTHS", sbw, 1);
-
-            free(sbw);
-        }
-    }
 }
 
 void blockExec(struct Block *blk, struct Click *cd) {
@@ -153,17 +115,14 @@ void blockExec(struct Block *blk, struct Click *cd) {
     }
 
     char button [12] = {0};
-    char subblock [12] = {0};
     char clickx [12] = {0};
 
     if (cd != 0) {
         sprintf(button, "%d", cd->button);
-        sprintf(subblock, "%d", cd->subblock);
         sprintf(clickx, "%d", cd->x + bars[cd->bar].x);
     }
 
     setenv("BLOCK_BUTTON", button, 1);
-    setenv("SUBBLOCK", subblock, 1);
     setenv("CLICK_X", clickx, 1);
 
     if (blk->eachmon) {
@@ -172,7 +131,6 @@ void blockExec(struct Block *blk, struct Click *cd) {
             execute(blk, cd->bar);
 
             setenv("BLOCK_BUTTON", "", 1);
-            setenv("SUBBLOCK", "", 1);
             setenv("CLICK_X", "", 1);
 
             for (int i = 0; i < barCount; i++) {

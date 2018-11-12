@@ -5,11 +5,6 @@
 
 typedef uint8_t color [4];
 
-enum Mode {
-    LEGACY,
-    SUBBLOCK
-};
-
 enum Pos {
     LEFT,
     RIGHT,
@@ -23,7 +18,6 @@ enum SettingType {
     STR,
     COL,
     POS,
-    MODE
 };
 
 union Value {
@@ -32,7 +26,6 @@ union Value {
     char *STR;
     color COL;
     enum Pos POS;
-    enum Mode MODE;
 };
 
 struct Setting {
@@ -68,7 +61,7 @@ struct Settings {
 };
 
 struct Properties {
-    struct Setting mode;
+    struct Setting module;
     struct Setting label;
     struct Setting exec;
     struct Setting pos;
@@ -79,16 +72,9 @@ struct Properties {
     struct Setting nodiv;
 };
 
-struct LegacyData {
+struct BlockData {
     int rendered;
     char *execData;
-};
-
-struct SubblockData {
-    int rendered;
-    char *execData;
-    int *widths;
-    int subblockCount;
 };
 
 struct Block {
@@ -100,19 +86,17 @@ struct Block {
 
     struct Properties properties;
 
-    union {
-        union {
-            struct LegacyData legacy;
-            struct SubblockData subblock;
-        } type;
+    struct BlockData *data;
+};
 
-        struct {
-            union {
-                struct LegacyData legacy;
-                struct SubblockData subblock;
-            } type;
-        } *mon;
-    } data;
+struct ModuleData {
+    char *name;
+};
+
+struct Module {
+    void *dl;
+    char *path;
+    struct ModuleData data;
 };
 
 #endif /* SETTINGS_H */

@@ -17,43 +17,16 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef WINDOW_H
-#define WINDOW_H
-#include <cairo/cairo-xlib.h>
-#include <X11/Xlib.h>
+#ifndef MODULES_H
+#define MODULES_H
 
-enum RenderIndex {
-    RI_VISIBLE,
-    RI_BUFFER,
-    RI_CENTER,
-    RI_COUNT
-};
+#include "types.h"
 
-struct Bar {
-    Window window;
-    int x;
-    int width;
-    int height;
-    char *output;
+extern struct Module *modules;
+extern int moduleCount;
 
-    cairo_surface_t *sfc [RI_COUNT];
-    cairo_t *ctx [RI_COUNT];
-};
+void loadModule(char *path);
+void cleanupModules();
+void (*moduleGetFunction(char *modName, char *funcName));
 
-struct Click {
-    int button;
-    int x;
-    int bar;
-    struct Block *block;
-};
-
-extern Display *disp;
-extern int barCount;
-extern struct Bar *bars;
-
-int createBars();
-void updateGeom();
-void pollEvents();
-void cleanupBars();
-
-#endif /* WINDOW_H */
+#endif /* MODULES_H */

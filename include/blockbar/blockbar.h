@@ -17,43 +17,11 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef WINDOW_H
-#define WINDOW_H
-#include <cairo/cairo-xlib.h>
-#include <X11/Xlib.h>
+#ifndef BLOCKBAR_H
+#define BLOCKBAR_H
 
-enum RenderIndex {
-    RI_VISIBLE,
-    RI_BUFFER,
-    RI_CENTER,
-    RI_COUNT
-};
+#include "types.h"
 
-struct Bar {
-    Window window;
-    int x;
-    int width;
-    int height;
-    char *output;
+extern struct Settings settings;
 
-    cairo_surface_t *sfc [RI_COUNT];
-    cairo_t *ctx [RI_COUNT];
-};
-
-struct Click {
-    int button;
-    int x;
-    int bar;
-    struct Block *block;
-};
-
-extern Display *disp;
-extern int barCount;
-extern struct Bar *bars;
-
-int createBars();
-void updateGeom();
-void pollEvents();
-void cleanupBars();
-
-#endif /* WINDOW_H */
+#endif /* BLOCKBAR_H */

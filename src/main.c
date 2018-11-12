@@ -19,6 +19,7 @@
 
 #include "config.h"
 #include "exec.h"
+#include "modules.h"
 #include "render.h"
 #include "socket.h"
 #include "tray.h"
@@ -63,6 +64,7 @@ static void onexit() {
 
     cleanupTray();
     cleanupBlocks();
+    cleanupModules();
     cleanupBars();
     cleanupSettings();
 
@@ -221,9 +223,9 @@ int main(int argc, const char *argv[]) {
             if (blk) {
                 char **execData;
                 if (blk->eachmon) {
-                    execData = &(blk->data.mon[proc->bar].type.legacy.execData);
+                    execData = &(blk->data[proc->bar].execData);
                 } else {
-                    execData = &(blk->data.type.legacy.execData);
+                    execData = &(blk->data->execData);
                 }
 
                 if (*execData) {

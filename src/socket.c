@@ -210,13 +210,6 @@ static int printSetting(struct Setting *setting, char *str, int fd) {
                 rprintf("center\n");
             }
             return 0;
-        case MODE:
-            if (setting->val.MODE == LEGACY) {
-                rprintf("legacy\n");
-            } else if (setting->val.MODE == SUBBLOCK) {
-                rprintf("subblocks\n");
-            }
-            return 0;
         }
     }
     return 1;
@@ -269,15 +262,6 @@ static int parseSetting(struct Setting *setting, char *v, int fd) {
             return 1;
         }
         break;
-    case MODE:
-        if (strcmp(v, "legacy") == 0) {
-            val.MODE = LEGACY;
-        } else if (strcmp(v, "subblocks") == 0) {
-            val.MODE = SUBBLOCK;
-        } else {
-            frprintf(rstderr, "Invalid mode\n");
-            return 1;
-        }
     }
 
     if (setSetting(setting, val)) {
@@ -300,9 +284,9 @@ cmd(_getProperty) {
     if (strcmp("execdata", argv[3]) == 0) {
         char *execData;
         if (blk->eachmon) {
-            execData = blk->data.mon[output].type.legacy.execData;
+            execData = blk->data[output].execData;
         } else {
-            execData = blk->data.type.legacy.execData;
+            execData = blk->data->execData;
         }
         rprintf("%s\n", execData ? execData : "");
 
@@ -342,9 +326,9 @@ cmd(_setProperty) {
     if (strcmp("execdata", argv[3]) == 0) {
         char **execData;
         if (blk->eachmon) {
-            execData = &(blk->data.mon[output].type.legacy.execData);
+            execData = &(blk->data[output].execData);
         } else {
-            execData = &(blk->data.type.legacy.execData);
+            execData = &(blk->data->execData);
         }
 
         if (*execData) {

@@ -206,9 +206,9 @@ static void click(struct Click *cd) {
 
         int rendered;
         if (blk->eachmon) {
-            rendered = blk->data.mon[cd->bar].type.legacy.rendered;
+            rendered = blk->data[cd->bar].rendered;
         } else {
-            rendered = blk->data.type.legacy.rendered;
+            rendered = blk->data->rendered;
         }
 
         if (blk->id && rendered && blk->properties.pos.val.POS == CENTER) {
@@ -226,9 +226,9 @@ static void click(struct Click *cd) {
 
         int rendered;
         if (blk->eachmon) {
-            rendered = blk->data.mon[cd->bar].type.legacy.rendered;
+            rendered = blk->data[cd->bar].rendered;
         } else {
-            rendered = blk->data.type.legacy.rendered;
+            rendered = blk->data->rendered;
         }
 
         if (!rendered) {
@@ -257,41 +257,12 @@ static void click(struct Click *cd) {
         if (cx[pos] > rx) {
             cd->block = blk;
 
-            if (blk->properties.mode.val.MODE == SUBBLOCK) {
-                struct SubblockData *sbd;
-
-                cd->subblock = -1;
-
-                if (blk->eachmon) {
-                    sbd = &(blk->data.mon[cd->bar].type.subblock);
-                } else {
-                    sbd = &(blk->data.type.subblock);
-                }
-
-                int sbx = cx[pos] - blk->width[cd->bar];
-                for (int j = 0; j < sbd->subblockCount; j++) {
-                    sbx += sbd->widths[j];
-
-                    if (sbx > rx) {
-                        if (pos == RIGHT) {
-                            cd->subblock = sbd->subblockCount - j - 1;
-                        } else {
-                            cd->subblock = j;
-                        }
-                        break;
-                    }
-                }
-
-                if (cd->subblock == -1) return;
-            }
-
-            goto found;
+            break;
         }
     }
 
     if (!cd->block) return;
 
-found:
     blockExec(cd->block, cd);
 }
 

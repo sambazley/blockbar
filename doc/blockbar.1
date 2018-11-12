@@ -30,6 +30,9 @@ The configuration file is a JSON file, that has the following sections:
 .EX
 {
     <General bar settings>,
+    "modules": [
+        <paths to module binaries>
+    ],
     "left": [
         <Left block settings objects>,
         {
@@ -148,8 +151,8 @@ cB cB cB cB
 l2 lx2 l2 l.
 Block Settings
 Key|Description|Type|Default
-mode|T{
-Block mode, "legacy" or "subblocks".
+module|T{
+The name of the module that handles he block.
 T}|String|"legacy"
 eachmon|T{
 If true, the block will execute once per monitor,
@@ -180,89 +183,6 @@ If true, the divider to the right of the block is not drawn.
 T}|Boolean|false
 .TE
 
-.SH MODES
-.PP
-A block can have one of two modes: "legacy", and "subblocks".
-.SS LEGACY
-Blocks in legacy mode work similarly to blocks in i3blocks.
-The standard output of the block's executable is parsed as three lines:
-.IP 1
-Full text
-.IP 2
-Short text
-.IP 3
-Color
-.PP
-Lines 2 and 3 are optional.
-If the standard output is empty, the block will not be drawn.
-Color should be in the format of "#RRGGBB" or "#RGB".
-
-.SS SUBBLOCKS
-For blocks in subblocks mode, the standard output of the block's executable
-is parsed as a JSON string. The format of this string is:
-.PP
-.in +4n
-.EX
-{
-    "subblocks":[
-        <subblock objects>,
-        {
-            ...
-        },
-        {
-            ...
-        },
-        ...
-    ]
-}
-.EE
-.in
-
-.PP
-.TS
-allbox tab(#);
-cB s s s
-cB cB cB cB
-l2 lx2 l2 l.
-Subblocks data
-Key#Description#Type#Default
-text#T{
-Text displayed in the subblock.
-T}#String#""
-background#T{
-Background color of the subblock.
-T}#Color#\-
-foreground#T{
-Default text color.
-T}#Color#[255,255,255]
-bgwidth#T{
-Sets the width of the block.
-Takes priority over bgxpad.
-Ignored if "background" is not set.
-T}#Integer#\-
-bgheight#T{
-Sets the height of the block.
-Takes priority over bgypad.
-Ignored if "background" is not set.
-T}#Integer#\-
-bgxpad#T{
-Sets the padding to the left and right of the block.
-Ignored if "background" is not set.
-T}#Integer#5
-bgypad#T{
-Sets the padding above and below the block.
-Ignored if "background" is not set.
-T}#Integer#1
-bgrad#T{
-Sets the radius of the curvature if the corners of the background.
-Ignored if "background" is not set.
-T}#Integer#0
-margin#T{
-Sets the margin to the right of the subblock.
-Ignored if the subblock is the final subblock.
-T}#Integer#1
-.TE
-
 .SH
 ENVIRONMENT VARIABLES
 .PP
@@ -282,11 +202,6 @@ is executed.
 If the block's execution was triggered by a click, this variable will be set
 to the mouse button's number ("1", "2", etc).
 
-.SS SUBBLOCK
-If the block's execution was triggered by a click, and the block is in
-subblocks mode, this variable will be set to the clicked subblock's index.
-If the block is not in subblocks mode, this variable will be set to "0".
-
 .SS BAR_OUTPUT
 If the block has \fIeachmon\fR=true, or the block was clicked, this variable
 will be set to the output's name (see xrandr).
@@ -299,12 +214,7 @@ to the x coordinate of the cursor.
 The x coordinate of the block.
 
 .SS BLOCK_WIDTH
-The width of the block, including padding. If the block is in subblocks mode,
-this is the total width of all subblocks.
-
-.SS SUBBLOCK_WIDTH
-If the block is in subblocks mode, this variable will be set to a list of
-each subblock's width, separated by a \\n character.
+The width of the block, including padding.
 
 .SH
 BBC COMMANDS

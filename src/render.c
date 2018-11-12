@@ -19,6 +19,7 @@
 
 #include "render.h"
 #include "config.h"
+#include "modules.h"
 #include "tray.h"
 #include "types.h"
 #include "window.h"
@@ -54,16 +55,13 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
     cairo_fill(ctx);
 }
 
-static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
-        int pos, color fg, int bgWidth, int bgHeight, int bgXPad, int bgYPad,
-        int bgRad, color bg) {
-
+int drawString(int bar, const char *str, int x, int pos, color fg) {
     cairo_t *ctx;
 
     if (pos == RI_CENTER) {
-        ctx = bar->ctx[RI_CENTER];
+        ctx = bars[bar].ctx[RI_CENTER];
     } else {
-        ctx = bar->ctx[RI_BUFFER];
+        ctx = bars[bar].ctx[RI_BUFFER];
     }
 
     PangoLayout *layout = pango_cairo_create_layout(ctx);
@@ -73,37 +71,8 @@ static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
     int width, height;
     pango_layout_get_pixel_size(layout, &width, &height);
 
-    if (!(bg == 0 || bg[0] < 0 || bg[1] < 0 || bg[2] < 0 || bg[3] < 0)) {
-        cairo_set_source_rgba(ctx,
-                              bg[0]/255.f,
-                              bg[1]/255.f,
-                              bg[2]/255.f,
-                              bg[3]/255.f);
-
-        if (bgWidth <= 0) {
-            bgWidth = width + 2*bgXPad;
-        } else {
-            bgXPad = (bgWidth - width) / 2;
-        }
-
-        if (bgHeight <= 0) {
-            bgHeight = bar->height - 2*bgYPad;
-        } else {
-            bgYPad = (bar->height - bgHeight) / 2;
-        }
-
-        if (pos == RIGHT) {
-            x = bar->width - x - bgWidth;
-        }
-
-        drawRect(ctx, x, bgYPad, bgWidth, bgHeight, bgRad);
-
-        width = bgWidth;
-        x += bgXPad;
-    } else {
-        if (pos == RIGHT) {
-            x = bar->width - x - width;
-        }
+    if (pos == RIGHT) {
+        x = bars[bar].width - x - width;
     }
 
     cairo_set_source_rgba(ctx,
@@ -111,266 +80,12 @@ static int drawStringWithBackground(struct Bar *bar, const char *str, int x,
                           fg[1]/255.f,
                           fg[2]/255.f,
                           fg[3]/255.f);
-    cairo_move_to(ctx, x, bar->height/2 - height/2);
+    cairo_move_to(ctx, x, bars[bar].height/2 - height/2);
     pango_cairo_show_layout(ctx, layout);
 
     g_object_unref(layout);
 
     return width;
-}
-
-static int drawString(struct Bar *bar, const char *str, int x,
-        int pos, color fg) {
-    return drawStringWithBackground(bar, str, x, pos, fg, 0, 0, 0, 0, 0, 0);
-}
-
-static int drawLegacyBlock(struct Block *blk, int x, int bar) {
-    char *dataOrig;
-
-    if (blk->eachmon) {
-        dataOrig = blk->data.mon[bar].type.legacy.execData;
-    } else {
-        dataOrig = blk->data.type.legacy.execData;
-    }
-
-    enum Pos pos = blk->properties.pos.val.POS;
-    char *label = blk->properties.label.val.STR;
-
-    char *data = malloc(strlen(dataOrig) + 1);
-    strcpy(data, dataOrig);
-
-    char *longText = data;
-    char *shortText = data;
-    color col;
-    memcpy(col, settings.foreground.val.COL, sizeof(color));
-
-    int j = 0;
-    int len = strlen(data);
-
-    for (int i = 0; i < len; i++) {
-        if (data[i] == '\0') {
-            break;
-        }
-
-        if (data[i] == '\n') {
-            if (j == 0) {
-                shortText = data + i + 1;
-            } else if (j == 1 && data[i + 1] == '#') {
-                char str [9] = "00000000";
-                int colLen = len - i - 2;
-                if (colLen == 3 || colLen == 4 || colLen == 6 || colLen == 8) {
-                    strncpy(str, data+i+2, colLen+1);
-                    parseColorString(str, col);
-                }
-            }
-            data[i] = 0;
-            j++;
-        }
-    }
-
-    x += settings.padding.val.INT + blk->properties.padding.val.INT;
-
-    if (pos == RIGHT) {
-        x += blk->properties.paddingright.val.INT;
-    } else {
-        x += blk->properties.paddingleft.val.INT;
-    }
-
-    int dl = shortMode ? settings.shortlabels.val.INT : 1;
-
-    if (dl && (pos == LEFT || pos == CENTER) && label && strcmp(label, "")) {
-        x += drawString(&bars[bar], label, x, pos, col);
-    }
-
-    char *text;
-    if (shortMode) {
-        text = shortText;
-    } else {
-        text = longText;
-    }
-
-    x += drawString(&bars[bar], text, x, pos, col);
-
-    if (dl && pos == RIGHT && label && strcmp(label, "")) {
-        x += drawString(&bars[bar], label, x, pos, col);
-    }
-
-    x += settings.padding.val.INT + blk->properties.padding.val.INT;
-
-    if (pos == RIGHT) {
-        x += blk->properties.paddingleft.val.INT;
-    } else {
-        x += blk->properties.paddingright.val.INT;
-    }
-
-    free(data);
-
-    return x;
-}
-
-static int drawSubblocks(struct Block *blk, int x, int bar) {
-    char *data;
-    char *exec = blk->properties.exec.val.STR;
-    int **widths;
-    int *subblockCount;
-
-    if (blk->eachmon) {
-        data = blk->data.mon[bar].type.subblock.execData;
-        widths = &(blk->data.mon[bar].type.subblock.widths);
-        subblockCount = &(blk->data.mon[bar].type.subblock.subblockCount);
-    } else {
-        data = blk->data.type.subblock.execData;
-        widths = &(blk->data.type.subblock.widths);
-        subblockCount = &(blk->data.type.subblock.subblockCount);
-    }
-
-    JsonError err;
-    jsonErrorInit(&err);
-
-    JsonObject *jo = jsonParseString(data, &err);
-
-    if (!jo) return x;
-
-    if (jsonErrorIsSet(&err)) {
-        fprintf(stderr, "Invalid subblock data (exec=%s)\n%s\n",
-                exec, err.msg);
-        goto end;
-    }
-
-    if (jsonGetPairIndex(jo, "subblocks") == -1) {
-        goto end;
-    }
-
-    JsonArray *subblocks;
-    jsonGetArray(jo, "subblocks", &subblocks, &err);
-    if (jsonErrorIsSet(&err)) {
-        fprintf(stderr, "Error parsing \"subblocks\" array\n%s\n", err.msg);
-        goto end;
-    }
-
-    if (subblocks->used == 0) {
-        return x;
-    }
-
-    x += blk->properties.padding.val.INT;
-
-    *widths = realloc(*widths, sizeof(int) * subblocks->used);
-    *subblockCount = subblocks->used;
-
-    int start, end, diff;
-
-    if (blk->properties.pos.val.POS == RIGHT) {
-        start = subblocks->used - 1;
-        end = -1;
-        diff = -1;
-    } else {
-        start = 0;
-        end = subblocks->used;
-        diff = 1;
-    }
-
-    for (int i = start; i != end; i += diff) {
-        void *val = subblocks->vals[i];
-        if (jsonGetType(val) != JSON_OBJECT) {
-            fprintf(stderr, "Expecting object in \"subblocks\" array\n");
-            break;
-        }
-
-        JsonObject *subblock = (JsonObject *) val;
-
-        char *text = "";
-        if (jsonGetPairIndex(subblock, "text") != -1) {
-            jsonGetString(subblock, "text", &text, &err);
-            if (jsonErrorIsSet(&err)) {
-                fprintf(stderr,
-                        "Error parsing \"text\" string from subblock\n%s\n",
-                        err.msg);
-                jsonErrorCleanup(&err);
-                jsonErrorInit(&err);
-            }
-        }
-
-        color bg = {-1, -1, -1, -1};
-        color fg;
-        int bgwidth = -1, bgheight = -1, bgxpad = 5, bgypad = 1, bgrad = 0;
-        int margin = 1;
-
-        memcpy(fg, settings.foreground.val.COL, sizeof(color));
-
-        parseColorJson(subblock, "background", bg, &err);
-        if (jsonErrorIsSet(&err)) {
-            fprintf(stderr,
-                    "Error parsing \"background\" array form subblock\n%s\n",
-                    err.msg);
-            jsonErrorCleanup(&err);
-            jsonErrorInit(&err);
-        }
-
-        parseColorJson(subblock, "foreground", fg, &err);
-        if (jsonErrorIsSet(&err)) {
-            fprintf(stderr,
-                    "Error parsing \"foreground\" array form subblock\n%s\n",
-                    err.msg);
-            jsonErrorCleanup(&err);
-            jsonErrorInit(&err);
-        }
-
-        #define INT(x) \
-            if (jsonGetPairIndex(subblock, #x) != -1) { \
-                jsonGetInt(subblock, #x, &x, &err); \
-                if (jsonErrorIsSet(&err)) { \
-                    fprintf(stderr, "Error parsing \"" #x  "\"string " \
-                            "from subblock\n%s\n", err.msg); \
-                    jsonErrorCleanup(&err); \
-                    jsonErrorInit(&err); \
-                } \
-            }
-
-        INT(bgwidth);
-        INT(bgheight);
-        INT(bgxpad);
-        INT(bgypad);
-        INT(bgrad);
-        INT(margin);
-
-        bgypad += settings.borderwidth.val.INT;
-
-        #undef INT
-
-        int startx = x;
-
-        if (i == start) {
-            if (blk->properties.pos.val.POS == RIGHT) {
-                x += blk->properties.paddingright.val.INT;
-            } else {
-                x += blk->properties.paddingleft.val.INT;
-            }
-        }
-
-        x += drawStringWithBackground(&bars[bar], text, x,
-                blk->properties.pos.val.POS, fg,
-                bgwidth, bgheight, bgxpad, bgypad, bgrad, bg);
-
-        if (i != end - diff) {
-            x += margin;
-        }
-
-        (*widths)[i] = x - startx;
-
-        if (i == end - diff) {
-            if (blk->properties.pos.val.POS == RIGHT) {
-                x += blk->properties.paddingleft.val.INT;
-            } else {
-                x += blk->properties.paddingright.val.INT;
-            }
-        }
-    }
-
-    x += blk->properties.padding.val.INT;
-
-end:
-    jsonCleanup(jo);
-    return x;
 }
 
 static void drawDiv(int i, cairo_t *ctx, int x) {
@@ -431,11 +146,11 @@ static int drawBlocks(int i, int *x) {
         char *execData;
         int *rendered;
         if (blk->eachmon) {
-            execData = blk->data.mon[i].type.legacy.execData;
-            rendered = &(blk->data.mon[i].type.legacy.rendered);
+            execData = blk->data[i].execData;
+            rendered = &(blk->data[i].rendered);
         } else {
-            execData = blk->data.type.legacy.execData;
-            rendered = &(blk->data.type.legacy.rendered);
+            execData = blk->data->execData;
+            rendered = &(blk->data->rendered);
         }
 
         *rendered = 0;
@@ -445,55 +160,79 @@ static int drawBlocks(int i, int *x) {
             continue;
         }
 
+        int prex = x[pos];
+
         if (pos == RIGHT) {
             x[pos] += 1;
         }
 
-        int prex = x[pos];
+        x[pos] += settings.padding.val.INT + blk->properties.padding.val.INT;
+
+        if (pos == RIGHT) {
+            x[pos] += blk->properties.paddingright.val.INT;
+        } else {
+            x[pos] += blk->properties.paddingleft.val.INT;
+        }
 
         if (execData) {
-            if (blk->properties.mode.val.MODE == LEGACY) {
-                x[pos] = drawLegacyBlock(blk, x[pos], i);
-            } else {
-                x[pos] = drawSubblocks(blk, x[pos], i);
+            int (*func)(cairo_t *, struct Block *, int, int) =
+                moduleGetFunction(blk->properties.module.val.STR, "render");
+
+            if (func) {
+                cairo_surface_t *sfc = cairo_surface_create_similar_image(
+                        bars[i].sfc[0], CAIRO_FORMAT_ARGB32,
+                        bars[i].width, bars[i].height);
+
+                cairo_t *ctx_ = cairo_create(sfc);
+
+                int width = func(ctx_, blk, i, shortMode);
+
+                int sfcx = x[pos];
+
+                if (width == 0) {
+                    cairo_surface_destroy(sfc);
+                    cairo_destroy(ctx_);
+
+                    x[pos] = prex;
+                    blk->x[i] = -1;
+                    blk->width[i] = 0;
+                    continue;
+                }
+
+                *rendered = 1;
+
+                if (pos == RIGHT) {
+                    sfcx = bars[i].width - sfcx - width;
+                }
+
+                cairo_set_source_surface(ctx, sfc, sfcx, 0);
+                cairo_paint(ctx);
+
+                cairo_surface_destroy(sfc);
+                cairo_destroy(ctx_);
+
+                x[pos] += width;
             }
         } else if (blk->properties.label.val.STR &&
                 (shortMode ? settings.shortlabels.val.INT : 1)) {
-            x[pos]+= settings.padding.val.INT + blk->properties.padding.val.INT;
-            if (pos == RIGHT) {
-                x[pos] += blk->properties.paddingright.val.INT;
-            } else {
-                x[pos] += blk->properties.paddingleft.val.INT;
-            }
 
-            x[pos] += drawString(&bars[i], blk->properties.label.val.STR,
+            x[pos] += drawString(i, blk->properties.label.val.STR,
                     x[pos], pos, settings.foreground.val.COL);
-
-            x[pos]+= settings.padding.val.INT + blk->properties.padding.val.INT;
-            if (pos == RIGHT) {
-                x[pos] += blk->properties.paddingleft.val.INT;
-            } else {
-                x[pos] += blk->properties.paddingright.val.INT;
-            }
         }
 
-        *rendered = prex != x[pos];
+        x[pos] += settings.padding.val.INT + blk->properties.padding.val.INT;
 
-        if (!*rendered) {
-            if (pos == RIGHT) {
-                x[pos] -= 1;
-            }
-            blk->x[i] = -1;
-            blk->width[i] = 0;
-            continue;
+        if (pos == RIGHT) {
+            x[pos] += blk->properties.paddingleft.val.INT;
+        } else {
+            x[pos] += blk->properties.paddingright.val.INT;
         }
-
-        blk->width[i] = x[pos] - prex + 1;
 
         if (pos != RIGHT) {
             x[pos] += 1;
         }
 
+        blk->width[i] = x[pos] - prex;
         if (pos == RIGHT) {
             blk->x[i] = bars[i].width - x[pos];
         } else {
@@ -534,9 +273,9 @@ static int drawBlocks(int i, int *x) {
         int rendered;
 
         if (blk->eachmon) {
-            rendered = blk->data.mon[i].type.legacy.rendered;
+            rendered = blk->data[i].rendered;
         } else {
-            rendered = blk->data.type.legacy.rendered;
+            rendered = blk->data->rendered;
         }
 
         if (!rendered) {

@@ -18,6 +18,7 @@
  */
 
 #include "config.h"
+#include "modules.h"
 #include "util.h"
 #include "window.h"
 #include <pwd.h>
@@ -42,7 +43,6 @@ const char *typeStrings [] = {
     "string",
     "color",
     "position",
-    "mode"
 };
 
 #define S(n, t, d, ...) \
@@ -80,7 +80,7 @@ struct Settings settings = {
 };
 
 struct Properties defProperties = {
-    S(mode, MODE, "The block's mode", LEGACY)
+    S(module, STR, "The name of the module that handles the block", "legacy")
     S(label, STR, "The block's label", "")
     S(exec, STR, "Command to be executed", "")
     S(pos, POS, "Position of the block", LEFT)
@@ -100,7 +100,6 @@ int setSetting(struct Setting *setting, union Value val) {
     switch (setting->type) {
     case INT:
     case BOOL:
-    case MODE:
         if (setting == &settings.divvertmargin) {
             settings.divheight.val.INT = -1;
         }
@@ -195,25 +194,6 @@ static int parseSetting(JsonObject *jo, struct Setting *setting,
                     val->POS = RIGHT;
                 } else if (strcmp(str, "center") == 0) {
                     val->POS = CENTER;
-                } else {
-                    free(str);
-                    return 1;
-                }
-            }
-            break;
-        }
-    case MODE:
-        {
-            char *str = 0;
-            jsonGetString(jo, setting->name, &str, err);
-            if (jsonErrorIsSet(err)) {
-                return 1;
-            }
-            if (str) {
-                if (strcmp(str, "legacy") == 0) {
-                    val->MODE = LEGACY;
-                } else if (strcmp(str, "subblocks") == 0) {
-                    val->MODE = SUBBLOCK;
                 } else {
                     free(str);
                     return 1;
@@ -391,6 +371,29 @@ void configParseGeneral(JsonObject *jsonConfig) {
            }
         }
     }
+
+    JsonArray *mods;
+
+    if (jsonGetPairIndex(jsonConfig, "modules") != -1) {
+        jsonGetArray(jsonConfig, "modules", &mods, &err);
+        if (jsonErrorIsSet(&err)) {
+            fprintf(stderr, "Error parsing \"modules\" array\n%s\n", err.msg);
+            jsonErrorCleanup(&err);
+            jsonErrorInit(&err);
+        } else {
+            for (int i = 0; i < mods->used; i++) {
+                JsonString *str = mods->vals[i];
+                if (jsonGetType(str) != JSON_STRING) {
+                    fprintf(stderr, "Skipping invalid module\n");
+                    continue;
+                }
+
+                char *path = str->data;
+
+                loadModule(path);
+            }
+        }
+    }
 }
 
 void configParseBlocks(JsonObject *jsonConfig) {
@@ -457,20 +460,6 @@ static void addSetting(struct Setting *setting, int explicit,
             jsonAddString(setting->name, str, jo, err);
         }
         break;
-    case MODE:
-        if (setting->val.MODE != setting->def.MODE || explicit) {
-            char *str = "";
-            switch (setting->val.MODE) {
-            case LEGACY:
-                str = "legacy";
-                break;
-            case SUBBLOCK:
-                str = "subblocks";
-                break;
-            }
-            jsonAddString(setting->name, str, jo, err);
-        }
-        break;
     }
 }
 
@@ -496,6 +485,13 @@ char *configSave(FILE *file, int explicit) {
         if (jsonErrorIsSet(&err)) {
             ERR_;
         }
+    }
+
+    JsonArray *mods = jsonAddArray("modules", jo, &err);
+
+    for (int i = 0; i < moduleCount; i++) {
+        jsonAddString(0, modules[i].path, mods, &err);
+        ERR_;
     }
 
     JsonArray *bArr [SIDES];

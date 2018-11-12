@@ -142,10 +142,11 @@ struct Block *createBlock(int eachmon) {
     blk->eachmon = eachmon;
 
     if (eachmon) {
-        blk->data.mon = malloc(sizeof(*(blk->data.mon)) * barCount);
-        memset(blk->data.mon, 0, sizeof(*(blk->data.mon)) * barCount);
+        blk->data = malloc(sizeof(struct BlockData) * barCount);
+        memset(blk->data, 0, sizeof(struct BlockData) * barCount);
     } else {
-        blk->data.type.legacy.rendered = 0;
+        blk->data = malloc(sizeof(struct BlockData));
+        memset(blk->data, 0, sizeof(struct BlockData));
     }
 
     memcpy(&(blk->properties), &defProperties, sizeof(blk->properties));
@@ -166,39 +167,23 @@ struct Block *createBlock(int eachmon) {
 void removeBlock(struct Block *blk) {
     blk->id = 0;
 
-    if (blk->properties.mode.val.MODE == SUBBLOCK) {
-        if (blk->eachmon) {
-            for (int i = 0; i < barCount; i++) {
-                int *widths = blk->data.mon[i].type.subblock.widths;
-                if (widths) {
-                    free(widths);
-                }
-            }
-        } else {
-            int *widths = blk->data.type.subblock.widths;
-            if (widths) {
-                free(widths);
-            }
-        }
-    }
-
     if (blk->eachmon) {
         for (int i = 0; i < barCount; i++) {
-            char *execData = blk->data.mon[i].type.legacy.execData;
+            char *execData = blk->data[i].execData;
 
             if (execData) {
                 free(execData);
             }
         }
-
-        free(blk->data.mon);
     } else {
-        char *execData = blk->data.type.legacy.execData;
+        char *execData = blk->data->execData;
 
         if (execData) {
             free(execData);
         }
     }
+
+    free(blk->data);
 
     if (blk->properties.label.val.STR) {
         free(blk->properties.label.val.STR);
@@ -206,6 +191,10 @@ void removeBlock(struct Block *blk) {
 
     if (blk->properties.exec.val.STR) {
         free(blk->properties.exec.val.STR);
+    }
+
+    if (blk->properties.module.val.STR) {
+        free(blk->properties.module.val.STR);
     }
 
     free(blk->width);
