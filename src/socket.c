@@ -437,11 +437,6 @@ cmd(_setSetting) {
                     reparentIcons();
                 }
 
-                if (0
-                    E(font)) {
-                    renderInit();
-                }
-
                 redraw();
 
                 return 0;

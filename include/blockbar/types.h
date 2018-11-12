@@ -45,7 +45,6 @@ struct Settings {
     struct Setting background;
     struct Setting foreground;
     struct Setting font;
-    struct Setting shortlabels;
     struct Setting position;
     struct Setting divwidth;
     struct Setting divheight;
@@ -62,7 +61,6 @@ struct Settings {
 
 struct Properties {
     struct Setting module;
-    struct Setting label;
     struct Setting exec;
     struct Setting pos;
     struct Setting interval;

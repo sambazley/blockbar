@@ -185,10 +185,6 @@ void removeBlock(struct Block *blk) {
 
     free(blk->data);
 
-    if (blk->properties.label.val.STR) {
-        free(blk->properties.label.val.STR);
-    }
-
     if (blk->properties.exec.val.STR) {
         free(blk->properties.exec.val.STR);
     }

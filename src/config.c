@@ -64,7 +64,6 @@ struct Settings settings = {
     S(background, COL, "Background color of the bar", {0, 0, 0, 0xFF})
     S(foreground, COL, "Default text color", {0xFF, 0xFF, 0xFF, 0xFF})
     S(font, STR, "Font name and size", 0)
-    S(shortlabels, BOOL, "Whether a block's label should render in short mode", 1)
     S(position, STR, "Position of the bar on the screen (\"top\" or \"bottom\")", "top")
     S(divwidth, INT, "Divider width", 1)
     S(divheight, INT, "Divider height", -1)
@@ -81,7 +80,6 @@ struct Settings settings = {
 
 struct Properties defProperties = {
     S(module, STR, "The name of the module that handles the block", "legacy")
-    S(label, STR, "The block's label", "")
     S(exec, STR, "Command to be executed", "")
     S(pos, POS, "Position of the block", LEFT)
     S(interval, INT, "Time between each execution of the block's script", 0)

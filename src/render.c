@@ -28,15 +28,7 @@
 #include <string.h>
 #include <ujson.h>
 
-static PangoFontDescription *fontDesc;
-
 static int shortMode;
-
-void renderInit() {
-    if (settings.font.val.STR) {
-        fontDesc = pango_font_description_from_string(settings.font.val.STR);
-    }
-}
 
 static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
     if (r) {
@@ -53,39 +45,6 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
         cairo_rectangle(ctx, x, y, w, h);
     }
     cairo_fill(ctx);
-}
-
-int drawString(int bar, const char *str, int x, int pos, color fg) {
-    cairo_t *ctx;
-
-    if (pos == RI_CENTER) {
-        ctx = bars[bar].ctx[RI_CENTER];
-    } else {
-        ctx = bars[bar].ctx[RI_BUFFER];
-    }
-
-    PangoLayout *layout = pango_cairo_create_layout(ctx);
-    pango_layout_set_font_description(layout, fontDesc);
-    pango_layout_set_markup(layout, str, -1);
-
-    int width, height;
-    pango_layout_get_pixel_size(layout, &width, &height);
-
-    if (pos == RIGHT) {
-        x = bars[bar].width - x - width;
-    }
-
-    cairo_set_source_rgba(ctx,
-                          fg[0]/255.f,
-                          fg[1]/255.f,
-                          fg[2]/255.f,
-                          fg[3]/255.f);
-    cairo_move_to(ctx, x, bars[bar].height/2 - height/2);
-    pango_cairo_show_layout(ctx, layout);
-
-    g_object_unref(layout);
-
-    return width;
 }
 
 static void drawDiv(int i, cairo_t *ctx, int x) {
@@ -155,11 +114,6 @@ static int drawBlocks(int i, int *x) {
 
         *rendered = 0;
 
-        if ((execData == 0 || strcmp(execData, "") == 0) &&
-                strcmp(blk->properties.label.val.STR, "") == 0) {
-            continue;
-        }
-
         int prex = x[pos];
 
         if (pos == RIGHT) {
@@ -213,11 +167,6 @@ static int drawBlocks(int i, int *x) {
 
                 x[pos] += width;
             }
-        } else if (blk->properties.label.val.STR &&
-                (shortMode ? settings.shortlabels.val.INT : 1)) {
-
-            x[pos] += drawString(i, blk->properties.label.val.STR,
-                    x[pos], pos, settings.foreground.val.COL);
         }
 
         x[pos] += settings.padding.val.INT + blk->properties.padding.val.INT;

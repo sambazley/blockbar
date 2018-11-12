@@ -20,7 +20,6 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-void renderInit();
 void redraw();
 
 #endif /* RENDER_H */
