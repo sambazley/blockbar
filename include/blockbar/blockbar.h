@@ -24,4 +24,6 @@
 
 extern struct Settings settings;
 
+extern void setEnv(char *key, char *val);
+
 #endif /* BLOCKBAR_H */

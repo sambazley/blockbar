@@ -40,13 +40,6 @@ struct Bar {
     cairo_t *ctx [RI_COUNT];
 };
 
-struct Click {
-    int button;
-    int x;
-    int bar;
-    struct Block *block;
-};
-
 extern Display *disp;
 extern int barCount;
 extern struct Bar *bars;

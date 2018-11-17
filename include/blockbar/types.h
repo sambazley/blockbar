@@ -87,6 +87,13 @@ struct Block {
     struct BlockData *data;
 };
 
+struct Click {
+    int button;
+    int x;
+    int bar;
+    struct Block *block;
+};
+
 struct ModuleData {
     char *name;
 };
