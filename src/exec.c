@@ -19,6 +19,7 @@
 
 #include "exec.h"
 #include "config.h"
+#include "modules.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -87,6 +88,17 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
 static void execute(struct Block *blk, int bar, struct Click *cd) {
     barEnvs(blk, bar, cd);
 
+    int (*func)(struct Block *, int, struct Click *) =
+        moduleGetFunction(blk->properties.module.val.STR, "exec");
+
+    if (func) {
+        int ret = func(blk, bar, cd);
+
+        if (ret != 0) {
+            goto end;
+        }
+    }
+
     int out [2];
 
     if (pipe(out) == -1) {
@@ -132,6 +144,7 @@ static void execute(struct Block *blk, int bar, struct Click *cd) {
     proc->blk = blk->id;
     proc->bar = bar;
 
+end:
     resetEnvs();
 }
 

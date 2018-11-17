@@ -201,6 +201,8 @@ static void click(struct Click *cd) {
     int cx [SIDES] = {0};
     int centerWidth = 0;
 
+    struct Block *block = 0;
+
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
 
@@ -255,15 +257,15 @@ static void click(struct Click *cd) {
         cx[pos] += blk->width[cd->bar];
 
         if (cx[pos] > rx) {
-            cd->block = blk;
+            block = blk;
 
             break;
         }
     }
 
-    if (!cd->block) return;
+    if (!block) return;
 
-    blockExec(cd->block, cd);
+    blockExec(block, cd);
 }
 
 void pollEvents() {
