@@ -76,9 +76,11 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
         return;
     }
 
-    char x [12] = {0};
-    sprintf(x, "%d", blk->x[bar] + bars[bar].x);
-    setEnv("BLOCK_X", x);
+    if (blk->eachmon || cd) {
+        char x [12] = {0};
+        sprintf(x, "%d", blk->x[bar] + bars[bar].x);
+        setEnv("BLOCK_X", x);
+    }
 
     char w [12] = {0};
     sprintf(w, "%d", blk->width[bar]);
