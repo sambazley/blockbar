@@ -70,6 +70,17 @@ void loadModule(char *path) {
         return;
     }
 
+    for (int i = 0 ; i < moduleCount - 1; i++) {
+        if (strcmp(m->data.name, modules[i].data.name) == 0) {
+            fprintf(stderr, "Module \"%s\" failed to initialize\n", path);
+            fprintf(stderr, "Module with name \"%s\" already loaded\n",
+                    m->data.name);
+            dlclose(m->dl);
+            moduleCount--;
+            return;
+        }
+    }
+
     int *version = dlsym(m->dl, "API_VERSION");
     err = dlerror();
 
