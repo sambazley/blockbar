@@ -18,6 +18,7 @@
  */
 
 #include "modules.h"
+#include "version.h"
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,6 +65,23 @@ void loadModule(char *path) {
 
     if (ret != 0) {
         fprintf(stderr, "Module \"%s\" failed to initialize (%d)\n", path, ret);
+        dlclose(m->dl);
+        moduleCount--;
+        return;
+    }
+
+    int *version = dlsym(m->dl, "API_VERSION");
+    err = dlerror();
+
+    if (err) {
+        fprintf(stderr, "%s\n", err);
+        dlclose(m->dl);
+        moduleCount--;
+        return;
+    }
+
+    if (*version != API_VERSION) {
+        fprintf(stderr, "\"%s\" module is out of date\n", m->data.name);
         dlclose(m->dl);
         moduleCount--;
         return;

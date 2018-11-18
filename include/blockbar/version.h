@@ -17,14 +17,9 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef BLOCKBAR_H
-#define BLOCKBAR_H
+#ifndef VERSION_H
+#define VERSION_H
 
-#include "types.h"
-#include "version.h"
+const int API_VERSION = 1;
 
-extern struct Settings settings;
-
-extern void setEnv(char *key, char *val);
-
-#endif /* BLOCKBAR_H */
+#endif /* VERSION_H */
