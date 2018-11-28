@@ -28,6 +28,7 @@ struct Proc {
     int bar;
     int pid;
     int fdout;
+    char *buffer;
 };
 
 extern int procCount;

@@ -211,10 +211,19 @@ int main(int argc, const char *argv[]) {
             if (proc->pid == 0) continue;
             if (!FD_ISSET(proc->fdout, &fds)) continue;
 
-            waitpid(proc->pid, 0, 0);
-
             char buf [2048] = {0};
             read(proc->fdout, buf, sizeof(buf) - 1);
+
+            if (!proc->buffer) {
+                proc->buffer = malloc(strlen(buf) + 1);
+                strcpy(proc->buffer, buf);
+            } else {
+                proc->buffer = realloc(proc->buffer,
+                                       strlen(proc->buffer) + strlen(buf) + 1);
+                strcpy(proc->buffer + strlen(proc->buffer), buf);
+            }
+
+            if (waitpid(proc->pid, 0, WNOHANG) == 0) continue;
 
             struct Block *blk = getBlock(proc->blk);
 
@@ -229,11 +238,11 @@ int main(int argc, const char *argv[]) {
                 if (*execData) {
                     free(*execData);
                 }
-                *execData = malloc(strlen(buf) + 1);
-                strcpy(*execData, buf);
+                *execData = proc->buffer;
 
-                if (strlen(buf) && (*execData)[strlen(buf) - 1] == '\n') {
-                    (*execData)[strlen(buf) - 1] = 0;
+                if (strlen(*execData) &&
+                        (*execData)[strlen(*execData) - 1] == '\n') {
+                    (*execData)[strlen(*execData) - 1] = 0;
                 }
             }
 

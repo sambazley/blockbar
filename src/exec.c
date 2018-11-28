@@ -145,6 +145,7 @@ static void execute(struct Block *blk, int bar, struct Click *cd) {
     proc->pid = pid;
     proc->blk = blk->id;
     proc->bar = bar;
+    proc->buffer = 0;
 
 end:
     resetEnvs();
