@@ -7,7 +7,7 @@ include_directories(include/blockbar)
 
 project(blockbar)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -rdynamic -std=gnu99 -Og -ggdb -Wall -D_WITH_DPRINTF")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -rdynamic -std=gnu99 -Og -ggdb -Wall")
 
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)
 
@@ -22,6 +22,9 @@ set(SOURCE
     src/util.c
     src/window.c
 )
+
+add_definitions(-D_WITH_DPRINTF)
+add_definitions(-DLIBDIR="${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(pangocairo REQUIRED pangocairo)

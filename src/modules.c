@@ -19,6 +19,7 @@
 
 #include "modules.h"
 #include "version.h"
+#include <dirent.h>
 #include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +27,8 @@
 
 struct Module *modules;
 int moduleCount;
+
+static int inConfig = 1;
 
 void loadModule(char *path) {
     char *err = dlerror();
@@ -101,7 +104,39 @@ void loadModule(char *path) {
     m->path = malloc(strlen(path) + 1);
     strcpy(m->path, path);
 
+    m->inConfig = inConfig;
+
     printf("Loaded \"%s\" module (%s)\n", m->data.name, path);
+}
+
+void initModules() {
+    char *libdir = LIBDIR "/blockbar/";
+    DIR *dir = opendir(libdir);
+
+    if (!dir) {
+        fprintf(stderr, "Module directory (%s) does not exist\n", libdir);
+        return;
+    }
+
+    inConfig = 0;
+
+    struct dirent *dp;
+
+    while ((dp = readdir(dir))) {
+        if (dp->d_type != DT_REG && dp->d_type != DT_LNK) {
+            continue;
+        }
+
+        char *file = malloc(strlen(libdir) + strlen(dp->d_name) + 1);
+        strcpy(file, libdir);
+        strcpy(file + strlen(libdir), dp->d_name);
+        loadModule(file);
+        free(file);
+    }
+
+    closedir(dir);
+
+    inConfig = 1;
 }
 
 void cleanupModules() {
@@ -123,8 +158,6 @@ void (*moduleGetFunction(char *modName, char *funcName)) {
             char *err = dlerror();
 
             if (err) {
-                fprintf(stderr, "%s\n", err);
-
                 return 0;
             } else {
                 return func;

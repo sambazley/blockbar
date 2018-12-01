@@ -124,6 +124,8 @@ int main(int argc, const char *argv[]) {
         configParseGeneral(jsonConfig);
     }
 
+    initModules();
+
     if (createBars() != 0) {
         return 1;
     }

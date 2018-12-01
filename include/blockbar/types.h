@@ -100,6 +100,7 @@ struct ModuleData {
 struct Module {
     void *dl;
     char *path;
+    int inConfig;
     struct ModuleData data;
 };
 

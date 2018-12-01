@@ -26,6 +26,7 @@ extern struct Module *modules;
 extern int moduleCount;
 
 void loadModule(char *path);
+void initModules();
 void cleanupModules();
 void (*moduleGetFunction(char *modName, char *funcName));
 
