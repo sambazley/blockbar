@@ -388,7 +388,7 @@ void configParseGeneral(JsonObject *jsonConfig) {
 
                 char *path = str->data;
 
-                loadModule(path);
+                loadModule(path, stdout, stderr);
             }
         }
     }
@@ -488,6 +488,10 @@ char *configSave(FILE *file, int explicit) {
     JsonArray *mods = jsonAddArray("modules", jo, &err);
 
     for (int i = 0; i < moduleCount; i++) {
+        if (!modules[i].dl) {
+            continue;
+        }
+
         if (modules[i].inConfig) {
             jsonAddString(0, modules[i].path, mods, &err);
         }

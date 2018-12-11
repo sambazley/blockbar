@@ -30,57 +30,73 @@ int moduleCount;
 
 static int inConfig = 1;
 
-void loadModule(char *path) {
+int loadModule(char *path, FILE *out, FILE *errout) {
     char *err = dlerror();
 
-    modules = realloc(modules, sizeof(struct Module) * ++moduleCount);
+    struct Module *m = 0;
 
-    struct Module *m = &modules[moduleCount - 1];
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+        if (mod->dl == 0) {
+            m = mod;
+            break;
+        }
+    }
+
+    if (!m) {
+        modules = realloc(modules, sizeof(struct Module) * ++moduleCount);
+        m = &modules[moduleCount - 1];
+    }
+
     memset(&(m->data), 0, sizeof(struct ModuleData));
 
     m->dl = dlopen(path, RTLD_NOW);
     err = dlerror();
 
     if (err || !m->dl) {
-        fprintf(stderr, "%s\n", err);
+        fprintf(errout, "%s\n", err);
         moduleCount--;
-        return;
+        return 1;
     }
 
     int (*init)(struct ModuleData *) = dlsym(m->dl, "init");
     err = dlerror();
 
     if (err) {
-        fprintf(stderr, "Error loading module \"%s\":\n%s\n", path, err);
+        fprintf(errout, "Error loading module \"%s\":\n%s\n", path, err);
         dlclose(m->dl);
         moduleCount--;
-        return;
+        return 1;
     }
 
     if (!init) {
-        fprintf(stderr, "Module \"%s\" has no init function\n", path);
+        fprintf(errout, "Module \"%s\" has no init function\n", path);
         dlclose(m->dl);
         moduleCount--;
-        return;
+        return 1;
     }
 
     int ret = init(&m->data);
 
     if (ret != 0) {
-        fprintf(stderr, "Module \"%s\" failed to initialize (%d)\n", path, ret);
+        fprintf(errout, "Module \"%s\" failed to initialize (%d)\n", path, ret);
         dlclose(m->dl);
         moduleCount--;
-        return;
+        return 1;
     }
 
-    for (int i = 0 ; i < moduleCount - 1; i++) {
+    for (int i = 0; i < moduleCount; i++) {
+        if (!modules[i].dl || &modules[i] == m) {
+            continue;
+        }
+
         if (strcmp(m->data.name, modules[i].data.name) == 0) {
-            fprintf(stderr, "Module \"%s\" failed to initialize\n", path);
-            fprintf(stderr, "Module with name \"%s\" already loaded\n",
+            fprintf(errout, "Module \"%s\" failed to initialize\n", path);
+            fprintf(errout, "Module with name \"%s\" already loaded\n",
                     m->data.name);
             dlclose(m->dl);
             moduleCount--;
-            return;
+            return 1;
         }
     }
 
@@ -88,17 +104,17 @@ void loadModule(char *path) {
     err = dlerror();
 
     if (err) {
-        fprintf(stderr, "%s\n", err);
+        fprintf(errout, "%s\n", err);
         dlclose(m->dl);
         moduleCount--;
-        return;
+        return 1;
     }
 
     if (*version != API_VERSION) {
-        fprintf(stderr, "\"%s\" module is out of date\n", m->data.name);
+        fprintf(errout, "\"%s\" module is out of date\n", m->data.name);
         dlclose(m->dl);
         moduleCount--;
-        return;
+        return 1;
     }
 
     m->path = malloc(strlen(path) + 1);
@@ -106,7 +122,31 @@ void loadModule(char *path) {
 
     m->inConfig = inConfig;
 
-    printf("Loaded \"%s\" module (%s)\n", m->data.name, path);
+    fprintf(out, "Loaded \"%s\" module (%s)\n", m->data.name, path);
+    return 0;
+}
+
+static void unload(struct Module *mod) {
+    dlclose(mod->dl);
+    mod->dl = 0;
+
+    free(mod->path);
+}
+
+int unloadModule(char *name) {
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+        if (!mod->dl) {
+            continue;
+        }
+
+        if (strcmp(name, mod->data.name) == 0) {
+            unload(mod);
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 void initModules() {
@@ -130,7 +170,7 @@ void initModules() {
         char *file = malloc(strlen(libdir) + strlen(dp->d_name) + 1);
         strcpy(file, libdir);
         strcpy(file + strlen(libdir), dp->d_name);
-        loadModule(file);
+        loadModule(file, stdout, stderr);
         free(file);
     }
 
@@ -141,8 +181,9 @@ void initModules() {
 
 void cleanupModules() {
     for (int i = 0; i < moduleCount; i++) {
-        dlclose(modules[i].dl);
-        free(modules[i].path);
+        if (modules[i].dl) {
+            unload(&modules[i]);
+        }
     }
 
     free(modules);
@@ -151,6 +192,11 @@ void cleanupModules() {
 void (*moduleGetFunction(char *modName, char *funcName)) {
     for (int i = 0; i < moduleCount; i++) {
         struct Module *mod = &modules[i];
+
+        if (!mod->dl) {
+            continue;
+        }
+
         if (strcmp(modName, mod->data.name) == 0) {
             dlerror();
 

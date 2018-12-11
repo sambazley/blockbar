@@ -21,6 +21,7 @@
 #include "bbc.h"
 #include "config.h"
 #include "exec.h"
+#include "modules.h"
 #include "render.h"
 #include "types.h"
 #include "tray.h"
@@ -134,6 +135,9 @@ cmd(help) {
     phelp("move-left <n>", "Moves a block left");
     phelp("move-right <n>", "Moves a block right");
     phelp("dump [--explicit]", "Dumps the current configuration to stdout");
+    phelp("list-modules", "Lists the loaded modules");
+    phelp("load-module <file>", "Loads a module");
+    phelp("unload-module <name>", "Unloads a module");
 
 #undef phelp
 
@@ -610,6 +614,76 @@ cmd(dump) {
     return 0;
 }
 
+cmd(list_modules) {
+    int width = 0;
+
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (!mod->dl) {
+            continue;
+        }
+
+        if (strlen(mod->data.name) > width) {
+            width = strlen(mod->data.name);
+        }
+    }
+
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        rprintf("%-*s%s\n", width + 2, mod->data.name, mod->path)
+    }
+
+    return 0;
+}
+
+cmd(load_module) {
+    if (argc != 3) {
+        frprintf(rstderr, "Usage: %s %s <module file>\n", argv[0], argv[1]);
+        return 1;
+    }
+
+#if _POSIX_C_SOURCE >= 200809L
+    char out [bbcbuffsize] = {0};
+    char err [bbcbuffsize] = {0};
+
+    FILE *fout = fmemopen(out, bbcbuffsize, "w");
+    FILE *ferr = fmemopen(err, bbcbuffsize, "w");
+
+    int ret = loadModule(argv[2], fout, ferr);
+
+    fclose(fout);
+    fclose(ferr);
+
+    frprintf(rstderr, "%s", err);
+    rprintf("%s", out);
+#else
+    dprintf(fd, "%c%c", setout, rstdout);
+    int ret = loadModule(argv[2], file, file);
+    fflush(file);
+#endif
+
+    return ret;
+}
+
+cmd(unload_module) {
+    if (argc != 3) {
+        frprintf(rstderr, "Usage: %s %s <module name>\n", argv[0], argv[1]);
+        return 1;
+    }
+
+    int ret = unloadModule(argv[2]);
+
+    if (ret == 0) {
+        rprintf("Module unloaded\n");
+    } else {
+        frprintf(rstderr, "Module \"%s\" does not exist\n", argv[2]);
+    }
+
+    return ret;
+}
+
 #define _CASE(x, y) \
     else if (strcmp(argv[1], x) == 0) { \
         ret = y(argc, argv, fd); \
@@ -708,6 +782,9 @@ void socketRecv(int sockfd) {
     _CASE("move-left", move_left)
     _CASE("move-right", move_right)
     CASE(dump)
+    _CASE("list-modules", list_modules)
+    _CASE("load-module", load_module)
+    _CASE("unload-module", unload_module)
     else {
         frprintf(rstderr, "Unknown command\n");
         ret = 1;

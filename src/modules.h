@@ -21,11 +21,14 @@
 #define MODULES_H
 
 #include "types.h"
+#include <stdio.h>
 
 extern struct Module *modules;
 extern int moduleCount;
 
-void loadModule(char *path);
+int loadModule(char *path, FILE *out, FILE *errout);
+int unloadModule(char *name);
+
 void initModules();
 void cleanupModules();
 void (*moduleGetFunction(char *modName, char *funcName));
