@@ -9,6 +9,8 @@ function __fish_bbc
             bbc list
         else if [ $cmd[2] = 'setting' ]
             bbc list-settings | sed 's/^[a-zA-Z]*\s*//g' | sed 's/\s\{2,\}/\t/g'
+        else if [ $cmd[2] = 'unload-module' ]
+            bbc list-modules | awk '{print $1}'
         end
     else if [ (count $cmd) -eq 3 ]
         if [ $cmd[2] = 'property' ]
@@ -34,6 +36,8 @@ function __fish_bbc
                 echo 'left'
                 echo 'center'
                 echo 'right'
+            else if [ $cmd[4] = 'module' ]
+                bbc list-modules | awk '{print $1}'
             end
         end
     end

@@ -27,6 +27,14 @@ _bbc()
     elif [[ "$CURRENT" == "3" && "${words[2]}" == "dump" ]]; then
         list=("--explicit")
         _describe -t commands 'bbc' list
+    elif [[ "$CURRENT" == "3" && "${words[2]}" == "load-module" ]]; then
+        _path_files -P "/" -W "/"
+    elif [[ "$CURRENT" == "3" && "${words[2]}" == "unload-module" ]]; then
+        mods=()
+        bbc list-modules | while read m; do
+            mods+=$(echo $m | awk '{print $1}')
+        done
+        _describe -t commands 'bbc' mods
     elif [[ "$CURRENT" == "4" && "${words[2]}" == "property" ]]; then
         props=()
         bbc list-properties | while read prop; do
@@ -48,6 +56,14 @@ _bbc()
         if [[ "${words[4]}" == "pos" ]]; then
             list=("left" "center" "right")
             _describe -t commands 'bbc' list
+        elif [[ "${words[4]}" == "exec" ]]; then
+            _path_files -P "/" -W "/"
+        elif [[ "${words[4]}" == "module" ]]; then
+            mods=()
+            bbc list-modules | while read m; do
+                mods+=$(echo $m | awk '{print $1}')
+            done
+            _describe -t commands 'bbc' mods
         fi
     fi
 }
