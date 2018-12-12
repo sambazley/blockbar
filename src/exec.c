@@ -159,14 +159,18 @@ void blockExec(struct Block *blk, struct Click *cd) {
 
     char button [12] = {0};
     char clickx [12] = {0};
+    char blockid [12] = {0};
 
     if (cd != 0) {
         sprintf(button, "%d", cd->button);
         sprintf(clickx, "%d", cd->x + bars[cd->bar].x);
     }
 
+    sprintf(blockid, "%d", blk->id);
+
     setEnv("BLOCK_BUTTON", button);
     setEnv("CLICK_X", clickx);
+    setEnv("BLOCK_ID", blockid);
 
     if (blk->eachmon) {
         if (cd) {
