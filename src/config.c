@@ -137,6 +137,17 @@ int setSetting(struct Setting *setting, union Value val) {
         break;
     }
 
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        void (*func)(struct Setting *) =
+            moduleGetFunction(mod->data.name, "settingUpdate");
+
+        if (func) {
+            func(setting);
+        }
+    }
+
     return 0;
 }
 
