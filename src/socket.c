@@ -349,15 +349,30 @@ cmd(_setProperty) {
                 &((struct Setting *) &(blk->properties))[i];
 
             if (strcmp(argv[3], property->name) == 0) {
+                char *oldModule = 0;
+
+                if (property == &(blk->properties.module)) {
+                    oldModule =
+                        malloc(strlen(blk->properties.module.val.STR) + 1);
+                    strcpy(oldModule, blk->properties.module.val.STR);
+                }
+
                 int r = parseSetting(property, str, fd);
 
                 if (r == 0) {
-                    if (strcmp("interval", property->name) == 0) {
+                    if (property == &(blk->properties.module)) {
+                        moduleRegisterBlock(blk, oldModule);
+                        free(oldModule);
+                    } else if (property == &(blk->properties.interval)) {
                         updateTickInterval();
                     }
 
                     goto end;
                 } else if (r == 1) {
+                    if (oldModule) {
+                        free(oldModule);
+                    }
+
                     return 1;
                 }
             }
