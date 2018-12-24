@@ -344,9 +344,19 @@ JsonObject *configInit(const char *config) {
         free((char *) file);
     }
 
-    if (jsonConfig == 0 || jsonErrorIsSet(&err)) {
+    int errSet = jsonErrorIsSet(&err);
+    if (jsonConfig == 0 || errSet) {
         fprintf(stderr, "\nError loading configuration file.\n");
-        fprintf(stderr, "%s\n", err.msg);
+
+        if (errSet) {
+            fprintf(stderr, "%s\n", err.msg);
+            jsonErrorCleanup(&err);
+        }
+
+        if (jsonConfig) {
+            jsonCleanup(jsonConfig);
+        }
+
         fprintf(stderr, "Loading defaults\n\n");
 
         return 0;
