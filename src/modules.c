@@ -127,6 +127,11 @@ int loadModule(char *path, FILE *out, FILE *errout) {
 }
 
 static void unload(struct Module *mod) {
+    void (*unloadFunc)() = moduleGetFunction(mod->data.name, "unload");
+    if (unloadFunc) {
+        unloadFunc();
+    }
+
     dlclose(mod->dl);
     mod->dl = 0;
 
