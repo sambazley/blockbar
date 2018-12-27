@@ -95,6 +95,9 @@ struct Click {
 
 struct ModuleData {
     char *name;
+
+    struct Setting *settings;
+    int settingCount;
 };
 
 struct Module {

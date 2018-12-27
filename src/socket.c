@@ -129,7 +129,7 @@ cmd(help) {
     phelp("list-properties", "Lists a block's properties");
     phelp("list-settings", "Lists the bar's settings");
     phelp("property <n>[:o] <p> [v]", "Gets or sets a property of a block");
-    phelp("setting <s> [v]", "Gets or sets a setting of the bar");
+    phelp("setting [m:]<s> [v]", "Gets or sets a setting of the bar");
     phelp("new [--eachmon]", "Creates a new block");
     phelp("rm <n>", "Removes a block");
     phelp("move-left <n>", "Moves a block left");
@@ -183,6 +183,23 @@ cmd(list_settings) {
         rprintf("%-9s%-15s%s\n", typeStrings[setting->type], setting->name,
                 setting->desc);
     }
+
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (mod->data.settingCount == 0) {
+            continue;
+        }
+
+        rprintf("\n%s:\n", mod->data.name);
+
+        for (int j = 0; j < mod->data.settingCount; j++) {
+            struct Setting *setting = &mod->data.settings[j];
+            rprintf("%-9s%-15s%s\n", typeStrings[setting->type], setting->name,
+                    setting->desc);
+        }
+    }
+
     return 0;
 }
 
@@ -400,10 +417,54 @@ cmd(property) {
 }
 
 cmd(_getSetting) {
+    char *colon = strchr(argv[2], ':');
+
+    char *moduleName;
+    char *settingName;
+
+    if (colon) {
+        moduleName = argv[2];
+        settingName = colon + 1;
+        *colon = '\0';
+    } else {
+        moduleName = 0;
+        settingName = argv[2];
+    }
+
+    if (moduleName) {
+        struct Module *mod = 0;
+
+        for (int i = 0; i < moduleCount; i++) {
+            mod = &modules[i];
+            if (strcmp(mod->data.name, moduleName) == 0) {
+                break;
+            }
+            mod = 0;
+        }
+
+        if (mod == 0) {
+            frprintf(rstderr, "Module \"%s\" does not exist\n", moduleName);
+            return 1;
+        }
+
+        for (int i = 0; i < mod->data.settingCount; i++) {
+            struct Setting *setting = &mod->data.settings[i];
+
+            if (printSetting(setting, settingName, fd) == 0) {
+                return 0;
+            }
+        }
+
+        frprintf(rstderr, "Module \"%s\" does not have setting \"%s\"\n",
+                 moduleName, settingName);
+
+        return 1;
+    }
+
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
-        if (printSetting(setting, argv[2], fd) == 0) {
+        if (printSetting(setting, settingName, fd) == 0) {
             return 0;
         }
     }
@@ -422,13 +483,64 @@ cmd(_setSetting) {
 
     str[strlen(str) - 1] = 0;
 
+    char *colon = strchr(argv[2], ':');
+
+    char *moduleName;
+    char *settingName;
+
+    if (colon) {
+        moduleName = argv[2];
+        settingName = colon + 1;
+        *colon = '\0';
+    } else {
+        moduleName = 0;
+        settingName = argv[2];
+    }
+
+    if (moduleName) {
+        struct Module *mod = 0;
+
+        for (int i = 0; i < moduleCount; i++) {
+            mod = &modules[i];
+            if (strcmp(mod->data.name, moduleName) == 0) {
+                break;
+            }
+            mod = 0;
+        }
+
+        if (mod == 0) {
+            frprintf(rstderr, "Module \"%s\" does not exist\n", moduleName);
+            return 1;
+        }
+
+        for (int i = 0; i < mod->data.settingCount; i++) {
+            struct Setting *setting = &mod->data.settings[i];
+            if (strcmp(settingName, setting->name) == 0) {
+                int r = parseSetting(setting, str, fd);
+
+                if (r == 0) {
+                    redraw();
+
+                    return 0;
+                } else {
+                    return 1;
+                }
+            }
+        }
+
+        frprintf(rstderr, "Module \"%s\" does not have setting \"%s\"\n",
+                 moduleName, settingName);
+
+        return 1;
+    }
+
 #define E(x) \
     || setting == &settings.x
 
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
-        if (strcmp(argv[2], setting->name) == 0) {
+        if (strcmp(settingName, setting->name) == 0) {
             int r = parseSetting(setting, str, fd);
 
             if (r == 0) {
@@ -476,7 +588,7 @@ cmd(setting) {
     } else if (argc >= 4) {
         return _setSetting(argc, argv, fd);
     } else {
-        frprintf(rstderr, "Usage: %s %s <setting> [value]\n",
+        frprintf(rstderr, "Usage: %s %s [module:]<setting> [value]\n",
                  argv[0], argv[1]);
         return 1;
     }
@@ -666,7 +778,7 @@ cmd(load_module) {
     FILE *fout = fmemopen(out, bbcbuffsize, "w");
     FILE *ferr = fmemopen(err, bbcbuffsize, "w");
 
-    int ret = loadModule(argv[2], fout, ferr);
+    struct Module *ret = loadModule(argv[2], fout, ferr);
 
     fclose(fout);
     fclose(ferr);
@@ -675,11 +787,11 @@ cmd(load_module) {
     rprintf("%s", out);
 #else
     dprintf(fd, "%c%c", setout, rstdout);
-    int ret = loadModule(argv[2], file, file);
+    struct Module *ret = loadModule(argv[2], file, file);
     fflush(file);
 #endif
 
-    return ret;
+    return ret != 0;
 }
 
 cmd(unload_module) {

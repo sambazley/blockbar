@@ -30,7 +30,7 @@ int moduleCount;
 
 static int inConfig = 1;
 
-int loadModule(char *path, FILE *out, FILE *errout) {
+struct Module *loadModule(char *path, FILE *out, FILE *errout) {
     char *err = dlerror();
 
     struct Module *m = 0;
@@ -56,7 +56,7 @@ int loadModule(char *path, FILE *out, FILE *errout) {
     if (err || !m->dl) {
         fprintf(errout, "%s\n", err);
         moduleCount--;
-        return 1;
+        return 0;
     }
 
     int (*init)(struct ModuleData *) = dlsym(m->dl, "init");
@@ -66,14 +66,14 @@ int loadModule(char *path, FILE *out, FILE *errout) {
         fprintf(errout, "Error loading module \"%s\":\n%s\n", path, err);
         dlclose(m->dl);
         moduleCount--;
-        return 1;
+        return 0;
     }
 
     if (!init) {
         fprintf(errout, "Module \"%s\" has no init function\n", path);
         dlclose(m->dl);
         moduleCount--;
-        return 1;
+        return 0;
     }
 
     int ret = init(&m->data);
@@ -82,7 +82,7 @@ int loadModule(char *path, FILE *out, FILE *errout) {
         fprintf(errout, "Module \"%s\" failed to initialize (%d)\n", path, ret);
         dlclose(m->dl);
         moduleCount--;
-        return 1;
+        return 0;
     }
 
     for (int i = 0; i < moduleCount; i++) {
@@ -96,7 +96,7 @@ int loadModule(char *path, FILE *out, FILE *errout) {
                     m->data.name);
             dlclose(m->dl);
             moduleCount--;
-            return 1;
+            return 0;
         }
     }
 
@@ -107,14 +107,14 @@ int loadModule(char *path, FILE *out, FILE *errout) {
         fprintf(errout, "%s\n", err);
         dlclose(m->dl);
         moduleCount--;
-        return 1;
+        return 0;
     }
 
     if (*version != API_VERSION) {
         fprintf(errout, "\"%s\" module is out of date\n", m->data.name);
         dlclose(m->dl);
         moduleCount--;
-        return 1;
+        return 0;
     }
 
     m->path = malloc(strlen(path) + 1);
@@ -123,7 +123,7 @@ int loadModule(char *path, FILE *out, FILE *errout) {
     m->inConfig = inConfig;
 
     fprintf(out, "Loaded \"%s\" module (%s)\n", m->data.name, path);
-    return 0;
+    return m;
 }
 
 static void unload(struct Module *mod) {

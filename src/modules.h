@@ -26,7 +26,7 @@
 extern struct Module *modules;
 extern int moduleCount;
 
-int loadModule(char *path, FILE *out, FILE *errout);
+struct Module *loadModule(char *path, FILE *out, FILE *errout);
 int unloadModule(char *name);
 
 void initModules();
