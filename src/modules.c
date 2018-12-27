@@ -221,16 +221,16 @@ void (*moduleGetFunction(char *modName, char *funcName)) {
     return 0;
 }
 
-void moduleRegisterBlock(struct Block *blk, char *oldModule) {
-    if (oldModule) {
-        void (*rm)(struct Block *) =
-            moduleGetFunction(oldModule, "blockRemove");
+void moduleUnregisterBlock(struct Block *blk) {
+    void (*rm)(struct Block *) =
+        moduleGetFunction(blk->properties.module.val.STR, "blockRemove");
 
-        if (rm) {
-            rm(blk);
-        }
+    if (rm) {
+        rm(blk);
     }
+}
 
+void moduleRegisterBlock(struct Block *blk) {
     void (*add)(struct Block *) =
         moduleGetFunction(blk->properties.module.val.STR, "blockAdd");
 

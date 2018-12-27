@@ -19,6 +19,7 @@
 
 #include "util.h"
 #include "config.h"
+#include "modules.h"
 #include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -165,6 +166,8 @@ struct Block *createBlock(int eachmon) {
 }
 
 void removeBlock(struct Block *blk) {
+    moduleUnregisterBlock(blk);
+
     blk->id = 0;
 
     if (blk->eachmon) {

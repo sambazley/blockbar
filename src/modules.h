@@ -33,6 +33,7 @@ void initModules();
 void cleanupModules();
 void (*moduleGetFunction(char *modName, char *funcName));
 
-void moduleRegisterBlock(struct Block *blk, char *oldModule);
+void moduleUnregisterBlock(struct Block *blk);
+void moduleRegisterBlock(struct Block *blk);
 
 #endif /* MODULES_H */

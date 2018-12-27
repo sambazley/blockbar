@@ -312,7 +312,7 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
 
         blk->properties.pos.val.POS = pos;
 
-        moduleRegisterBlock(blk, 0);
+        moduleRegisterBlock(blk);
     }
 }
 
