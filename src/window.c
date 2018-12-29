@@ -206,6 +206,10 @@ static void click(struct Click *cd) {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
 
+        if (!blk->id) {
+            continue;
+        }
+
         int rendered;
         if (blk->eachmon) {
             rendered = blk->data[cd->bar].rendered;
@@ -213,7 +217,7 @@ static void click(struct Click *cd) {
             rendered = blk->data->rendered;
         }
 
-        if (blk->id && rendered && blk->properties.pos.val.POS == CENTER) {
+        if (rendered && blk->properties.pos.val.POS == CENTER) {
             centerWidth += blk->width[cd->bar];
         }
     }
