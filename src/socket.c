@@ -203,37 +203,34 @@ cmd(list_settings) {
     return 0;
 }
 
-static int printSetting(struct Setting *setting, char *str, int fd) {
-    if (strcmp(str, setting->name) == 0) {
-        switch (setting->type) {
-        case INT:
-            rprintf("%d\n", setting->val.INT);
-            return 0;
-        case BOOL:
-            rprintf("%s\n", setting->val.BOOL ? "true" : "false");
-            return 0;
-        case STR:
-            rprintf("%s\n", setting->val.STR);
-            return 0;
-        case COL:
-            rprintf("#%02x%02x%02x%02x\n",
-                    setting->val.COL[0],
-                    setting->val.COL[1],
-                    setting->val.COL[2],
-                    setting->val.COL[3]);
-            return 0;
-        case POS:
-            if (setting->val.POS == LEFT) {
-                rprintf("left\n");
-            } else if (setting->val.POS == RIGHT) {
-                rprintf("right\n");
-            } else if (setting->val.POS == CENTER) {
-                rprintf("center\n");
-            }
-            return 0;
+static void printSetting(struct Setting *setting, int fd) {
+    switch (setting->type) {
+    case INT:
+        rprintf("%d\n", setting->val.INT);
+        break;
+    case BOOL:
+        rprintf("%s\n", setting->val.BOOL ? "true" : "false");
+        break;
+    case STR:
+        rprintf("%s\n", setting->val.STR);
+        break;
+    case COL:
+        rprintf("#%02x%02x%02x%02x\n",
+                setting->val.COL[0],
+                setting->val.COL[1],
+                setting->val.COL[2],
+                setting->val.COL[3]);
+        break;
+    case POS:
+        if (setting->val.POS == LEFT) {
+            rprintf("left\n");
+        } else if (setting->val.POS == RIGHT) {
+            rprintf("right\n");
+        } else if (setting->val.POS == CENTER) {
+            rprintf("center\n");
         }
+        break;
     }
-    return 1;
 }
 
 static int parseSetting(struct Setting *setting, char *v, int fd) {
@@ -317,9 +314,12 @@ cmd(_getProperty) {
     for (int i = 0; i < propertyCount; i++) {
         struct Setting *property = &((struct Setting *) &(blk->properties))[i];
 
-        if (printSetting(property, argv[3], fd) == 0) {
-            return 0;
+        if (strcmp(argv[3], property->name)) {
+            continue;
         }
+
+        printSetting(property, fd);
+        return 0;
     }
 
     frprintf(rstderr, "Property does not exist, or cannot be returned\n");
@@ -441,9 +441,12 @@ cmd(_getSetting) {
         for (int i = 0; i < mod->data.settingCount; i++) {
             struct Setting *setting = &mod->data.settings[i];
 
-            if (printSetting(setting, settingName, fd) == 0) {
-                return 0;
+            if (strcmp(settingName, setting->name)) {
+                continue;
             }
+
+            printSetting(setting, fd);
+            return 0;
         }
 
         frprintf(rstderr, "Module \"%s\" does not have setting \"%s\"\n",
@@ -455,9 +458,12 @@ cmd(_getSetting) {
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
 
-        if (printSetting(setting, settingName, fd) == 0) {
-            return 0;
+        if (strcmp(settingName, setting->name)) {
+            continue;
         }
+
+        printSetting(setting, fd);
+        return 0;
     }
 
     frprintf(rstderr, "Setting does not exist\n");
