@@ -85,6 +85,13 @@ struct Module *loadModule(char *path, FILE *out, FILE *errout) {
         return 0;
     }
 
+    if (!m->data.name) {
+        fprintf(errout, "Module \"%s\" has no name\n", path);
+        dlclose(m->dl);
+        moduleCount--;
+        return 0;
+    }
+
     for (int i = 0; i < moduleCount; i++) {
         if (!modules[i].dl || &modules[i] == m) {
             continue;
