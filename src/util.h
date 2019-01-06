@@ -20,15 +20,15 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include "types.h"
 #include <ujson.h>
+#include "types.h"
 
 #define MAX(a, b) (a>b?a:b)
 
-int parseColorJson(JsonObject *jo, const char *key, color dest,
-                    JsonError *err);
-int parseColorString(char *str, color dest);
-void stringifyColor(color c, char *s);
+int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
+                           JsonError *err);
+int blockbarParseColorString(const char *str, color dest);
+void blockbarStringifyColor(const color c, char *s);
 
 struct Block *createBlock(int eachmon);
 void removeBlock(struct Block *blk);

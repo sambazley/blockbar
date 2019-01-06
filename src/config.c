@@ -183,7 +183,7 @@ static int parseSetting(JsonObject *jo, struct Setting *setting,
         break;
     case COL:
         {
-            int e = parseColorJson(jo, setting->name, val->COL, err);
+            int e = blockbarParseColorJson(jo, setting->name, val->COL, err);
             if (e || jsonErrorIsSet(err)) {
                 return 1;
             }
@@ -538,7 +538,7 @@ static void addSetting(struct Setting *setting, int explicit,
     case COL:
     {
         char col [10];
-        stringifyColor(setting->val.COL, col);
+        blockbarStringifyColor(setting->val.COL, col);
         jsonAddString(setting->name, col, jo, err);
     }
         break;

@@ -25,8 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-int parseColorJson(JsonObject *jo, const char *key, color dest,
-                    JsonError *err) {
+int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
+                           JsonError *err) {
     int index = jsonGetPairIndex(jo, key);
     if (index == -1) {
         return 1;
@@ -39,7 +39,7 @@ int parseColorJson(JsonObject *jo, const char *key, color dest,
         jsonGetString(jo, key, &str, err);
 
         if (str && *str == '#') {
-            return parseColorString(str+1, dest);
+            return blockbarParseColorString(str+1, dest);
         }
 
         return 1;
@@ -81,7 +81,7 @@ int parseColorJson(JsonObject *jo, const char *key, color dest,
     return 0;
 }
 
-int parseColorString(char *str, color dest) {
+int blockbarParseColorString(const char *str, color dest) {
     char *end = 0;
 
     int c = strtol(str, &end, 16);
@@ -117,7 +117,7 @@ int parseColorString(char *str, color dest) {
     return 0;
 }
 
-void stringifyColor(color c, char *s) {
+void blockbarStringifyColor(const color c, char *s) {
     sprintf(s, "#%02x%02x%02x%02x", c[0], c[1], c[2], c[3]);
 }
 

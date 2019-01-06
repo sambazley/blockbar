@@ -20,11 +20,19 @@
 #ifndef BLOCKBAR_H
 #define BLOCKBAR_H
 
+#include <ujson.h>
 #include "types.h"
 #include "version.h"
 
 extern struct Settings settings;
 
-extern void setEnv(char *key, char *val);
+void blockbarSetEnv(const char *key, const char *val);
+
+int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
+                           JsonError *err);
+
+int blockbarParseColorString(const char *str, color dest);
+
+void blockbarStringifyColor(const color c, char *s);
 
 #endif /* BLOCKBAR_H */

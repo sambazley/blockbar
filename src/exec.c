@@ -31,7 +31,7 @@ struct Proc *procs;
 static int envCount = 0;
 static char **envs = 0;
 
-void setEnv(char *key, char *val) {
+void blockbarSetEnv(const char *key, const char *val) {
     envs = realloc(envs, sizeof(char *) * ++envCount);
     envs[envCount - 1] = malloc(strlen(key) + 1);
     strcpy(envs[envCount - 1], key);
@@ -61,7 +61,7 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
     }
 
     if (blk->eachmon || cd) {
-        setEnv("BAR_OUTPUT", bars[bar].output);
+        blockbarSetEnv("BAR_OUTPUT", bars[bar].output);
     }
 
     int rendered;
@@ -79,12 +79,12 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
     if (blk->eachmon || cd) {
         char x [12] = {0};
         sprintf(x, "%d", blk->x[bar] + bars[bar].x);
-        setEnv("BLOCK_X", x);
+        blockbarSetEnv("BLOCK_X", x);
     }
 
     char w [12] = {0};
     sprintf(w, "%d", blk->width[bar]);
-    setEnv("BLOCK_WIDTH", w);
+    blockbarSetEnv("BLOCK_WIDTH", w);
 }
 
 static void execute(struct Block *blk, int bar, struct Click *cd) {
@@ -168,9 +168,9 @@ void blockExec(struct Block *blk, struct Click *cd) {
 
     sprintf(blockid, "%d", blk->id);
 
-    setEnv("BLOCK_BUTTON", button);
-    setEnv("CLICK_X", clickx);
-    setEnv("BLOCK_ID", blockid);
+    blockbarSetEnv("BLOCK_BUTTON", button);
+    blockbarSetEnv("CLICK_X", clickx);
+    blockbarSetEnv("BLOCK_ID", blockid);
 
     if (blk->eachmon) {
         if (cd) {

@@ -263,7 +263,7 @@ static int parseSetting(struct Setting *setting, char *v, int fd) {
         val.STR = v;
         break;
     case COL:
-        if (*v != '#' || parseColorString(v + 1, val.COL) != 0) {
+        if (*v != '#' || blockbarParseColorString(v + 1, val.COL) != 0) {
             frprintf(rstderr, "Invalid color\n");
             return 1;
         }
