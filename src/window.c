@@ -323,3 +323,7 @@ void cleanupBars() {
 
     free(bars);
 }
+
+int blockbarGetBarWidth(int bar) {
+    return bars[bar].width;
+}

@@ -26,6 +26,8 @@
 
 extern struct Settings settings;
 
+int blockbarGetBarWidth(int bar);
+
 void blockbarSetEnv(const char *key, const char *val);
 
 int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
