@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+include(GNUInstallDirs)
+
 add_subdirectory(ujson ujson_static EXCLUDE_FROM_ALL)
 include_directories(ujson/src)
 
@@ -23,8 +25,10 @@ set(SOURCE
     src/window.c
 )
 
+set(LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+
 add_definitions(-D_WITH_DPRINTF)
-add_definitions(-DLIBDIR="${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+add_definitions(-DLIBDIR="${LIBDIR}")
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(pangocairo REQUIRED pangocairo)
@@ -51,10 +55,23 @@ add_custom_target(
     man ALL DEPENDS doc/blockbar.1.gz)
 
 install(TARGETS blockbar bbc
-        RUNTIME DESTINATION bin)
-
-include(GNUInstallDirs)
+    RUNTIME DESTINATION bin)
 
 install(FILES "doc/blockbar.1.gz"
-        DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
-        COMPONENT doc)
+    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
+    COMPONENT doc)
+
+macro(module name)
+add_custom_command(
+    OUTPUT modules/${name}/${name}.so
+    COMMAND make -C modules/${name})
+
+add_custom_target(${name} ALL DEPENDS modules/${name}/${name}.so)
+
+install(FILES "modules/${name}/${name}.so"
+    DESTINATION "${LIBDIR}/blockbar"
+    COMPONENT module)
+endmacro(module)
+
+module(legacy)
+module(subblocks)
