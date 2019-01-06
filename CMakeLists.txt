@@ -55,11 +55,16 @@ add_custom_target(
     man ALL DEPENDS doc/blockbar.1.gz)
 
 install(TARGETS blockbar bbc
-    RUNTIME DESTINATION bin)
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(FILES "doc/blockbar.1.gz"
     DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
     COMPONENT doc)
+
+message(${CMAKE_INSTALL_INCLUDEDIR})
+install(DIRECTORY include/blockbar
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h")
 
 macro(module name)
 add_custom_command(
