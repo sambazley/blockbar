@@ -80,11 +80,11 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
         char x [12] = {0};
         sprintf(x, "%d", blk->x[bar] + bars[bar].x);
         blockbarSetEnv("BLOCK_X", x);
-    }
 
-    char w [12] = {0};
-    sprintf(w, "%d", blk->width[bar]);
-    blockbarSetEnv("BLOCK_WIDTH", w);
+        char w [12] = {0};
+        sprintf(w, "%d", blk->width[bar]);
+        blockbarSetEnv("BLOCK_WIDTH", w);
+    }
 }
 
 static void execute(struct Block *blk, int bar, struct Click *cd) {
