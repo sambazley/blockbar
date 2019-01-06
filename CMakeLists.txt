@@ -25,7 +25,9 @@ set(SOURCE
     src/window.c
 )
 
-set(LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+if (NOT DEFINED LIBDIR)
+    set(LIBDIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+endif()
 
 add_definitions(-D_WITH_DPRINTF)
 add_definitions(-DLIBDIR="${LIBDIR}")
@@ -74,7 +76,7 @@ add_custom_command(
 add_custom_target(${name} ALL DEPENDS modules/${name}/${name}.so)
 
 install(FILES "modules/${name}/${name}.so"
-    DESTINATION "${LIBDIR}/blockbar"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/blockbar"
     COMPONENT module)
 endmacro(module)
 
