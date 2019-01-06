@@ -11,7 +11,7 @@ LDFLAGS+=$(shell pkgconf --libs pangocairo)
 all: subblocks.so
 
 subblocks.so: main.o
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LDFLAGS)
 
 main.o: main.c
 
