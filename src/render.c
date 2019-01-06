@@ -114,6 +114,10 @@ static int drawBlocks(int i, int *x) {
 
         *rendered = 0;
 
+        if (!execData) {
+            continue;
+        }
+
         int prex = x[pos];
 
         if (pos == RIGHT) {
@@ -128,45 +132,43 @@ static int drawBlocks(int i, int *x) {
             x[pos] += blk->properties.paddingleft.val.INT;
         }
 
-        if (execData) {
-            int (*func)(cairo_t *, struct Block *, int, int) =
-                moduleGetFunction(blk->properties.module.val.STR, "render");
+        int (*func)(cairo_t *, struct Block *, int, int) =
+            moduleGetFunction(blk->properties.module.val.STR, "render");
 
-            if (func) {
-                cairo_surface_t *sfc = cairo_surface_create_similar_image(
-                        bars[i].sfc[0], CAIRO_FORMAT_ARGB32,
-                        bars[i].width, bars[i].height);
+        if (func) {
+            cairo_surface_t *sfc = cairo_surface_create_similar_image(
+                    bars[i].sfc[0], CAIRO_FORMAT_ARGB32,
+                    bars[i].width, bars[i].height);
 
-                cairo_t *ctx_ = cairo_create(sfc);
+            cairo_t *ctx_ = cairo_create(sfc);
 
-                int width = func(ctx_, blk, i, shortMode);
+            int width = func(ctx_, blk, i, shortMode);
 
-                int sfcx = x[pos];
+            int sfcx = x[pos];
 
-                if (width == 0) {
-                    cairo_surface_destroy(sfc);
-                    cairo_destroy(ctx_);
-
-                    x[pos] = prex;
-                    blk->x[i] = -1;
-                    blk->width[i] = 0;
-                    continue;
-                }
-
-                *rendered = 1;
-
-                if (pos == RIGHT) {
-                    sfcx = bars[i].width - sfcx - width;
-                }
-
-                cairo_set_source_surface(ctx, sfc, sfcx, 0);
-                cairo_paint(ctx);
-
+            if (width == 0) {
                 cairo_surface_destroy(sfc);
                 cairo_destroy(ctx_);
 
-                x[pos] += width;
+                x[pos] = prex;
+                blk->x[i] = -1;
+                blk->width[i] = 0;
+                continue;
             }
+
+            *rendered = 1;
+
+            if (pos == RIGHT) {
+                sfcx = bars[i].width - sfcx - width;
+            }
+
+            cairo_set_source_surface(ctx, sfc, sfcx, 0);
+            cairo_paint(ctx);
+
+            cairo_surface_destroy(sfc);
+            cairo_destroy(ctx_);
+
+            x[pos] += width;
         }
 
         x[pos] += settings.padding.val.INT + blk->properties.padding.val.INT;
