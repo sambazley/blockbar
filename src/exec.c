@@ -88,6 +88,10 @@ static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
 }
 
 static void execute(struct Block *blk, int bar, struct Click *cd) {
+    char blockid [12] = {0};
+    sprintf(blockid, "%d", blk->id);
+    blockbarSetEnv("BLOCK_ID", blockid);
+
     barEnvs(blk, bar, cd);
 
     int (*func)(struct Block *, int, struct Click *) =
@@ -159,18 +163,14 @@ void blockExec(struct Block *blk, struct Click *cd) {
 
     char button [12] = {0};
     char clickx [12] = {0};
-    char blockid [12] = {0};
 
     if (cd != 0) {
         sprintf(button, "%d", cd->button);
         sprintf(clickx, "%d", cd->x + bars[cd->bar].x);
     }
 
-    sprintf(blockid, "%d", blk->id);
-
     blockbarSetEnv("BLOCK_BUTTON", button);
     blockbarSetEnv("CLICK_X", clickx);
-    blockbarSetEnv("BLOCK_ID", blockid);
 
     if (blk->eachmon) {
         if (cd) {
