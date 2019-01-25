@@ -61,11 +61,11 @@ void blockRemove(struct Block *blk) {
 
 int exec(struct Block *blk, int bar, struct Click *cd) {
     if (cd) {
-        struct SubblockData *sbd;
+        struct SubblockData *sbd = 0;
 
         for (int i = 0; i < dataCount; i++) {
             struct SubblockData *sbd_ = &data[i];
-            if (sbd_->blkid == blk->id && data->bar == bar * blk->eachmon) {
+            if (sbd_->blkid == blk->id && sbd_->bar == bar * blk->eachmon) {
                 sbd = sbd_;
                 break;
             }
@@ -318,6 +318,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
         }
 
         sbd->widths[i] = x - startx;
+
     }
 
 end:
