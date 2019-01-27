@@ -114,8 +114,8 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
 }
 
 static int drawSubblock(cairo_t *ctx, char *str, int bar, int x, color fg,
-                        int bgwidth, int bgheight, int bgxpad, int bgypad,
-                        int bgrad, color bg) {
+                        color bc, int bw, int bgwidth, int bgheight,
+                        int bgxpad, int bgypad, int bgrad, color bg) {
     PangoLayout *layout = pango_cairo_create_layout(ctx);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
@@ -124,11 +124,6 @@ static int drawSubblock(cairo_t *ctx, char *str, int bar, int x, color fg,
     pango_layout_get_pixel_size(layout, &width, &height);
 
     if (!(bg == 0 || bg[0] < 0 || bg[1] < 0 || bg[2] < 0 || bg[3] < 0)) {
-        cairo_set_source_rgba(ctx,
-                              bg[0]/255.f,
-                              bg[1]/255.f,
-                              bg[2]/255.f,
-                              bg[3]/255.f);
 
         if (bgwidth <= 0) {
             bgwidth = width + 2 * bgxpad;
@@ -142,7 +137,25 @@ static int drawSubblock(cairo_t *ctx, char *str, int bar, int x, color fg,
             bgypad = (settings.height.val.INT - bgheight) / 2;
         }
 
-        drawRect(ctx, x, bgypad, bgwidth, bgheight, bgrad);
+        if (bw) {
+            cairo_set_source_rgba(ctx,
+                                  bc[0]/255.f,
+                                  bc[1]/255.f,
+                                  bc[2]/255.f,
+                                  bc[3]/255.f);
+
+            drawRect(ctx, x, bgypad, bgwidth, bgheight, bgrad);
+        }
+
+        cairo_set_source_rgba(ctx,
+                              bg[0]/255.f,
+                              bg[1]/255.f,
+                              bg[2]/255.f,
+                              bg[3]/255.f);
+
+        drawRect(ctx,
+                 x + bw, bgypad + bw,
+                 bgwidth - bw * 2, bgheight - bw * 2, bgrad);
 
         width = bgwidth;
         x += bgxpad;
@@ -263,7 +276,9 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
 
         color bg = {-1, -1, -1, -1};
         color fg;
+        color borderCol = {0, 0, 0, 255};
         int bgwidth = -1, bgheight = -1, bgxpad = 5, bgypad = 1, bgrad = 0;
+        int borderwidth = 0;
         int margin = 1;
 
         memcpy(fg, settings.foreground.val.COL, sizeof(color));
@@ -286,6 +301,15 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
             jsonErrorInit(&err);
         }
 
+        blockbarParseColorJson(subblock, "bordercolor", borderCol, &err);
+        if (jsonErrorIsSet(&err)) {
+            fprintf(stderr,
+                    "Error parsing \"bordercolor\" array from subblock\n%s\n",
+                    err.msg);
+            jsonErrorCleanup(&err);
+            jsonErrorInit(&err);
+        }
+
         #define INT(x) \
             if (jsonGetPairIndex(subblock, #x) != -1) { \
                 jsonGetInt(subblock, #x, &x, &err); \
@@ -302,6 +326,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
         INT(bgxpad);
         INT(bgypad);
         INT(bgrad);
+        INT(borderwidth);
         INT(margin);
 
         #undef INT
@@ -310,7 +335,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
 
         bgypad += settings.borderwidth.val.INT;
 
-        x += drawSubblock(ctx, text, bar, x, fg,
+        x += drawSubblock(ctx, text, bar, x, fg, borderCol, borderwidth,
                           bgwidth, bgheight, bgxpad, bgypad, bgrad, bg);
 
         if (i != subblocks->used - 1) {
