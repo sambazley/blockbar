@@ -788,7 +788,7 @@ cmd(load_module) {
     fflush(file);
 #endif
 
-    return ret != 0;
+    return ret == 0;
 }
 
 cmd(unload_module) {
