@@ -31,7 +31,13 @@ The configuration file is a JSON file, that has the following sections:
 {
     <General bar settings>,
     "modules": [
-        <paths to module binaries>
+        {
+            "path": "...",
+            "settings": {
+                ...
+            }
+        },
+        ...
     ],
     "left": [
         <Left block settings objects>,
