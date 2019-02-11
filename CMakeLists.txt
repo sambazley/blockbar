@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 
 include(GNUInstallDirs)
 
-add_subdirectory(ujson ujson_static EXCLUDE_FROM_ALL)
-include_directories(ujson/src)
-
 include_directories(include/blockbar)
 
 project(blockbar)
@@ -41,9 +38,10 @@ add_executable(bbc src/bbc.c)
 
 find_library(cairo cairo)
 find_library(dl dl)
+find_library(ujson ujson)
 find_library(X11 X11)
 find_library(xrandr Xrandr)
-target_link_libraries(blockbar ${cairo} ${dl} ${pangocairo_LIBRARIES} ${X11} ${xrandr} ujson_static)
+target_link_libraries(blockbar ${cairo} ${dl} ${pangocairo_LIBRARIES} ${X11} ${xrandr} ${ujson})
 
 target_include_directories(blockbar PUBLIC ${pangocairo_INCLUDE_DIRS})
 target_compile_options(blockbar PUBLIC ${pangocairo_CFLAGS_OTHER})
@@ -63,7 +61,6 @@ install(FILES "doc/blockbar.1.gz"
     DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
     COMPONENT doc)
 
-message(${CMAKE_INSTALL_INCLUDEDIR})
 install(DIRECTORY include/blockbar
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h")
