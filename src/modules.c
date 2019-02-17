@@ -228,6 +228,22 @@ void (*moduleGetFunction(char *modName, char *funcName)) {
     return 0;
 }
 
+int moduleHasFlag(char *modName, long mflag) {
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (!mod->dl) {
+            continue;
+        }
+
+        if (strcmp(modName, mod->data.name) == 0) {
+            return mod->data.flags & mflag;
+        }
+    }
+
+    return 0;
+}
+
 void moduleUnregisterBlock(struct Block *blk) {
     void (*rm)(struct Block *) =
         moduleGetFunction(blk->properties.module.val.STR, "blockRemove");

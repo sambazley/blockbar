@@ -96,8 +96,12 @@ struct Click {
     int bar;
 };
 
+#define MFLAG_NO_EXEC (1<<0)
+
 struct ModuleData {
     char *name;
+
+    long flags;
 
     struct Setting *settings;
     int settingCount;

@@ -31,7 +31,9 @@ int unloadModule(char *name);
 
 void initModules();
 void cleanupModules();
+
 void (*moduleGetFunction(char *modName, char *funcName));
+int moduleHasFlag(char *modName, long mflag);
 
 void moduleUnregisterBlock(struct Block *blk);
 void moduleRegisterBlock(struct Block *blk);

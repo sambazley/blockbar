@@ -65,6 +65,10 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
         execdata = blk->data->execData;
     }
 
+    if (!execdata) {
+        return 0;
+    }
+
     char *data = malloc(strlen(execdata) + 1);
     strcpy(data, execdata);
 

@@ -20,6 +20,7 @@
 #include "exec.h"
 #include "config.h"
 #include "modules.h"
+#include "render.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -156,6 +157,11 @@ end:
 }
 
 void blockExec(struct Block *blk, struct Click *cd) {
+    if (moduleHasFlag(blk->properties.module.val.STR, MFLAG_NO_EXEC)) {
+        redrawBlock(blk);
+        return;
+    }
+
     if (!blk->properties.exec.val.STR ||
             strcmp(blk->properties.exec.val.STR, "") == 0) {
         return;

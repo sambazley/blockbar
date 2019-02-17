@@ -331,22 +331,15 @@ void redrawBlock(struct Block *blk) {
     }
 
     for (int bar = 0; bar < barCount; bar++) {
-        char *execdata;
         int *rendered;
 
         if (blk->eachmon) {
-            execdata = blk->data[bar].execData;
             rendered = &(blk->data[bar].rendered);
         } else {
-            execdata = blk->data->execData;
             rendered = &(blk->data->rendered);
         }
 
         *rendered = 0;
-
-        if (!execdata) {
-            continue;
-        }
 
         int (*func)(cairo_t *, struct Block *, int) =
             moduleGetFunction(blk->properties.module.val.STR, "render");

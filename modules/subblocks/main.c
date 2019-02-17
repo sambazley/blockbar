@@ -188,6 +188,10 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
         execdata = blk->data->execData;
     }
 
+    if (!execdata) {
+        return 0;
+    }
+
     for (int i = 0; i < dataCount; i++) {
         struct SubblockData *sbd_ = &data[i];
         if (sbd_->blkid == blk->id && sbd_->bar == bar * blk->eachmon) {
