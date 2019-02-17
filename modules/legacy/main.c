@@ -55,7 +55,7 @@ static int drawString(cairo_t *ctx, char *str, int x, color col) {
     return width;
 }
 
-int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
+int render(cairo_t *ctx, struct Block *blk, int bar) {
     int x = 0;
     char *execdata;
 
@@ -68,8 +68,6 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
     char *data = malloc(strlen(execdata) + 1);
     strcpy(data, execdata);
 
-    char *longText = data;
-    char *shortText = data;
     color col;
     memcpy(col, settings.foreground.val.COL, sizeof(color));
 
@@ -82,9 +80,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
         }
 
         if (data[i] == '\n') {
-            if (j == 0) {
-                shortText = data + i + 1;
-            } else if (j == 1 && data[i + 1] == '#') {
+            if (data[i + 1] == '#') {
                 char str [9] = "00000000";
                 int colLen = len - i - 2;
                 if (colLen == 3 || colLen == 4 || colLen == 6 || colLen == 8) {
@@ -93,18 +89,10 @@ int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
                 }
             }
             data[i] = 0;
-            j++;
         }
     }
 
-    char *text;
-    if (shortMode) {
-        text = shortText;
-    } else {
-        text = longText;
-    }
-
-    x += drawString(ctx, text, x, col);
+    x += drawString(ctx, data, x, col);
 
     free(data);
 

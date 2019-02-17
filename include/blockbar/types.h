@@ -2,6 +2,7 @@
 #define SETTINGS_H
 
 #include <stdint.h>
+#include <cairo.h>
 
 typedef uint8_t color [4];
 
@@ -79,8 +80,10 @@ struct Block {
     int id;
     int eachmon;
     int timePassed;
+
     int *width;
     int *x;
+    cairo_surface_t **sfc;
 
     struct Properties properties;
 

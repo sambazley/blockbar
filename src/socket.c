@@ -391,6 +391,7 @@ cmd(_setProperty) {
     return 1;
 
 end:
+    redrawBlock(blk);
     redraw();
     return 0;
 }
@@ -563,6 +564,11 @@ cmd(_setSetting) {
                     E(background)
                     E(traybar)) {
                     reparentIcons();
+                }
+
+                for (int j = 0; j < blockCount; j++) {
+                    struct Block *blk = &blocks[j];
+                    redrawBlock(blk);
                 }
 
                 redraw();

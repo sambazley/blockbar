@@ -176,7 +176,7 @@ static int drawSubblock(cairo_t *ctx, char *str, int bar, int x, color fg,
     return width;
 }
 
-int render(cairo_t *ctx, struct Block *blk, int bar, int shortMode) {
+int render(cairo_t *ctx, struct Block *blk, int bar) {
     int x = 0;
     char *execdata;
     char *exec = blk->properties.exec.val.STR;

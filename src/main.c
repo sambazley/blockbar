@@ -246,6 +246,8 @@ int main(int argc, const char *argv[]) {
                         (*execData)[strlen(*execData) - 1] == '\n') {
                     (*execData)[strlen(*execData) - 1] = 0;
                 }
+
+                redrawBlock(blk);
             }
 
             close(proc->fdout);

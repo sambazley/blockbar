@@ -161,6 +161,13 @@ struct Block *createBlock(int eachmon) {
 
     blk->width = malloc(sizeof(int) * barCount);
     blk->x = malloc(sizeof(int) * barCount);
+    blk->sfc = malloc(sizeof(cairo_surface_t *) * barCount);
+
+    for (int i = 0; i < barCount; i++) {
+        blk->sfc[i] = cairo_surface_create_similar_image(
+                bars[i].sfc[0], CAIRO_FORMAT_ARGB32,
+                bars[i].width, bars[i].height);
+    }
 
     return blk;
 }
@@ -196,8 +203,13 @@ void removeBlock(struct Block *blk) {
         }
     }
 
+    for (int i = 0; i < barCount; i++) {
+        cairo_surface_destroy(blk->sfc[i]);
+    }
+
     free(blk->width);
     free(blk->x);
+    free(blk->sfc);
 }
 
 struct Block *getBlock(int id) {

@@ -20,6 +20,9 @@
 #ifndef RENDER_H
 #define RENDER_H
 
+#include "types.h"
+
 void redraw();
+void redrawBlock(struct Block *blk);
 
 #endif /* RENDER_H */

@@ -28,8 +28,6 @@
 #include <string.h>
 #include <ujson.h>
 
-static int shortMode;
-
 static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
     if (r) {
         int mx [] = {w - r, r};
@@ -47,16 +45,16 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
     cairo_fill(ctx);
 }
 
-static void drawDiv(int i, cairo_t *ctx, int x) {
+static void drawDiv(int bar, cairo_t *ctx, int x) {
     int width = settings.divwidth.val.INT;
     int height;
     int y;
 
     if (settings.divheight.val.INT >= 0) {
         height = settings.divheight.val.INT;
-        y = (bars[i].height - height) / 2;
+        y = (bars[bar].height - height) / 2;
     } else {
-        height = bars[i].height - settings.divvertmargin.val.INT * 2;
+        height = bars[bar].height - settings.divvertmargin.val.INT * 2;
         y = settings.divvertmargin.val.INT;
     }
 
@@ -78,18 +76,15 @@ static void drawDiv(int i, cairo_t *ctx, int x) {
     drawRect(ctx, x - width / 2 - 1, y, width, height, 0);
 }
 
-static int drawBlocks(int i, int *x) {
+static void drawBlocks(int bar, int *x) {
     cairo_t *ctx;
 
-    int last [SIDES];
-    memset(last, -1, sizeof(int) * SIDES);
-
-    if (i == trayBar) {
+    if (bar == trayBar) {
         x[settings.trayside.val.POS] = getTrayWidth();
     }
 
-    for (int j = 0; j < blockCount; j++) {
-        struct Block *blk = &blocks[j];
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
         enum Pos pos = blk->properties.pos.val.POS;
 
         if (!blk->id) {
@@ -97,124 +92,45 @@ static int drawBlocks(int i, int *x) {
         }
 
         if (pos == CENTER) {
-            ctx = bars[i].ctx[RI_CENTER];
+            ctx = bars[bar].ctx[RI_CENTER];
         } else {
-            ctx = bars[i].ctx[RI_BUFFER];
+            ctx = bars[bar].ctx[RI_BUFFER];
         }
 
-        char *execData;
-        int *rendered;
+        int rendered;
+
         if (blk->eachmon) {
-            execData = blk->data[i].execData;
-            rendered = &(blk->data[i].rendered);
+            rendered = blk->data[bar].rendered;
         } else {
-            execData = blk->data->execData;
-            rendered = &(blk->data->rendered);
+            rendered = blk->data->rendered;
         }
 
-        *rendered = 0;
-
-        if (!execData) {
+        if (!rendered) {
             continue;
         }
 
-        int prex = x[pos];
+        blk->x[bar] = x[pos];
 
+        int leftpadding = 0;
+        leftpadding += settings.padding.val.INT;
+        leftpadding += blk->properties.padding.val.INT;
+        leftpadding += blk->properties.paddingleft.val.INT;
+
+        int sfcx;
         if (pos == RIGHT) {
-            x[pos] += 1;
-        }
-
-        x[pos] += settings.padding.val.INT + blk->properties.padding.val.INT;
-
-        if (pos == RIGHT) {
-            x[pos] += blk->properties.paddingright.val.INT;
+            sfcx = bars[bar].width - x[pos] - blk->width[bar] + leftpadding;
         } else {
-            x[pos] += blk->properties.paddingleft.val.INT;
+            sfcx = x[pos] + leftpadding;
         }
 
-        int (*func)(cairo_t *, struct Block *, int, int) =
-            moduleGetFunction(blk->properties.module.val.STR, "render");
+        cairo_set_source_surface(ctx, blk->sfc[bar], sfcx, 0);
+        cairo_paint(ctx);
 
-        if (func) {
-            cairo_surface_t *sfc = cairo_surface_create_similar_image(
-                    bars[i].sfc[0], CAIRO_FORMAT_ARGB32,
-                    bars[i].width, bars[i].height);
-
-            cairo_t *ctx_ = cairo_create(sfc);
-
-            int width = func(ctx_, blk, i, shortMode);
-
-            int sfcx = x[pos];
-
-            if (width == 0) {
-                cairo_surface_destroy(sfc);
-                cairo_destroy(ctx_);
-
-                x[pos] = prex;
-                blk->x[i] = -1;
-                blk->width[i] = 0;
-                continue;
-            }
-
-            *rendered = 1;
-
-            if (pos == RIGHT) {
-                sfcx = bars[i].width - sfcx - width;
-            }
-
-            cairo_set_source_surface(ctx, sfc, sfcx, 0);
-            cairo_paint(ctx);
-
-            cairo_surface_destroy(sfc);
-            cairo_destroy(ctx_);
-
-            x[pos] += width;
-        }
-
-        x[pos] += settings.padding.val.INT + blk->properties.padding.val.INT;
-
-        if (pos == RIGHT) {
-            x[pos] += blk->properties.paddingleft.val.INT;
-        } else {
-            x[pos] += blk->properties.paddingright.val.INT;
-        }
-
-        if (pos != RIGHT) {
-            x[pos] += 1;
-        }
-
-        blk->width[i] = x[pos] - prex;
-        if (pos == RIGHT) {
-            blk->x[i] = bars[i].width - x[pos];
-        } else {
-            blk->x[i] = prex;
-        }
-
-        if (pos != RIGHT || last[RIGHT] == -1) {
-            last[pos] = j;
-        }
+        x[pos] += blk->width[bar];
     }
 
-    if (!shortMode && x[CENTER]) {
-        if (MAX(x[LEFT], x[RIGHT]) >= bars[i].width / 2 - x[CENTER] / 2) {
-            shortMode = 1;
-            return 1;
-        }
-    } else if (!shortMode && x[RIGHT] + x[LEFT] >= bars[i].width) {
-        shortMode = 1;
-        return 1;
-    }
-
-    shortMode = 0;
-
-    int dx[SIDES] = {0};
-
-    if (i == trayBar) {
-        dx[settings.trayside.val.POS] = getTrayWidth();
-    }
-
-    for (int j = 0; j < blockCount; j++) {
-        struct Block *blk = &blocks[j];
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
         enum Pos pos = blk->properties.pos.val.POS;
 
         if (!blk->id) {
@@ -224,7 +140,68 @@ static int drawBlocks(int i, int *x) {
         int rendered;
 
         if (blk->eachmon) {
-            rendered = blk->data[i].rendered;
+            rendered = blk->data[bar].rendered;
+        } else {
+            rendered = blk->data->rendered;
+        }
+
+        if (!rendered) {
+            continue;
+        }
+
+        if (pos == CENTER) {
+            blk->x[bar] = blk->x[bar] + bars[bar].width / 2 - x[CENTER] / 2;
+        } else if (pos == RIGHT) {
+            blk->x[bar] = bars[bar].width - blk->x[bar] - blk->width[bar];
+        }
+    }
+}
+
+static void drawDivs(int bar) {
+    int x [SIDES] = {0};
+    struct Block *last [SIDES] = {0};
+
+    int traywidth = getTrayWidth();
+
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
+        enum Pos pos = blk->properties.pos.val.POS;
+
+        if (!blk->id) {
+            continue;
+        }
+
+        int rendered;
+        if (blk->eachmon) {
+            rendered = blk->data[bar].rendered;
+        } else {
+            rendered = blk->data->rendered;
+        }
+
+        if (!rendered) {
+            continue;
+        }
+
+        if (pos != RIGHT || last[RIGHT] == 0) {
+            last[pos] = blk;
+        }
+    }
+
+    if (bar == trayBar) {
+        x[settings.trayside.val.POS] = traywidth;
+    }
+
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
+        enum Pos pos = blk->properties.pos.val.POS;
+
+        if (!blk->id) {
+            continue;
+        }
+
+        int rendered;
+        if (blk->eachmon) {
+            rendered = blk->data[bar].rendered;
         } else {
             rendered = blk->data->rendered;
         }
@@ -234,61 +211,55 @@ static int drawBlocks(int i, int *x) {
         }
 
         if (pos != RIGHT) {
-            dx[pos] += blk->width[i];
+            x[pos] += blk->width[bar];
         }
 
-        if (pos == CENTER) {
-            blk->x[i] = blk->x[i] + bars[i].width / 2 - x[CENTER] / 2;
-        }
-
-        if (!blk->properties.nodiv.val.INT && last[pos] != j) {
+        if (!blk->properties.nodiv.val.INT && last[pos] != blk) {
+            cairo_t *ctx;
             if (pos == CENTER) {
-                ctx = bars[i].ctx[RI_CENTER];
+                ctx = bars[bar].ctx[RI_CENTER];
             } else {
-                ctx = bars[i].ctx[RI_BUFFER];
+                ctx = bars[bar].ctx[RI_BUFFER];
             }
 
-            int divx = dx[pos];
+            int divx;
 
             if (pos == RIGHT) {
-                divx = bars[i].width - dx[pos];
+                divx = bars[bar].width - x[pos];
             } else {
-                divx = dx[pos];
+                divx = x[pos];
             }
 
-            drawDiv(i, ctx, divx);
+            drawDiv(bar, ctx, divx);
         }
 
         if (pos == RIGHT) {
-            dx[pos] += blk->width[i];
+            x[pos] += blk->width[bar];
         }
     }
 
-    int trayWidth = getTrayWidth();
-    if (last[settings.trayside.val.POS] != -1 && settings.traydiv.val.INT &&
-            i == trayBar && trayWidth) {
+    if (last[settings.trayside.val.POS] && settings.traydiv.val.INT &&
+            bar == trayBar && traywidth) {
         int divx;
 
         if (settings.trayside.val.POS == RIGHT) {
-            divx = bars[i].width - trayWidth;
+            divx = bars[bar].width - traywidth;
         } else {
-            divx = trayWidth;
+            divx = traywidth;
         }
 
-        drawDiv(i, bars[i].ctx[RI_BUFFER], divx);
+        drawDiv(bar, bars[bar].ctx[RI_BUFFER], divx);
     }
-
-    return 0;
 }
 
-static void drawBar(int i) {
-    cairo_t *ctx = bars[i].ctx[RI_CENTER];
+static void drawBar(int bar) {
+    cairo_t *ctx = bars[bar].ctx[RI_CENTER];
 
     cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
     cairo_paint(ctx);
     cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
 
-    ctx = bars[i].ctx[RI_BUFFER];
+    ctx = bars[bar].ctx[RI_BUFFER];
 
     cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
     cairo_paint(ctx);
@@ -297,8 +268,8 @@ static void drawBar(int i) {
 
     int b = settings.borderwidth.val.INT;
     int r = settings.radius.val.INT;
-    int w = bars[i].width;
-    int h = bars[i].height;
+    int w = bars[bar].width;
+    int h = bars[bar].height;
 
     if (b) {
         cairo_set_source_rgba(ctx,
@@ -326,21 +297,24 @@ static void drawBar(int i) {
 
     int x [SIDES] = {0};
 
-    if (drawBlocks(i, x) == 0) {
-        if (x[RI_CENTER]) {
-            cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
-            cairo_set_source_surface(ctx, bars[i].sfc[RI_CENTER],
-                                     bars[i].width /2 - x[RI_CENTER] / 2, 0);
-            cairo_paint(ctx);
-        }
-
-        ctx = bars[i].ctx[RI_VISIBLE];
-        cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-        cairo_set_source_surface(ctx, bars[i].sfc[RI_BUFFER], 0, 0);
-        cairo_paint(ctx);
-    } else {
-        drawBar(i);
+    if (bar == trayBar) {
+        x[settings.trayside.val.POS] = getTrayWidth();
     }
+
+    drawBlocks(bar, x);
+    drawDivs(bar);
+
+    if (x[RI_CENTER]) {
+        cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+        cairo_set_source_surface(ctx, bars[bar].sfc[RI_CENTER],
+                bars[bar].width / 2 - x[RI_CENTER] / 2, 0);
+        cairo_paint(ctx);
+    }
+
+    ctx = bars[bar].ctx[RI_VISIBLE];
+    cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+    cairo_set_source_surface(ctx, bars[bar].sfc[RI_BUFFER], 0, 0);
+    cairo_paint(ctx);
 }
 
 void redraw() {
@@ -349,4 +323,58 @@ void redraw() {
     }
 
     XSync(disp, False);
+}
+
+void redrawBlock(struct Block *blk) {
+    if (!blk->id) {
+        return;
+    }
+
+    for (int bar = 0; bar < barCount; bar++) {
+        char *execdata;
+        int *rendered;
+
+        if (blk->eachmon) {
+            execdata = blk->data[bar].execData;
+            rendered = &(blk->data[bar].rendered);
+        } else {
+            execdata = blk->data->execData;
+            rendered = &(blk->data->rendered);
+        }
+
+        *rendered = 0;
+
+        if (!execdata) {
+            continue;
+        }
+
+        int (*func)(cairo_t *, struct Block *, int) =
+            moduleGetFunction(blk->properties.module.val.STR, "render");
+
+        if (!func) {
+            continue;
+        }
+
+        cairo_t *ctx = cairo_create(blk->sfc[bar]);
+
+        cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+        cairo_paint(ctx);
+        cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+
+        int width = func(ctx, blk, bar);
+        cairo_destroy(ctx);
+
+        if (width == 0) {
+            continue;
+        }
+
+        width += settings.padding.val.INT * 2;
+        width += blk->properties.padding.val.INT * 2;
+        width += blk->properties.paddingleft.val.INT;
+        width += blk->properties.paddingright.val.INT;
+
+        *rendered = 1;
+
+        blk->width[bar] = width;
+    }
 }
