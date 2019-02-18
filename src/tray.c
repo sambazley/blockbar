@@ -153,7 +153,8 @@ void redrawTray() {
         }
 
         int x = settings.trayiconsize.val.INT * iconsDrawn
-              + settings.traypadding.val.INT * (iconsDrawn + 1);
+              + settings.traypadding.val.INT * iconsDrawn
+              + settings.padding.val.INT;
         int y = bars[trayBar].height / 2 - settings.trayiconsize.val.INT / 2;
 
         if (settings.trayside.val.POS == RIGHT) {
@@ -183,7 +184,9 @@ void redrawTray() {
 
 int getTrayWidth() {
     if (iconsDrawn > 0) {
-        return (settings.trayiconsize.val.INT + settings.traypadding.val.INT)*iconsDrawn + settings.padding.val.INT;
+        return settings.trayiconsize.val.INT * iconsDrawn
+             + settings.traypadding.val.INT * (iconsDrawn - 1)
+             + settings.padding.val.INT * 2;
     } else {
         return 0;
     }

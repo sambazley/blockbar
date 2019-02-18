@@ -554,6 +554,7 @@ cmd(_setSetting) {
                 if (0
                     E(height)
                     E(marginhoriz)
+                    E(padding)
                     E(traypadding)
                     E(trayiconsize)
                     E(trayside)) {
