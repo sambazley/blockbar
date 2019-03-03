@@ -2,8 +2,16 @@
 
 _list_blocks() {
     ids=()
-    bbc list | while read id execpath; do
-        if [[ "$1" == "eachmon" ]]; then
+    bbc list | while read id b c; do
+        if [[ "$b" == "*" ]]; then
+            execpath="$c"
+            eachmon="1"
+        else
+            execpath="$b $c"
+            eachmon="0"
+        fi
+
+        if [[ "$1" == "eachmon" ]] && [[ "$eachmon" == "1" ]]; then
             xrandr | grep " connected" | awk '{print $1}' | while read disp; do
                 ids+=$(echo "$id\\:$disp:$execpath")
             done

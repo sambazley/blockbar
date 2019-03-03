@@ -145,10 +145,29 @@ cmd(help) {
 }
 
 cmd(list) {
+    int maxIdColumns = 0;
+    int maxId = 0;
+
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
+
+        if (blk->id > maxId) {
+            maxId = blk->id;
+        }
+    }
+
+    while (maxId) {
+        maxIdColumns++;
+        maxId /= 10;
+    }
+
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         if (blk->id) {
-            rprintf("%u\t%s\n", blk->id, blocks[i].properties.exec.val.STR);
+            rprintf("%-*u" "%c %s\n",
+                    maxIdColumns + 1, blk->id,
+                    blk->eachmon ? '*' : ' ',
+                    blocks[i].properties.exec.val.STR);
         }
     }
 
