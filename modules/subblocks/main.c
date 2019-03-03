@@ -78,7 +78,7 @@ int exec(struct Block *blk, int bar, struct Click *cd) {
         int subblock = 0;
         int x = 0;
 
-        while (subblock < sbd->count) {
+        while (subblock < sbd->count - 1) {
             x += sbd->widths[subblock];
 
             if (x > cd->x - blk->x[bar]) {
