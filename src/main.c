@@ -118,36 +118,28 @@ int main(int argc, const char *argv[]) {
         return 1;
     }
 
+    if (createBars() != 0) {
+        return 1;
+    }
+
     JsonObject *jsonConfig = configInit(config);
 
     if (jsonConfig) {
         configParseGeneral(jsonConfig);
     }
 
-    initModules();
+    updateGeom();
 
-    if (createBars() != 0) {
-        return 1;
+    if (!isSettingModified(&settings.traybar)) {
+        trayInit(0);
     }
+
+    initModules();
 
     if (jsonConfig) {
         configParseBlocks(jsonConfig);
         configCleanup(jsonConfig);
     }
-
-    int trayBar = 0;
-
-    if (settings.traybar.val.STR != 0) {
-        for (int i = 0; i < barCount; i++) {
-            struct Bar bar = bars[i];
-            if (strcmp(bar.output, settings.traybar.val.STR) == 0) {
-                trayBar = i;
-                break;
-            }
-        }
-    }
-
-    trayInit(trayBar);
 
     int sockfd = socketInit();
 

@@ -120,8 +120,6 @@ int createBars() {
     XRRFreeScreenResources(res);
     XFlush(disp);
 
-    updateGeom();
-
     return 0;
 }
 

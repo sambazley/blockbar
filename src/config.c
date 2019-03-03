@@ -19,6 +19,7 @@
 
 #include "config.h"
 #include "modules.h"
+#include "tray.h"
 #include "util.h"
 #include "window.h"
 #include <pwd.h>
@@ -121,6 +122,22 @@ int setSetting(struct Setting *setting, union Value val) {
 
         if (setting == &settings.position) {
             if (strcmp(val.STR, "top") && strcmp(val.STR, "bottom")) {
+                return 1;
+            }
+        } else if (setting == &settings.traybar) {
+            int traybar = -1;
+            for (int i = 0; i < barCount; i++) {
+                struct Bar bar = bars[i];
+                if (strcmp(bar.output, val.STR) == 0) {
+                    traybar = i;
+                    break;
+                }
+            }
+
+            if (traybar != -1) {
+                trayInit(traybar);
+                reparentIcons();
+            } else {
                 return 1;
             }
         }
@@ -474,7 +491,7 @@ void configCleanup(JsonObject *jsonConfig) {
     jsonCleanup(jsonConfig);
 }
 
-static int isSettingModified(struct Setting *setting) {
+int isSettingModified(struct Setting *setting) {
     switch (setting->type) {
     case INT:
         if (setting->val.INT != setting->def.INT) {
@@ -504,6 +521,8 @@ static int isSettingModified(struct Setting *setting) {
         }
         return 0;
     }
+
+    return 0;
 }
 
 static void addSetting(struct Setting *setting, int explicit,

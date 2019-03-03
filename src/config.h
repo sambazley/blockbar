@@ -26,6 +26,7 @@
 
 void cleanupSettings();
 int setSetting(struct Setting *setting, union Value val);
+int isSettingModified(struct Setting *setting);
 
 JsonObject *configInit(const char *config);
 void configParseGeneral(JsonObject *jsonConfig);
