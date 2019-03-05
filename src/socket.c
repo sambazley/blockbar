@@ -809,6 +809,7 @@ cmd(load_module) {
     frprintf(rstderr, "%s", err);
     rprintf("%s", out);
 #else
+    FILE *file = fdopen(fd, "w");
     dprintf(fd, "%c%c", setout, rstdout);
     struct Module *ret = loadModule(argv[2], file, file);
     fflush(file);
