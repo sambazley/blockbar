@@ -173,7 +173,7 @@ struct Block *createBlock(int eachmon) {
 }
 
 void removeBlock(struct Block *blk) {
-    moduleUnregisterBlock(blk);
+    moduleRegisterBlock(blk, 0, 0);
 
     blk->id = 0;
 

@@ -35,7 +35,6 @@ void cleanupModules();
 void (*moduleGetFunction(char *modName, char *funcName));
 int moduleHasFlag(char *modName, long mflag);
 
-void moduleUnregisterBlock(struct Block *blk);
-void moduleRegisterBlock(struct Block *blk);
+int moduleRegisterBlock(struct Block *blk, char *name, FILE *err);
 
 #endif /* MODULES_H */

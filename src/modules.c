@@ -18,6 +18,7 @@
  */
 
 #include "modules.h"
+#include "config.h"
 #include "version.h"
 #include <dirent.h>
 #include <dlfcn.h>
@@ -244,20 +245,49 @@ int moduleHasFlag(char *modName, long mflag) {
     return 0;
 }
 
-void moduleUnregisterBlock(struct Block *blk) {
+int moduleRegisterBlock(struct Block *blk, char *new, FILE *err) {
+    if (new) {
+        struct Module *mod = 0;
+
+        for (int i = 0; i < moduleCount; i++) {
+            struct Module *_mod = &modules[i];
+
+            if (strcmp(_mod->data.name, new) == 0) {
+                mod = _mod;
+                break;
+            }
+        }
+
+        if (!mod) {
+            fprintf(err, "Module \"%s\" not found\n", new);
+            return 1;
+        }
+
+        if (mod->data.type != BLOCK) {
+            fprintf(err, "Module \"%s\" not a block module\n", new);
+            return 1;
+        }
+    }
+
     void (*rm)(struct Block *) =
         moduleGetFunction(blk->properties.module.val.STR, "blockRemove");
 
     if (rm) {
         rm(blk);
     }
-}
 
-void moduleRegisterBlock(struct Block *blk) {
+    if (!new) {
+        return 0;
+    }
+
+    setSetting(&blk->properties.module, (union Value) new);
+
     void (*add)(struct Block *) =
         moduleGetFunction(blk->properties.module.val.STR, "blockAdd");
 
     if (add) {
         add(blk);
     }
+
+    return 0;
 }

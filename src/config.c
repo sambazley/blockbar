@@ -316,6 +316,11 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
 
             int e = parseSetting(entry, property, &val, err);
 
+            if (!e && strcmp("module", property->name) == 0) {
+                moduleRegisterBlock(blk, val.STR, stderr);
+                continue;
+            }
+
             if (e || setSetting(property, val)) {
                 fprintf(stderr, "Invalid value for property \"%s\"\n",
                         property->name);
@@ -328,8 +333,6 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
         }
 
         blk->properties.pos.val.POS = pos;
-
-        moduleRegisterBlock(blk);
     }
 }
 

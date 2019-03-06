@@ -98,9 +98,14 @@ struct Click {
 
 #define MFLAG_NO_EXEC (1<<0)
 
+enum ModuleType {
+    BLOCK
+};
+
 struct ModuleData {
     char *name;
 
+    enum ModuleType type;
     long flags;
 
     struct Setting *settings;

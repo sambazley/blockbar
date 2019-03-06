@@ -384,24 +384,40 @@ cmd(_setProperty) {
             struct Setting *property =
                 &((struct Setting *) &(blk->properties))[i];
 
-            if (strcmp(argv[3], property->name) == 0) {
-                if (property == &(blk->properties.module)) {
-                    moduleUnregisterBlock(blk);
-                }
+            if (strcmp(argv[3], property->name)) {
+                continue;
+            }
 
-                int r = parseSetting(property, str, fd);
-
-                if (r == 0) {
-                    if (property == &(blk->properties.module)) {
-                        moduleRegisterBlock(blk);
-                    } else if (property == &(blk->properties.interval)) {
-                        updateTickInterval();
-                    }
-
+            if (property == &(blk->properties.module)) {
+#if _POSIX_C_SOURCE >= 200809L
+                char err [bbcbuffsize] = {0};
+                FILE *ferr = fmemopen(err, bbcbuffsize, "w");
+                int ret = moduleRegisterBlock(blk, str, ferr);
+                fclose(ferr);
+                frprintf(rstderr, "%s", err);
+#else
+                FILE *file = fdopen(fd, "w");
+                dprintf(fd, "%c%c", setout, rstdout);
+                int ret = moduleRegisterBlock(blk, str, file);
+                fflush(file);
+#endif
+                if (ret == 0) {
                     goto end;
-                } else if (r == 1) {
+                } else {
                     return 1;
                 }
+            }
+
+            int r = parseSetting(property, str, fd);
+
+            if (r == 0) {
+                if (property == &(blk->properties.interval)) {
+                    updateTickInterval();
+                }
+
+                goto end;
+            } else if (r == 1) {
+                return 1;
             }
         }
     }
