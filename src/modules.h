@@ -27,13 +27,14 @@ extern struct Module *modules;
 extern int moduleCount;
 
 struct Module *loadModule(char *path, FILE *out, FILE *errout);
-int unloadModule(char *name);
+void unloadModule(struct Module *mod);
 
 void initModules();
 void cleanupModules();
 
-void (*moduleGetFunction(char *modName, char *funcName));
-int moduleHasFlag(char *modName, long mflag);
+struct Module *getModuleByName(char *name);
+
+void (*moduleGetFunction(struct Module *mod, char *funcName));
 
 int moduleRegisterBlock(struct Block *blk, char *name, FILE *err);
 

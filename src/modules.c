@@ -134,8 +134,8 @@ struct Module *loadModule(char *path, FILE *out, FILE *errout) {
     return m;
 }
 
-static void unload(struct Module *mod) {
-    void (*unloadFunc)() = moduleGetFunction(mod->data.name, "unload");
+void unloadModule(struct Module *mod) {
+    void (*unloadFunc)() = moduleGetFunction(mod, "unload");
     if (unloadFunc) {
         unloadFunc();
     }
@@ -144,22 +144,6 @@ static void unload(struct Module *mod) {
     mod->dl = 0;
 
     free(mod->path);
-}
-
-int unloadModule(char *name) {
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
-        if (!mod->dl) {
-            continue;
-        }
-
-        if (strcmp(name, mod->data.name) == 0) {
-            unload(mod);
-            return 0;
-        }
-    }
-
-    return 1;
 }
 
 void initModules() {
@@ -195,14 +179,14 @@ void initModules() {
 void cleanupModules() {
     for (int i = 0; i < moduleCount; i++) {
         if (modules[i].dl) {
-            unload(&modules[i]);
+            unloadModule(&modules[i]);
         }
     }
 
     free(modules);
 }
 
-void (*moduleGetFunction(char *modName, char *funcName)) {
+struct Module *getModuleByName(char *name) {
     for (int i = 0; i < moduleCount; i++) {
         struct Module *mod = &modules[i];
 
@@ -210,83 +194,61 @@ void (*moduleGetFunction(char *modName, char *funcName)) {
             continue;
         }
 
-        if (strcmp(modName, mod->data.name) == 0) {
-            dlerror();
-
-            void (*func) = dlsym(mod->dl, funcName);
-            char *err = dlerror();
-
-            if (err) {
-                return 0;
-            } else {
-                return func;
-            }
+        if (strcmp(mod->data.name, name) == 0) {
+            return mod;
         }
     }
-
-    fprintf(stderr, "Module \"%s\" does not exist\n", modName);
 
     return 0;
 }
 
-int moduleHasFlag(char *modName, long mflag) {
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
+void (*moduleGetFunction(struct Module *mod, char *funcName)) {
+    dlerror();
 
-        if (!mod->dl) {
-            continue;
-        }
+    void (*func) = dlsym(mod->dl, funcName);
+    char *err = dlerror();
 
-        if (strcmp(modName, mod->data.name) == 0) {
-            return mod->data.flags & mflag;
-        }
+    if (err) {
+        return 0;
+    } else {
+        return func;
     }
-
-    return 0;
 }
 
 int moduleRegisterBlock(struct Block *blk, char *new, FILE *err) {
+    struct Module *oldMod = getModuleByName(blk->properties.module.val.STR);
+    struct Module *newMod = 0;
+
     if (new) {
-        struct Module *mod = 0;
+        newMod = getModuleByName(new);
 
-        for (int i = 0; i < moduleCount; i++) {
-            struct Module *_mod = &modules[i];
-
-            if (strcmp(_mod->data.name, new) == 0) {
-                mod = _mod;
-                break;
-            }
-        }
-
-        if (!mod) {
+        if (!newMod) {
             fprintf(err, "Module \"%s\" not found\n", new);
             return 1;
         }
 
-        if (mod->data.type != BLOCK) {
+        if (newMod->data.type != BLOCK) {
             fprintf(err, "Module \"%s\" not a block module\n", new);
             return 1;
         }
     }
 
-    void (*rm)(struct Block *) =
-        moduleGetFunction(blk->properties.module.val.STR, "blockRemove");
+    if (oldMod) {
+        void (*rm)(struct Block *) = moduleGetFunction(oldMod, "blockRemove");
 
-    if (rm) {
-        rm(blk);
+        if (rm) {
+            rm(blk);
+        }
     }
 
-    if (!new) {
-        return 0;
-    }
+    if (new) {
+        setSetting(&blk->properties.module, (union Value) new);
 
-    setSetting(&blk->properties.module, (union Value) new);
+        void (*add)(struct Block *) = moduleGetFunction(newMod, "blockAdd");
 
-    void (*add)(struct Block *) =
-        moduleGetFunction(blk->properties.module.val.STR, "blockAdd");
-
-    if (add) {
-        add(blk);
+        if (add) {
+            add(blk);
+        }
     }
 
     return 0;

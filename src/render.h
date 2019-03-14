@@ -24,5 +24,6 @@
 
 void redraw();
 void redrawBlock(struct Block *blk);
+void redrawModules(struct Module *mod);
 
 #endif /* RENDER_H */

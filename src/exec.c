@@ -95,14 +95,18 @@ static void execute(struct Block *blk, int bar, struct Click *cd) {
 
     barEnvs(blk, bar, cd);
 
-    int (*func)(struct Block *, int, struct Click *) =
-        moduleGetFunction(blk->properties.module.val.STR, "exec");
+    struct Module *mod = getModuleByName(blk->properties.module.val.STR);
 
-    if (func) {
-        int ret = func(blk, bar, cd);
+    if (mod) {
+        int (*func)(struct Block *, int, struct Click *) =
+            moduleGetFunction(mod, "exec");
 
-        if (ret != 0) {
-            goto end;
+        if (func) {
+            int ret = func(blk, bar, cd);
+
+            if (ret != 0) {
+                goto end;
+            }
         }
     }
 
@@ -157,7 +161,13 @@ end:
 }
 
 void blockExec(struct Block *blk, struct Click *cd) {
-    if (moduleHasFlag(blk->properties.module.val.STR, MFLAG_NO_EXEC)) {
+    struct Module *mod = getModuleByName(blk->properties.module.val.STR);
+
+    if (!mod) {
+        return;
+    }
+
+    if (mod->data.flags & MFLAG_NO_EXEC) {
         redrawBlock(blk);
         return;
     }

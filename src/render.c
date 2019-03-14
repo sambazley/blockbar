@@ -326,10 +326,6 @@ void redraw() {
 }
 
 void redrawBlock(struct Block *blk) {
-    if (!blk->id) {
-        return;
-    }
-
     for (int bar = 0; bar < barCount; bar++) {
         int *rendered;
 
@@ -341,8 +337,14 @@ void redrawBlock(struct Block *blk) {
 
         *rendered = 0;
 
+        struct Module *mod = getModuleByName(blk->properties.module.val.STR);
+
+        if (!mod) {
+            continue;
+        }
+
         int (*func)(cairo_t *, struct Block *, int) =
-            moduleGetFunction(blk->properties.module.val.STR, "render");
+            moduleGetFunction(mod, "render");
 
         if (!func) {
             continue;

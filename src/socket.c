@@ -206,6 +206,10 @@ cmd(list_settings) {
     for (int i = 0; i < moduleCount; i++) {
         struct Module *mod = &modules[i];
 
+        if (!mod->dl) {
+            continue;
+        }
+
         if (mod->data.settingCount == 0) {
             continue;
         }
@@ -459,17 +463,9 @@ cmd(_getSetting) {
     }
 
     if (moduleName) {
-        struct Module *mod = 0;
+        struct Module *mod = getModuleByName(moduleName);
 
-        for (int i = 0; i < moduleCount; i++) {
-            mod = &modules[i];
-            if (strcmp(mod->data.name, moduleName) == 0) {
-                break;
-            }
-            mod = 0;
-        }
-
-        if (mod == 0) {
+        if (!mod) {
             frprintf(rstderr, "Module \"%s\" does not exist\n", moduleName);
             return 1;
         }
@@ -531,17 +527,9 @@ cmd(_setSetting) {
     }
 
     if (moduleName) {
-        struct Module *mod = 0;
+        struct Module *mod = getModuleByName(moduleName);
 
-        for (int i = 0; i < moduleCount; i++) {
-            mod = &modules[i];
-            if (strcmp(mod->data.name, moduleName) == 0) {
-                break;
-            }
-            mod = 0;
-        }
-
-        if (mod == 0) {
+        if (!mod) {
             frprintf(rstderr, "Module \"%s\" does not exist\n", moduleName);
             return 1;
         }
@@ -798,6 +786,10 @@ cmd(list_modules) {
     for (int i = 0; i < moduleCount; i++) {
         struct Module *mod = &modules[i];
 
+        if (!mod->dl) {
+            continue;
+        }
+
         rprintf("%-*s%s\n", width + 2, mod->data.name, mod->path)
     }
 
@@ -840,15 +832,25 @@ cmd(unload_module) {
         return 1;
     }
 
-    int ret = unloadModule(argv[2]);
+    struct Module *mod = getModuleByName(argv[2]);
 
-    if (ret == 0) {
+    if (mod) {
+        unloadModule(mod);
+
+        for (int i = 0; i < blockCount; i++) {
+            struct Block *blk = &blocks[i];
+            if (blk->id) {
+                redrawBlock(blk);
+                redraw();
+            }
+        }
+
         rprintf("Module unloaded\n");
+        return 0;
     } else {
         frprintf(rstderr, "Module \"%s\" does not exist\n", argv[2]);
+        return 1;
     }
-
-    return ret;
 }
 
 #define _CASE(x, y) \
