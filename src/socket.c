@@ -114,7 +114,7 @@ int socketInit() {
     } \
     struct Block *blk = getBlock(index); \
     if (!blk) { \
-        rprintf("No block at index %u\n", index); \
+        rprintf("No block at index %d\n", index); \
         return 1; \
     }
 
