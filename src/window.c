@@ -20,6 +20,7 @@
 #include "window.h"
 #include "config.h"
 #include "exec.h"
+#include "modules.h"
 #include "tray.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,6 +194,14 @@ void updateGeom() {
 
     XRRFreeScreenResources(res);
     XFlush(disp);
+
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (mod->dl && mod->data.type == RENDER) {
+            resizeModule(mod);
+        }
+    }
 }
 
 static void click(struct Click *cd) {

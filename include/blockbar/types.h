@@ -99,7 +99,8 @@ struct Click {
 #define MFLAG_NO_EXEC (1<<0)
 
 enum ModuleType {
-    BLOCK
+    BLOCK,
+    RENDER,
 };
 
 struct ModuleData {
@@ -116,7 +117,11 @@ struct Module {
     void *dl;
     char *path;
     int inConfig;
+
     struct ModuleData data;
+
+    cairo_surface_t **sfc;
+    int zindex;
 };
 
 #endif /* SETTINGS_H */

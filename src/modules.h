@@ -26,8 +26,10 @@
 extern struct Module *modules;
 extern int moduleCount;
 
-struct Module *loadModule(char *path, FILE *out, FILE *errout);
+struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout);
 void unloadModule(struct Module *mod);
+
+void resizeModule(struct Module *mod);
 
 void initModules();
 void cleanupModules();

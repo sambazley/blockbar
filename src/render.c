@@ -76,6 +76,59 @@ static void drawDiv(int bar, cairo_t *ctx, int x) {
     drawRect(ctx, x - width / 2 - 1, y, width, height, 0);
 }
 
+static void drawModules(int bar, int above) {
+    int lastZ = 0;
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (!mod->dl || mod->data.type != RENDER) {
+            continue;
+        }
+
+        if ((mod->zindex < lastZ && mod->zindex < 0 && !above) ||
+            ((mod->zindex < lastZ || lastZ == 0) && mod->zindex > 0 && above)) {
+            lastZ = mod->zindex;
+        }
+    }
+
+    if (!lastZ) {
+        return;
+    }
+
+    lastZ--;
+
+    while (1) {
+        int minZ = 0;
+        struct Module *mod = 0;
+
+        for (int i = 0; i < moduleCount; i++) {
+            struct Module *_mod = &modules[i];
+
+            if (!_mod->dl || _mod->data.type != RENDER) {
+                continue;
+            }
+
+            if (_mod->zindex > lastZ && (_mod->zindex < minZ || minZ == 0)) {
+                mod = _mod;
+                lastZ = _mod->zindex;
+                minZ = _mod->zindex;
+            }
+        }
+
+        if (!mod) {
+            break;
+        }
+
+        if (!mod->sfc) {
+            continue;
+        }
+
+        cairo_t *ctx = bars[bar].ctx[RI_BUFFER];
+        cairo_set_source_surface(ctx, mod->sfc[bar], 0, 0);
+        cairo_paint(ctx);
+    }
+}
+
 static void drawBlocks(int bar, int *x) {
     cairo_t *ctx;
 
@@ -301,6 +354,27 @@ static void drawBar(int bar) {
         x[settings.trayside.val.POS] = getTrayWidth();
     }
 
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (!mod->dl || mod->data.type != RENDER) {
+            continue;
+        }
+
+        cairo_t *_ctx = cairo_create(mod->sfc[bar]);
+        cairo_set_operator(_ctx, CAIRO_OPERATOR_CLEAR);
+        cairo_paint(_ctx);
+        cairo_set_operator(_ctx, CAIRO_OPERATOR_OVER);
+
+        int (*func)(cairo_t *, struct Block *, int) =
+            moduleGetFunction(mod, "render");
+
+        func(_ctx, 0, bar);
+        cairo_destroy(_ctx);
+    }
+
+    drawModules(bar, 0);
+
     drawBlocks(bar, x);
     drawDivs(bar);
 
@@ -310,6 +384,8 @@ static void drawBar(int bar) {
                 bars[bar].width / 2 - x[RI_CENTER] / 2, 0);
         cairo_paint(ctx);
     }
+
+    drawModules(bar, 1);
 
     ctx = bars[bar].ctx[RI_VISIBLE];
     cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);

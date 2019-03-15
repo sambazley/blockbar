@@ -441,7 +441,18 @@ void configParseGeneral(JsonObject *jsonConfig) {
             continue;
         }
 
-        struct Module *mod = loadModule(path, stdout, stderr);
+        int zindex = -1;
+        if (jsonGetPairIndex(obj, "zindex") != -1) {
+            jsonGetInt(obj, "zindex", &zindex, &err);
+            if (jsonErrorIsSet(&err)) {
+                fprintf(stderr, "Error parsing module \"zindex\" string\n%s\n",
+                        err.msg);
+                jsonErrorCleanup(&err);
+                jsonErrorInit(&err);
+            }
+        }
+
+        struct Module *mod = loadModule(path, zindex, stdout, stderr);
 
         if (mod == 0) {
             continue;
@@ -458,7 +469,6 @@ void configParseGeneral(JsonObject *jsonConfig) {
                     err.msg);
             jsonErrorCleanup(&err);
             jsonErrorInit(&err);
-            continue;
         }
 
         for (int j = 0; j < mod->data.settingCount; j++) {
@@ -632,8 +642,13 @@ char *configSave(FILE *file, int explicit) {
 
         JsonObject *modObj = jsonAddObject(0, mods, &err);
 
-        jsonAddString("path", modules[i].path, modObj, &err);
+        jsonAddString("path", mod->path, modObj, &err);
         ERR_;
+
+        if (mod->data.type == RENDER && mod->zindex != -1) {
+            jsonAddNumber("zindex", mod->zindex, modObj, &err);
+            ERR_;
+        }
 
         JsonObject *settings = jsonAddObject("settings", modObj, &err);
         ERR_;

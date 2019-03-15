@@ -809,7 +809,7 @@ cmd(load_module) {
     FILE *fout = fmemopen(out, bbcbuffsize, "w");
     FILE *ferr = fmemopen(err, bbcbuffsize, "w");
 
-    struct Module *ret = loadModule(argv[2], fout, ferr);
+    struct Module *ret = loadModule(argv[2], -1, fout, ferr);
 
     fclose(fout);
     fclose(ferr);
@@ -819,7 +819,7 @@ cmd(load_module) {
 #else
     FILE *file = fdopen(fd, "w");
     dprintf(fd, "%c%c", setout, rstdout);
-    struct Module *ret = loadModule(argv[2], file, file);
+    struct Module *ret = loadModule(argv[2], -1, file, file);
     fflush(file);
 #endif
 

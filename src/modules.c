@@ -19,6 +19,7 @@
 
 #include "modules.h"
 #include "config.h"
+#include "window.h"
 #include "version.h"
 #include <dirent.h>
 #include <dlfcn.h>
@@ -31,7 +32,7 @@ int moduleCount;
 
 static int inConfig = 1;
 
-struct Module *loadModule(char *path, FILE *out, FILE *errout) {
+struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
     char *err = dlerror();
 
     struct Module *m = 0;
@@ -49,6 +50,7 @@ struct Module *loadModule(char *path, FILE *out, FILE *errout) {
         m = &modules[moduleCount - 1];
     }
 
+    memset(m, 0, sizeof(struct Module));
     memset(&(m->data), 0, sizeof(struct ModuleData));
 
     m->dl = dlopen(path, RTLD_NOW);
@@ -130,6 +132,31 @@ struct Module *loadModule(char *path, FILE *out, FILE *errout) {
 
     m->inConfig = inConfig;
 
+    if (m->data.type == RENDER) {
+        if (zindex == 0) {
+            zindex = -1;
+        }
+        m->zindex = zindex;
+
+        for (int i = 0; i < moduleCount; i++) {
+            struct Module *mod = &modules[i];
+
+            if (mod == m) {
+                continue;
+            }
+
+            if (m->zindex < 0 && m->zindex >= mod->zindex) {
+                mod->zindex--;
+            } else if (m->zindex > 0 && m->zindex <= mod->zindex) {
+                mod->zindex++;
+            }
+        }
+        m->sfc = malloc(sizeof(cairo_surface_t *) * barCount);
+        memset(m->sfc, 0, sizeof(cairo_surface_t *) * barCount);
+
+        resizeModule(m);
+    }
+
     fprintf(out, "Loaded \"%s\" module (%s)\n", m->data.name, path);
     return m;
 }
@@ -144,6 +171,31 @@ void unloadModule(struct Module *mod) {
     mod->dl = 0;
 
     free(mod->path);
+
+    if (mod->data.type == RENDER) {
+        if (mod->sfc[0]) {
+            for (int bar = 0; bar < barCount; bar++) {
+                cairo_surface_destroy(mod->sfc[bar]);
+            }
+        }
+        free(mod->sfc);
+    }
+}
+
+void resizeModule(struct Module *mod) {
+    if (mod->sfc[0]) {
+        for (int bar = 0; bar < barCount; bar++) {
+            cairo_surface_destroy(mod->sfc[bar]);
+        }
+    }
+
+    for (int bar = 0; bar < barCount; bar++) {
+        if (bars[bar].sfc[0]) {
+            mod->sfc[bar] = cairo_surface_create_similar_image(
+                    bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
+                    bars[bar].width, bars[bar].height);
+        }
+    }
 }
 
 void initModules() {
@@ -167,7 +219,7 @@ void initModules() {
         char *file = malloc(strlen(libdir) + strlen(dp->d_name) + 1);
         strcpy(file, libdir);
         strcpy(file + strlen(libdir), dp->d_name);
-        loadModule(file, stdout, stderr);
+        loadModule(file, -1, stdout, stderr);
         free(file);
     }
 
