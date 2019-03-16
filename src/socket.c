@@ -138,6 +138,8 @@ cmd(help) {
     phelp("list-modules", "Lists the loaded modules");
     phelp("load-module <file>", "Loads a module");
     phelp("unload-module <name>", "Unloads a module");
+    phelp("raise <name>", "Raises a render module");
+    phelp("lower <name>", "Lowers a render module");
 
 #undef phelp
 
@@ -853,6 +855,57 @@ cmd(unload_module) {
     }
 }
 
+static void positionModule(struct Module *mod, int diff, int first) {
+    mod->zindex += diff;
+    if (mod->zindex == 0) {
+        mod->zindex += diff;
+        first = 0;
+    }
+
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *_mod = &modules[i];
+
+        if (!_mod->dl) {
+            continue;
+        }
+
+        if (mod != _mod && mod->zindex == _mod->zindex) {
+            mod = _mod;
+            positionModule(_mod, diff * (first ? -1 : 1), 0);
+            break;
+        }
+    }
+}
+
+cmd(raise_lower) {
+    if (argc != 3) {
+        frprintf(rstderr, "Usage: %s %s <module name>\n", argv[0], argv[1]);
+        return 1;
+    }
+
+    struct Module *mod = getModuleByName(argv[2]);
+
+    if (!mod) {
+        frprintf(rstderr, "Module \"%s\" does not exist\n", argv[2]);
+        return 1;
+    }
+
+    if (mod->data.type != RENDER) {
+        frprintf(rstderr, "Module \"%s\" is not a render module\n", argv[2]);
+        return 1;
+    }
+
+    if (strcmp(argv[1], "raise") == 0) {
+        positionModule(mod, 1, 1);
+    } else {
+        positionModule(mod, -1, 1);
+    }
+
+    redraw();
+
+    return 0;
+}
+
 #define _CASE(x, y) \
     else if (strcmp(argv[1], x) == 0) { \
         ret = y(argc, argv, fd); \
@@ -954,6 +1007,8 @@ void socketRecv(int sockfd) {
     _CASE("list-modules", list_modules)
     _CASE("load-module", load_module)
     _CASE("unload-module", unload_module)
+    _CASE("raise", raise_lower)
+    _CASE("lower", raise_lower)
     else {
         frprintf(rstderr, "Unknown command\n");
         ret = 1;

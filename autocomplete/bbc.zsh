@@ -208,6 +208,22 @@ _comp_unload-module() {
     esac
 }
 
+_comp_raise() {
+    case $CURRENT in
+    3)
+        _list_modules
+        ;;
+    esac
+}
+
+_comp_lower() {
+    case $CURRENT in
+    3)
+        _list_modules
+        ;;
+    esac
+}
+
 _exists() {
     declare -f -F $1 > /dev/null
     return $?
