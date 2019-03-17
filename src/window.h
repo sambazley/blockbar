@@ -25,7 +25,6 @@
 enum RenderIndex {
     RI_VISIBLE,
     RI_BUFFER,
-    RI_CENTER,
     RI_COUNT
 };
 

@@ -113,10 +113,8 @@ int createBars() {
 
         bar->sfc[RI_VISIBLE] = 0;
         bar->sfc[RI_BUFFER] = 0;
-        bar->sfc[RI_CENTER] = 0;
         bar->ctx[RI_VISIBLE] = 0;
         bar->ctx[RI_BUFFER] = 0;
-        bar->ctx[RI_CENTER] = 0;
     }
     XRRFreeScreenResources(res);
     XFlush(disp);
