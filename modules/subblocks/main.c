@@ -113,7 +113,7 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
     cairo_fill(ctx);
 }
 
-static int drawSubblock(cairo_t *ctx, char *str, int bar, int x, color fg,
+static int drawSubblock(cairo_t *ctx, char *str, int x, color fg,
                         color bc, int bw, int bgwidth, int bgheight,
                         int bgxpad, int bgypad, int bgrad, color bg) {
     PangoLayout *layout = pango_cairo_create_layout(ctx);
@@ -123,8 +123,7 @@ static int drawSubblock(cairo_t *ctx, char *str, int bar, int x, color fg,
     int width, height;
     pango_layout_get_pixel_size(layout, &width, &height);
 
-    if (!(bg == 0 || bg[0] < 0 || bg[1] < 0 || bg[2] < 0 || bg[3] < 0)) {
-
+    if (bg != 0) {
         if (bgwidth <= 0) {
             bgwidth = width + 2 * bgxpad;
         } else {
@@ -256,7 +255,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
     sbd->widths = realloc(sbd->widths, sizeof(int) * subblocks->used);
     sbd->count = subblocks->used;
 
-    for (int i = 0; i < subblocks->used; i++) {
+    for (unsigned int i = 0; i < subblocks->used; i++) {
         void *val = subblocks->vals[i];
         if (jsonGetType(val) != JSON_OBJECT) {
             fprintf(stderr, "Expecting object in \"subblocks\" array\n");
@@ -339,7 +338,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
 
         bgypad += settings.borderwidth.val.INT;
 
-        x += drawSubblock(ctx, text, bar, x, fg, borderCol, borderwidth,
+        x += drawSubblock(ctx, text, x, fg, borderCol, borderwidth,
                           bgwidth, bgheight, bgxpad, bgypad, bgrad, bg);
 
         if (i != subblocks->used - 1) {

@@ -75,7 +75,6 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
     color col;
     memcpy(col, settings.foreground.val.COL, sizeof(color));
 
-    int j = 0;
     int len = strlen(data);
 
     for (int i = 0; i < len; i++) {

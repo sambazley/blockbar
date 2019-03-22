@@ -1,4 +1,4 @@
-CFLAGS+=-fPIC -std=c99 -I../../include -ggdb -Og
+CFLAGS+=-fPIC -std=c99 -I../../include -ggdb -Og -Wall -Wextra
 CFLAGS+=$(shell pkgconf --cflags cairo)
 CFLAGS+=$(shell pkgconf --cflags pangocairo)
 
