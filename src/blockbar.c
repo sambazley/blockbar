@@ -206,7 +206,12 @@ int main(int argc, const char *argv[]) {
             if (!FD_ISSET(proc->fdout, &fds)) continue;
 
             char buf [2048] = {0};
-            read(proc->fdout, buf, sizeof(buf) - 1);
+            int r = read(proc->fdout, buf, sizeof(buf) - 1);
+
+            if (r < 0) {
+                fprintf(stderr, "Error reading fdout\n");
+                continue;
+            }
 
             if (!proc->buffer) {
                 proc->buffer = malloc(strlen(buf) + 1);
