@@ -60,10 +60,7 @@ static void drawDiv(int bar, int x) {
 
     if (height <= 0 ||
         settings.divwidth.val.INT <= 0 ||
-        settings.divcolor.val.COL[0] < 0 ||
-        settings.divcolor.val.COL[1] < 0 ||
-        settings.divcolor.val.COL[2] < 0 ||
-        settings.divcolor.val.COL[3] <= 0) {
+        settings.divcolor.val.COL[3] == 0) {
         return;
     }
 

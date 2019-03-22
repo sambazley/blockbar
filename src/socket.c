@@ -119,6 +119,8 @@ int socketInit() {
     }
 
 cmd(help) {
+    (void) argc;
+
 #define phelp(key, val) \
     rprintf("\t%-27s%s\n", key, val)
 
@@ -147,6 +149,9 @@ cmd(help) {
 }
 
 cmd(list) {
+    (void) argc;
+    (void) argv;
+
     int maxIdColumns = 0;
     int maxId = 0;
 
@@ -184,6 +189,9 @@ cmd(exec) {
 }
 
 cmd(list_properties) {
+    (void) argc;
+    (void) argv;
+
 #define p(t, v, d) \
     rprintf("%-9s%-17s%s\n", t, v, d);
 
@@ -199,6 +207,9 @@ cmd(list_properties) {
 }
 
 cmd(list_settings) {
+    (void) argc;
+    (void) argv;
+
     for (int i = 0; i < settingCount; i++) {
         struct Setting *setting = &((struct Setting *) &settings)[i];
         rprintf("%-9s%-15s%s\n", typeStrings[setting->type], setting->name,
@@ -450,6 +461,8 @@ cmd(property) {
 }
 
 cmd(_getSetting) {
+    (void) argc;
+
     char *colon = strchr(argv[2], ':');
 
     char *moduleName;
@@ -771,7 +784,10 @@ cmd(dump) {
 }
 
 cmd(list_modules) {
-    int width = 0;
+    (void) argc;
+    (void) argv;
+
+    unsigned int width = 0;
 
     for (int i = 0; i < moduleCount; i++) {
         struct Module *mod = &modules[i];

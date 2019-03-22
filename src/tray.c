@@ -56,6 +56,8 @@ static int trayIconCount;
 static int iconsDrawn;
 
 static int errorHandler(Display *disp, XErrorEvent *err) {
+    (void) disp;
+
     if (err->error_code != 0) {
         trappedErrorCode = err->error_code;
     }

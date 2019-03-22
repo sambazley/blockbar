@@ -61,7 +61,7 @@ int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
         return 1;
     }
 
-    for (int j = 0; j < col->used; j++) {
+    for (unsigned int j = 0; j < col->used; j++) {
         void *val = col->vals[j];
         if (jsonGetType(val) != JSON_NUMBER) {
             fprintf(stderr, "Value in \"%s\" array is not a valid int\n", key);

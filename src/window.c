@@ -149,7 +149,7 @@ void updateGeom() {
                             + settings.xoffset.val.INT;
 
         int y = top ? settings.marginvert.val.INT
-                         : crtcInfo->height
+                         : (signed) crtcInfo->height
                          - settings.height.val.INT
                          - settings.marginvert.val.INT;
 

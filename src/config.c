@@ -289,7 +289,7 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
 
     jsonGetArray(jo, key, &arr, err); ERR(err);
 
-    for (int i = 0; i < arr->used; i++) {
+    for (unsigned int i = 0; i < arr->used; i++) {
         JsonObject *entry = arr->vals[i];
         if (jsonGetType(entry) != JSON_OBJECT) {
             fprintf(stderr, "Skipping invalid block entry\n");
@@ -423,7 +423,7 @@ void configParseGeneral(JsonObject *jsonConfig) {
         return;
     }
 
-    for (int i = 0; i < mods->used; i++) {
+    for (unsigned int i = 0; i < mods->used; i++) {
         JsonObject *obj = mods->vals[i];
         if (jsonGetType(obj) != JSON_OBJECT) {
             fprintf(stderr, "Skipping invalid module\n");
