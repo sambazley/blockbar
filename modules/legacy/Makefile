@@ -1,4 +1,4 @@
-CFLAGS+=-fPIC -std=c99 -I../../include -ggdb -Og -Wall -Wextra
+CFLAGS+=-fPIC -std=c99 -I../../include -Wall -Wextra
 CFLAGS+=$(shell pkgconf --cflags cairo)
 CFLAGS+=$(shell pkgconf --cflags pangocairo)
 
@@ -7,6 +7,10 @@ LDFLAGS+=$(shell pkgconf --libs cairo)
 LDFLAGS+=$(shell pkgconf --libs pangocairo)
 
 .PHONY: all clean
+
+ifeq ($(DEBUG),1)
+CFLAGS+=-Og -ggdb
+endif
 
 all: legacy.so
 
