@@ -123,7 +123,7 @@ static int drawSubblock(cairo_t *ctx, char *str, int x, color fg,
     int width, height;
     pango_layout_get_pixel_size(layout, &width, &height);
 
-    if (bg != 0) {
+    if (bg[3] != 0) {
         if (bgwidth <= 0) {
             bgwidth = width + 2 * bgxpad;
         } else {
@@ -277,7 +277,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
             }
         }
 
-        color bg = {-1, -1, -1, -1};
+        color bg = {0, 0, 0, 0};
         color fg;
         color borderCol = {0, 0, 0, 255};
         int bgwidth = -1, bgheight = -1, bgxpad = 5, bgypad = 1, bgrad = 0;
