@@ -1,9 +1,5 @@
 /bbc
 /blockbar
-/build
-/CMakeCache.txt
-/CMakeFiles
-/cmake_install.cmake
+/src/*.o
+/src/*.d
 /doc/*.gz
-/install_manifest.txt
-/Makefile

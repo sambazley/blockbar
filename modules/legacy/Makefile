@@ -14,4 +14,4 @@ legacy.so: main.o
 	$(CC) $^ -o $@ $(LDFLAGS)
 
 clean:
-	rm *.o *.so
+	rm -f *.o *.so

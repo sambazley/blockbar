@@ -23,7 +23,6 @@
 #include "tray.h"
 #include "types.h"
 #include "window.h"
-#include <pango/pangocairo.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ujson.h>
