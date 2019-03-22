@@ -9,9 +9,8 @@ If you are using Arch Linux, blockbar can be installed from the [AUR](https://au
 Otherwise, it can be installed with the following commands:
 
 ```
-$ git clone https://gitlab.com/sambazley/blockbar --recursive
+$ git clone https://gitlab.com/sambazley/blockbar
 $ cd blockbar
-$ cmake .
 $ sudo make install
 ```
 
