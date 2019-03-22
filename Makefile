@@ -12,7 +12,7 @@ DEPS=$(addprefix $(VPATH)/,$(BLOCKBAR_SRCS:.c=.d) $(BBC_SRCS:.c=.d))
 
 PREFIX?=/usr/local
 
-CFLAGS+=-std=gnu99 -Og -ggdb -Wall -Wextra -D_WITH_DPRINTF
+CFLAGS+=-std=gnu99 -Wall -Wextra -D_WITH_DPRINTF
 CFLAGS+=-Iinclude/blockbar
 CFLAGS+=-DLIBDIR="\"$(PREFIX)/lib\""
 CFLAGS+=$(shell pkgconf --cflags cairo)
@@ -32,6 +32,9 @@ MANDIR?=$(DESTDIR)$(PREFIX)/share/man
 BASHDIR?=$(DESTDIR)$(PREFIX)/share/bash-completion
 ZSHDIR?=$(DESTDIR)$(PREFIX)/share/zsh/site-functions
 MODDIR?=$(DESTDIR)$(PREFIX)/lib/blockbar
+
+debug: CFLAGS+=-Og -ggdb
+debug: all
 
 all: $(DEPS)
 -include $(DEPS)
