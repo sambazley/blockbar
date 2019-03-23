@@ -31,7 +31,7 @@ void settingUpdate(struct Setting *setting) {
     }
 }
 
-static int drawString(cairo_t *ctx, char *str, int x, color col) {
+static int drawString(cairo_t *ctx, char *str, color col) {
     PangoLayout *layout = pango_cairo_create_layout(ctx);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
@@ -40,7 +40,7 @@ static int drawString(cairo_t *ctx, char *str, int x, color col) {
 
     pango_layout_get_pixel_size(layout, &width, &height);
 
-    cairo_move_to(ctx, x, settings.height.val.INT / 2 - height / 2);
+    cairo_move_to(ctx, 0, settings.height.val.INT / 2 - height / 2);
 
     cairo_set_source_rgba(ctx,
                           col[0] / 255.f,
@@ -56,7 +56,6 @@ static int drawString(cairo_t *ctx, char *str, int x, color col) {
 }
 
 int render(cairo_t *ctx, struct Block *blk, int bar) {
-    int x = 0;
     char *execdata;
 
     if (blk->eachmon) {
@@ -95,9 +94,9 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
         }
     }
 
-    x += drawString(ctx, data, x, col);
+    int width = drawString(ctx, data, col);
 
     free(data);
 
-    return x;
+    return width;
 }
