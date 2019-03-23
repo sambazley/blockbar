@@ -360,8 +360,6 @@ void redraw() {
     for (int i = 0; i < barCount; i++) {
         drawBar(i);
     }
-
-//    XSync(disp, False);
 }
 
 void redrawBlock(struct Block *blk) {
