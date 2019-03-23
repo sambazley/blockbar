@@ -193,6 +193,14 @@ void updateGeom() {
     XRRFreeScreenResources(res);
     XFlush(disp);
 
+    for (int i = 0; i < blockCount; i++) {
+        struct Block *blk = &blocks[i];
+
+        if (blk->id) {
+            resizeBlock(blk);
+        }
+    }
+
     for (int i = 0; i < moduleCount; i++) {
         struct Module *mod = &modules[i];
 

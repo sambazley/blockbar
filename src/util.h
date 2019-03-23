@@ -30,6 +30,7 @@ int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
 int blockbarParseColorString(const char *str, color dest);
 void blockbarStringifyColor(const color c, char *s);
 
+void resizeBlock(struct Block *blk);
 struct Block *createBlock(int eachmon);
 void removeBlock(struct Block *blk);
 struct Block *getBlock(int id);

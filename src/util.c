@@ -121,6 +121,18 @@ void blockbarStringifyColor(const color c, char *s) {
     sprintf(s, "#%02x%02x%02x%02x", c[0], c[1], c[2], c[3]);
 }
 
+void resizeBlock(struct Block *blk) {
+    for (int bar = 0; bar < barCount; bar++) {
+        if (blk->sfc[bar]) {
+            cairo_surface_destroy(blk->sfc[bar]);
+        }
+
+        blk->sfc[bar] = cairo_surface_create_similar_image(
+                bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
+                bars[bar].width, bars[bar].height);
+    }
+}
+
 struct Block *createBlock(int eachmon) {
     struct Block *blk = 0;
 
@@ -162,12 +174,9 @@ struct Block *createBlock(int eachmon) {
     blk->width = malloc(sizeof(int) * barCount);
     blk->x = malloc(sizeof(int) * barCount);
     blk->sfc = malloc(sizeof(cairo_surface_t *) * barCount);
+    memset(blk->sfc, 0, sizeof(cairo_surface_t *) * barCount);
 
-    for (int i = 0; i < barCount; i++) {
-        blk->sfc[i] = cairo_surface_create_similar_image(
-                bars[i].sfc[0], CAIRO_FORMAT_ARGB32,
-                bars[i].width, bars[i].height);
-    }
+    resizeBlock(blk);
 
     return blk;
 }
