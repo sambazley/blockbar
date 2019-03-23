@@ -101,9 +101,11 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
         }
 
         if (strcmp(m->data.name, modules[i].data.name) == 0) {
-            fprintf(errout, "Module \"%s\" failed to initialize\n", path);
-            fprintf(errout, "Module with name \"%s\" already loaded\n",
-                    m->data.name);
+            if (inConfig) {
+                fprintf(errout, "Module \"%s\" failed to initialize\n", path);
+                fprintf(errout, "Module with name \"%s\" already loaded\n",
+                        m->data.name);
+            }
             dlclose(m->dl);
             moduleCount--;
             return 0;
