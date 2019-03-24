@@ -28,6 +28,7 @@ LDLIBS+=-lujson
 
 DESTDIR?=
 BINDIR?=$(DESTDIR)$(PREFIX)/bin
+INCDIR?=$(DESTDIR)$(PREFIX)/include
 MANDIR?=$(DESTDIR)$(PREFIX)/share/man
 BASHDIR?=$(DESTDIR)$(PREFIX)/share/bash-completion
 ZSHDIR?=$(DESTDIR)$(PREFIX)/share/zsh/site-functions
@@ -58,12 +59,14 @@ doc/%.gz: doc/%
 
 install: all
 	mkdir -p "$(BINDIR)"
+	mkdir -p "$(INCDIR)"
 	mkdir -p "$(MANDIR)/man1"
 	mkdir -p "$(BASHDIR)"
 	mkdir -p "$(ZSHDIR)"
 	mkdir -p "$(MODDIR)"
 	cp -fp blockbar "$(BINDIR)"
 	cp -fp bbc "$(BINDIR)"
+	cp -fpr include/blockbar "$(INCDIR)"
 	cp -fp doc/blockbar.1.gz "$(MANDIR)/man1"
 	cp -fp autocomplete/bbc.bash "$(BASHDIR)/bbc"
 	cp -fp autocomplete/bbc.zsh "$(ZSHDIR)/_bbc"
