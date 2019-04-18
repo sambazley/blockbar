@@ -336,10 +336,10 @@ static void drawBar(int bar) {
         cairo_paint(_ctx);
         cairo_set_operator(_ctx, CAIRO_OPERATOR_OVER);
 
-        int (*func)(cairo_t *, struct Block *, int) =
+        int (*func)(cairo_t *, int) =
             moduleGetFunction(mod, "render");
 
-        func(_ctx, 0, bar);
+        func(_ctx, bar);
         cairo_destroy(_ctx);
     }
 
