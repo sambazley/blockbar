@@ -14,7 +14,6 @@ PREFIX?=/usr/local
 
 CFLAGS+=-std=gnu99 -Wall -Wextra -D_WITH_DPRINTF
 CFLAGS+=-Iinclude/blockbar
-CFLAGS+=-DLIBDIR="\"$(PREFIX)/lib\""
 CFLAGS+=$(shell pkgconf --cflags cairo)
 CFLAGS+=$(shell pkgconf --cflags x11)
 CFLAGS+=$(shell pkgconf --cflags xrandr)

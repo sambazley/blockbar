@@ -200,32 +200,53 @@ void resizeModule(struct Module *mod) {
     }
 }
 
-void initModules() {
-    char *libdir = LIBDIR "/blockbar/";
-    DIR *dir = opendir(libdir);
+static void loadModulesInDir(char *path) {
+    DIR *dir = opendir(path);
+    struct dirent *dp;
 
     if (!dir) {
-        fprintf(stderr, "Module directory (%s) does not exist\n", libdir);
         return;
     }
-
-    inConfig = 0;
-
-    struct dirent *dp;
 
     while ((dp = readdir(dir))) {
         if (dp->d_type != DT_REG && dp->d_type != DT_LNK) {
             continue;
         }
 
-        char *file = malloc(strlen(libdir) + strlen(dp->d_name) + 1);
-        strcpy(file, libdir);
-        strcpy(file + strlen(libdir), dp->d_name);
+        int fileLen = strlen(path) + strlen(dp->d_name) + 2;
+        char *file = malloc(fileLen);
+        memset(file, 0, fileLen);
+
+        strcat(file, path);
+        strcat(file, "/");
+        strcat(file, dp->d_name);
+
         loadModule(file, -1, stdout, stderr);
         free(file);
     }
 
     closedir(dir);
+}
+
+void initModules() {
+#ifndef MODDIRS
+#   define MODDIRS
+#endif
+
+    char *dirs [] = {
+        MODDIRS "",
+        "/usr/local/lib/blockbar/modules",
+        "/usr/lib/blockbar/modules",
+    };
+    int dirCount = sizeof(dirs) / sizeof(char *);
+
+    inConfig = 0;
+
+    for (int i = 0; i < dirCount; i++) {
+        if (dirs[i][0] != '\0') {
+            loadModulesInDir(dirs[i]);
+        }
+    }
 
     inConfig = 1;
 }
