@@ -161,6 +161,7 @@ static void drawBlocks(int bar) {
 
 static void drawDivs(int bar) {
     struct Block *last [SIDES] = {0};
+    int x [SIDES] = {0};
 
     int traywidth = getTrayWidth();
 
@@ -186,6 +187,16 @@ static void drawDivs(int bar) {
         if (pos != RIGHT || last[RIGHT] == 0) {
             last[pos] = blk;
         }
+
+        x[pos] += blk->width[bar];
+    }
+
+    int maxWidth = bars[bar].width / 2 - x[CENTER] / 2;
+
+    if (x[LEFT] > maxWidth) {
+        last[LEFT] = last[CENTER];
+    } else if (x[RIGHT] > maxWidth) {
+        last[CENTER] = last[RIGHT];
     }
 
     for (int i = 0; i < blockCount; i++) {
@@ -257,6 +268,15 @@ static void calculateBlockX(int bar) {
         x[pos] += blk->width[bar];
     }
 
+    enum Pos overlap = CENTER;
+    int maxWidth = bars[bar].width / 2 - x[CENTER] / 2;
+
+    if (x[LEFT] > maxWidth) {
+        overlap = LEFT;
+    } else if (x[RIGHT] > maxWidth) {
+        overlap = RIGHT;
+    }
+
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         enum Pos pos = blk->properties.pos.val.POS;
@@ -277,10 +297,41 @@ static void calculateBlockX(int bar) {
             continue;
         }
 
-        if (pos == CENTER) {
+        if (pos == CENTER && overlap == CENTER) {
             blk->x[bar] = blk->x[bar] + bars[bar].width / 2 - x[CENTER] / 2;
         } else if (pos == RIGHT) {
             blk->x[bar] = bars[bar].width - blk->x[bar] - blk->width[bar];
+        }
+    }
+
+    for (int i = 0; i < blockCount * (overlap != CENTER); i++) {
+        struct Block *blk = &blocks[i];
+        enum Pos pos = blk->properties.pos.val.POS;
+
+        if (!blk->id) {
+            continue;
+        }
+
+        int rendered;
+
+        if (blk->eachmon) {
+            rendered = blk->data[bar].rendered;
+        } else {
+            rendered = blk->data->rendered;
+        }
+
+        if (!rendered) {
+            continue;
+        }
+
+        if (pos != CENTER) {
+            continue;
+        }
+
+        if (overlap == LEFT) {
+            blk->x[bar] = x[LEFT] + blk->x[bar];
+        } else if (overlap == RIGHT) {
+            blk->x[bar] = bars[bar].width - x[RIGHT] - x[CENTER] + blk->x[bar];
         }
     }
 }
