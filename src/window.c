@@ -211,33 +211,8 @@ void updateGeom() {
 }
 
 static void click(struct Click *cd) {
-    int cx [SIDES] = {0};
-    int centerWidth = 0;
-
-    struct Block *block = 0;
-
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
-
-        if (!blk->id) {
-            continue;
-        }
-
-        int rendered;
-        if (blk->eachmon) {
-            rendered = blk->data[cd->bar].rendered;
-        } else {
-            rendered = blk->data->rendered;
-        }
-
-        if (rendered && blk->properties.pos.val.POS == CENTER) {
-            centerWidth += blk->width[cd->bar];
-        }
-    }
-
-    for (int i = 0; i < blockCount; i++) {
-        struct Block *blk = &blocks[i];
-        enum Pos pos = blk->properties.pos.val.POS;
 
         if (!blk->id) {
             continue;
@@ -254,35 +229,12 @@ static void click(struct Click *cd) {
             continue;
         }
 
-        int rx = 0;
-        if (pos == LEFT) {
-            rx = cd->x;
-        } else if (pos == CENTER) {
-            rx = cd->x - bars[cd->bar].width / 2 + centerWidth / 2;
-        } else if (pos == RIGHT) {
-            rx = bars[cd->bar].width - cd->x - 1;
-        }
-
-        if (cd->bar == trayBar && pos == settings.trayside.val.POS) {
-            rx -= getTrayWidth();
-        }
-
-        if (rx < 0) {
-            continue;
-        }
-
-        cx[pos] += blk->width[cd->bar];
-
-        if (cx[pos] > rx) {
-            block = blk;
-
+        if (cd->x > blk->x[cd->bar] &&
+                cd->x < blk->x[cd->bar] + blk->width[cd->bar]) {
+            blockExec(blk, cd);
             break;
         }
     }
-
-    if (!block) return;
-
-    blockExec(block, cd);
 }
 
 void pollEvents() {
