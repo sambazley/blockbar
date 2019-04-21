@@ -31,7 +31,7 @@ INCDIR?=$(DESTDIR)$(PREFIX)/include
 MANDIR?=$(DESTDIR)$(PREFIX)/share/man
 BASHDIR?=$(DESTDIR)$(PREFIX)/share/bash-completion
 ZSHDIR?=$(DESTDIR)$(PREFIX)/share/zsh/site-functions
-MODDIR?=$(DESTDIR)$(PREFIX)/lib/blockbar
+MODDIR?=$(DESTDIR)$(PREFIX)/lib/blockbar/modules
 
 ifeq ($(DEBUG),1)
 CFLAGS+=-Og -ggdb
