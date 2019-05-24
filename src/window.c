@@ -249,6 +249,12 @@ void pollEvents() {
                         if (bars[bar].window == ev.xbutton.window) break;
                     }
 
+                    if (ev.xbutton.x < 0 || ev.xbutton.y < 0 ||
+                            ev.xbutton.x > bars[bar].width ||
+                            ev.xbutton.y > bars[bar].height) {
+                        break;
+                    }
+
                     struct Click cd = {
                         .button = ev.xbutton.button,
                         .x = ev.xbutton.x,
