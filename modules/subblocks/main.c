@@ -17,12 +17,14 @@ static int dataCount = 0;
 static PangoFontDescription *fontDesc = 0;
 
 static void setupFont() {
+    struct BarSettings *barSettings = blockbarGetSettings();
+
     if (fontDesc) {
         pango_font_description_free(fontDesc);
     }
 
-    if (settings.font.val.STR) {
-        fontDesc = pango_font_description_from_string(settings.font.val.STR);
+    if (barSettings->font.val.STR) {
+        fontDesc = pango_font_description_from_string(barSettings->font.val.STR);
     }
 }
 
@@ -35,7 +37,9 @@ int init(struct ModuleData *data) {
 }
 
 void settingUpdate(struct Setting *setting) {
-    if (setting == &settings.font) {
+    struct BarSettings *barSettings = blockbarGetSettings();
+
+    if (setting == &barSettings->font) {
         setupFont();
     }
 }
@@ -116,6 +120,8 @@ static void drawRect(cairo_t *ctx, int x, int y, int w, int h, int r) {
 static int drawSubblock(cairo_t *ctx, char *str, int x, color fg,
                         color bc, int bw, int bgwidth, int bgheight,
                         int bgxpad, int bgypad, int bgrad, color bg) {
+    struct BarSettings *barSettings = blockbarGetSettings();
+
     PangoLayout *layout = pango_cairo_create_layout(ctx);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
@@ -131,9 +137,9 @@ static int drawSubblock(cairo_t *ctx, char *str, int x, color fg,
         }
 
         if (bgheight <= 0) {
-            bgheight = settings.height.val.INT - 2 * bgypad;
+            bgheight = barSettings->height.val.INT - 2 * bgypad;
         } else {
-            bgypad = (settings.height.val.INT - bgheight) / 2;
+            bgypad = (barSettings->height.val.INT - bgheight) / 2;
         }
 
         if (bw) {
@@ -160,7 +166,7 @@ static int drawSubblock(cairo_t *ctx, char *str, int x, color fg,
         x += bgxpad;
     }
 
-    cairo_move_to(ctx, x, settings.height.val.INT / 2 - height / 2);
+    cairo_move_to(ctx, x, barSettings->height.val.INT / 2 - height / 2);
 
     cairo_set_source_rgba(ctx,
                           fg[0] / 255.f,
@@ -180,6 +186,8 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
     char *execdata;
     char *exec = blk->properties.exec.val.STR;
     struct SubblockData *sbd = 0;
+
+    struct BarSettings *barSettings = blockbarGetSettings();
 
     if (blk->eachmon) {
         execdata = blk->data[bar].execData;
@@ -284,7 +292,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
         int borderwidth = 0;
         int margin = 1;
 
-        memcpy(fg, settings.foreground.val.COL, sizeof(color));
+        memcpy(fg, barSettings->foreground.val.COL, sizeof(color));
 
         blockbarParseColorJson(subblock, "background", bg, &err);
         if (jsonErrorIsSet(&err)) {
@@ -336,7 +344,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
 
         int startx = x;
 
-        bgypad += settings.borderwidth.val.INT;
+        bgypad += barSettings->borderwidth.val.INT;
 
         x += drawSubblock(ctx, text, x, fg, borderCol, borderwidth,
                           bgwidth, bgheight, bgxpad, bgypad, bgrad, bg);

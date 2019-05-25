@@ -24,7 +24,7 @@
 #include "types.h"
 #include "version.h"
 
-extern struct Settings settings;
+struct BarSettings *blockbarGetSettings();
 
 int blockbarGetBarWidth(int bar);
 

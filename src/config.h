@@ -35,7 +35,7 @@ void configCleanup(JsonObject *jsonConfig);
 char *configSave(FILE *file, int explicit);
 
 extern const char *typeStrings [];
-extern struct Settings settings;
+extern struct BarSettings settings;
 extern int settingCount;
 extern struct Properties defProperties;
 extern int propertyCount;

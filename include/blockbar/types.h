@@ -36,7 +36,7 @@ struct Setting {
     union Value def, val;
 };
 
-struct Settings {
+struct BarSettings {
     struct Setting height;
     struct Setting marginvert;
     struct Setting marginhoriz;

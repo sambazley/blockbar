@@ -8,12 +8,14 @@
 static PangoFontDescription *fontDesc = 0;
 
 static void setupFont() {
+    struct BarSettings *barSettings = blockbarGetSettings();
+
     if (fontDesc) {
         pango_font_description_free(fontDesc);
     }
 
-    if (settings.font.val.STR) {
-        fontDesc = pango_font_description_from_string(settings.font.val.STR);
+    if (barSettings->font.val.STR) {
+        fontDesc = pango_font_description_from_string(barSettings->font.val.STR);
     }
 }
 
@@ -26,12 +28,15 @@ int init(struct ModuleData *data) {
 }
 
 void settingUpdate(struct Setting *setting) {
-    if (setting == &settings.font) {
+    struct BarSettings *barSettings = blockbarGetSettings();
+    if (setting == &(barSettings->font)) {
         setupFont();
     }
 }
 
 static int drawString(cairo_t *ctx, char *str, color col) {
+    struct BarSettings *barSettings = blockbarGetSettings();
+
     PangoLayout *layout = pango_cairo_create_layout(ctx);
     pango_layout_set_font_description(layout, fontDesc);
     pango_layout_set_markup(layout, str, -1);
@@ -40,7 +45,7 @@ static int drawString(cairo_t *ctx, char *str, color col) {
 
     pango_layout_get_pixel_size(layout, &width, &height);
 
-    cairo_move_to(ctx, 0, settings.height.val.INT / 2 - height / 2);
+    cairo_move_to(ctx, 0, barSettings->height.val.INT / 2 - height / 2);
 
     cairo_set_source_rgba(ctx,
                           col[0] / 255.f,
@@ -56,6 +61,8 @@ static int drawString(cairo_t *ctx, char *str, color col) {
 }
 
 int render(cairo_t *ctx, struct Block *blk, int bar) {
+    struct BarSettings *barSettings = blockbarGetSettings();
+
     char *execdata;
 
     if (blk->eachmon) {
@@ -72,7 +79,7 @@ int render(cairo_t *ctx, struct Block *blk, int bar) {
     strcpy(data, execdata);
 
     color col;
-    memcpy(col, settings.foreground.val.COL, sizeof(color));
+    memcpy(col, barSettings->foreground.val.COL, sizeof(color));
 
     int len = strlen(data);
 

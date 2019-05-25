@@ -55,7 +55,7 @@ const char *typeStrings [] = {
         .val.t = __VA_ARGS__, \
     },
 
-struct Settings settings = {
+struct BarSettings settings = {
     S(height, INT, "Height of the bar", 22)
     S(marginvert, INT, "Margin above or below the bar", 0)
     S(marginhoriz, INT, "Margin on the left and right of the bar", 0)
@@ -94,6 +94,10 @@ struct Properties defProperties = {
 
 int settingCount;
 int propertyCount;
+
+struct BarSettings *blockbarGetSettings() {
+    return &settings;
+}
 
 int setSetting(struct Setting *setting, union Value val) {
     switch (setting->type) {
