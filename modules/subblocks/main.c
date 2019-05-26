@@ -65,6 +65,7 @@ void blockRemove(struct Block *blk) {
 
 int exec(struct Block *blk, int bar, struct Click *cd) {
     if (cd) {
+        struct BarSettings *settings = blockbarGetSettings();
         struct SubblockData *sbd = 0;
 
         for (int i = 0; i < dataCount; i++) {
@@ -80,12 +81,15 @@ int exec(struct Block *blk, int bar, struct Click *cd) {
         }
 
         int subblock = 0;
-        int x = 0;
+        int x = blk->x[bar]
+              + blk->properties.padding.val.INT
+              + blk->properties.paddingleft.val.INT
+              + settings->padding.val.INT;
 
         while (subblock < sbd->count - 1) {
             x += sbd->widths[subblock];
 
-            if (x > cd->x - blk->x[bar]) {
+            if (x > cd->x) {
                 break;
             }
 
