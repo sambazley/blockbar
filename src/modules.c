@@ -197,6 +197,16 @@ void unloadModule(struct Module *mod) {
         }
         free(mod->sfc);
     }
+
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *_mod = &modules[i];
+
+        if (mod->zindex < 0 && _mod->zindex < mod->zindex) {
+            _mod->zindex++;
+        } else if (mod->zindex > 0 && _mod->zindex > mod->zindex) {
+            _mod->zindex--;
+        }
+    }
 }
 
 void resizeModule(struct Module *mod) {
