@@ -109,10 +109,11 @@ static void drawModules(int bar, int above) {
 
             if (_mod->zindex > lastZ && (_mod->zindex < minZ || minZ == 0)) {
                 mod = _mod;
-                lastZ = _mod->zindex;
                 minZ = _mod->zindex;
             }
         }
+
+        lastZ = minZ;
 
         if (!mod) {
             break;
