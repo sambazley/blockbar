@@ -2,9 +2,9 @@ CFLAGS+=-fPIC -std=c99 -I../../include -Wall -Wextra
 CFLAGS+=$(shell pkgconf --cflags cairo)
 CFLAGS+=$(shell pkgconf --cflags pangocairo)
 
-LDFLAGS+=-shared
-LDFLAGS+=$(shell pkgconf --libs cairo)
-LDFLAGS+=$(shell pkgconf --libs pangocairo)
+LDFLAGS+=-shared -Wl,-Bsymbolic
+LDLIBS+=$(shell pkgconf --libs cairo)
+LDLIBS+=$(shell pkgconf --libs pangocairo)
 
 .PHONY: all clean
 
@@ -15,7 +15,7 @@ endif
 all: legacy.so
 
 legacy.so: main.o
-	$(CC) $^ -o $@ $(LDFLAGS)
+	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f *.o *.so
