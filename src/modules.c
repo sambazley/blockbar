@@ -134,7 +134,19 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
 
     m->inConfig = inConfig;
 
-    if (m->data.type == RENDER) {
+    if (m->data.type == BLOCK) {
+        for (int i = 0; i < blockCount; i++) {
+            struct Block *blk = &blocks[i];
+
+            if (!blk->id) {
+                continue;
+            }
+
+            if (strcmp(blk->properties.module.val.STR, m->data.name) == 0) {
+                moduleRegisterBlock(blk, m->data.name, errout);
+            }
+        }
+    } else if (m->data.type == RENDER) {
         if (zindex == 0) {
             zindex = -1;
         }
@@ -308,7 +320,7 @@ int moduleRegisterBlock(struct Block *blk, char *new, FILE *err) {
         }
     }
 
-    if (oldMod) {
+    if (oldMod && oldMod != newMod) {
         void (*rm)(struct Block *) = moduleGetFunction(oldMod, "blockRemove");
 
         if (rm) {
