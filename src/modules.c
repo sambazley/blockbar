@@ -19,6 +19,7 @@
 
 #include "modules.h"
 #include "config.h"
+#include "render.h"
 #include "window.h"
 #include "version.h"
 #include <dirent.h>
@@ -144,6 +145,8 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
 
             if (strcmp(blk->properties.module.val.STR, m->data.name) == 0) {
                 moduleRegisterBlock(blk, m->data.name, errout);
+
+                redrawBlock(blk);
             }
         }
     } else if (m->data.type == RENDER) {
