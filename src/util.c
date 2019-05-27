@@ -249,6 +249,12 @@ void updateTickInterval() {
         time = gcd(time, blocks[i].properties.interval.val.INT);
     }
 
+    for (int i = 0; i < moduleCount; i++) {
+        if (modules[i].dl && modules[i].data.type == RENDER) {
+            time = gcd(time, modules[i].data.interval);
+        }
+    }
+
     extern int interval;
     interval = time;
 }

@@ -111,6 +111,8 @@ struct ModuleData {
 
     struct Setting *settings;
     int settingCount;
+
+    int interval;
 };
 
 struct Module {
@@ -122,6 +124,7 @@ struct Module {
 
     cairo_surface_t **sfc;
     int zindex;
+    int timePassed;
 };
 
 #endif /* SETTINGS_H */

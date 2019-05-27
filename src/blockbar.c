@@ -80,9 +80,13 @@ static void onexit() {
 }
 
 static void tickBlock(struct Block *blk, int interval) {
-    if (!blk->id) return;
+    if (!blk->id) {
+        return;
+    }
 
-    if (blk->properties.interval.val.INT == 0) return;
+    if (blk->properties.interval.val.INT == 0) {
+        return;
+    }
 
     if (blk->timePassed >= blk->properties.interval.val.INT) {
         blk->timePassed = 0;
@@ -90,6 +94,36 @@ static void tickBlock(struct Block *blk, int interval) {
     }
 
     blk->timePassed += interval;
+}
+
+static int tickModule(struct Module *mod, int interval) {
+    if (!mod->dl) {
+        return 0;
+    }
+
+    if (mod->data.type != RENDER) {
+        return 0;
+    }
+
+    if (mod->data.interval == 0) {
+        return 0;
+    }
+
+    int rendered = 0;
+
+    if (mod->timePassed >= mod->data.interval) {
+        mod->timePassed = 0;
+
+        for (int i = 0; i < barCount; i++) {
+            redrawModule(mod, i);
+        }
+
+        rendered = 1;
+    }
+
+    mod->timePassed += interval;
+
+    return rendered;
 }
 
 static void getTime(struct timeval *tv) {
@@ -188,9 +222,20 @@ int main(int argc, const char *argv[]) {
 
         if (fdsRdy == 0) {
             getTime(&timer1);
+
             for (int i = 0; i < blockCount; i++) {
                 tickBlock(&blocks[i], interval);
             }
+
+            int rendered = 0;
+            for (int i = 0; i < moduleCount; i++) {
+                rendered |= tickModule(&modules[i], interval);
+            }
+
+            if (rendered) {
+                redraw();
+            }
+
             continue;
         }
 

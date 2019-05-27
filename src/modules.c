@@ -172,6 +172,10 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
         memset(m->sfc, 0, sizeof(cairo_surface_t *) * barCount);
 
         resizeModule(m);
+
+        if (m->data.interval != 0) {
+            updateTickInterval();
+        }
     }
 
     fprintf(out, "Loaded \"%s\" module (%s)\n", m->data.name, path);
@@ -206,6 +210,10 @@ void unloadModule(struct Module *mod) {
         } else if (mod->zindex > 0 && _mod->zindex > mod->zindex) {
             _mod->zindex--;
         }
+    }
+
+    if (mod->data.interval != 0) {
+        updateTickInterval();
     }
 }
 

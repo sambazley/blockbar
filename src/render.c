@@ -337,6 +337,18 @@ static void calculateBlockX(int bar) {
     }
 }
 
+void redrawModule(struct Module *mod, int bar) {
+    cairo_t *ctx = cairo_create(mod->sfc[bar]);
+    cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
+    cairo_paint(ctx);
+    cairo_set_operator(ctx, CAIRO_OPERATOR_OVER);
+
+    int (*func)(cairo_t *, int) = moduleGetFunction(mod, "render");
+
+    func(ctx, bar);
+    cairo_destroy(ctx);
+}
+
 static void drawBar(int bar) {
     cairo_t *ctx = bars[bar].ctx[RI_BUFFER];
 
@@ -383,16 +395,9 @@ static void drawBar(int bar) {
             continue;
         }
 
-        cairo_t *_ctx = cairo_create(mod->sfc[bar]);
-        cairo_set_operator(_ctx, CAIRO_OPERATOR_CLEAR);
-        cairo_paint(_ctx);
-        cairo_set_operator(_ctx, CAIRO_OPERATOR_OVER);
-
-        int (*func)(cairo_t *, int) =
-            moduleGetFunction(mod, "render");
-
-        func(_ctx, bar);
-        cairo_destroy(_ctx);
+        if (mod->data.interval == 0) {
+            redrawModule(mod, bar);
+        }
     }
 
     drawModules(bar, 0);
