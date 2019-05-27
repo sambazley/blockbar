@@ -219,6 +219,8 @@ void removeBlock(struct Block *blk) {
     free(blk->width);
     free(blk->x);
     free(blk->sfc);
+
+    updateTickInterval();
 }
 
 struct Block *getBlock(int id) {
