@@ -246,13 +246,23 @@ void updateTickInterval() {
     int time = 0;
 
     for (int i = 0; i < blockCount; i++) {
-        time = gcd(time, blocks[i].properties.interval.val.INT);
+        struct Block *blk = &blocks[i];
+
+        if (!blk->id) {
+            continue;
+        }
+
+        time = gcd(time, blk->properties.interval.val.INT);
     }
 
     for (int i = 0; i < moduleCount; i++) {
-        if (modules[i].dl && modules[i].data.type == RENDER) {
-            time = gcd(time, modules[i].data.interval);
+        struct Module *mod = &modules[i];
+
+        if (!mod->dl || mod->data.type != RENDER) {
+            continue;
         }
+
+        time = gcd(time, mod->data.interval);
     }
 
     extern int interval;
