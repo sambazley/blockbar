@@ -157,7 +157,7 @@ void redrawTray() {
         int x = settings.trayiconsize.val.INT * iconsDrawn
               + settings.traypadding.val.INT * iconsDrawn
               + settings.padding.val.INT;
-        int y = bars[trayBar].height / 2 - settings.trayiconsize.val.INT / 2;
+        int y = settings.height.val.INT / 2 - settings.trayiconsize.val.INT / 2;
 
         if (settings.trayside.val.POS == RIGHT) {
             x = bars[trayBar].width - x - settings.trayiconsize.val.INT;

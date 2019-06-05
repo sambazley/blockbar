@@ -228,7 +228,7 @@ void resizeModule(struct Module *mod) {
         if (bars[bar].sfc[0]) {
             mod->sfc[bar] = cairo_surface_create_similar_image(
                     bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
-                    bars[bar].width, bars[bar].height);
+                    bars[bar].width, settings.height.val.INT);
         }
     }
 }

@@ -32,7 +32,6 @@ struct Bar {
     Window window;
     int x;
     int width;
-    int height;
     char *output;
 
     cairo_surface_t *sfc [RI_COUNT];

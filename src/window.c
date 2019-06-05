@@ -160,7 +160,6 @@ void updateGeom() {
 
         bar->x = x;
         bar->width = width;
-        bar->height = settings.height.val.INT;
 
         for (int ri = 0; ri < RI_COUNT; ri++) {
             if (bar->sfc[ri]) {
@@ -173,10 +172,10 @@ void updateGeom() {
 
             if (ri == 0) {
                 bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
-                    visual, bar->width, bar->height);
+                    visual, bar->width, settings.height.val.INT);
             } else {
                 bar->sfc[ri] = cairo_surface_create_similar_image(bar->sfc[0],
-                    CAIRO_FORMAT_ARGB32, bar->width, bar->height);
+                    CAIRO_FORMAT_ARGB32, bar->width, settings.height.val.INT);
             }
 
             bar->ctx[ri] = cairo_create(bar->sfc[ri]);
@@ -251,7 +250,7 @@ void pollEvents() {
 
                     if (ev.xbutton.x < 0 || ev.xbutton.y < 0 ||
                             ev.xbutton.x > bars[bar].width ||
-                            ev.xbutton.y > bars[bar].height) {
+                            ev.xbutton.y > settings.height.val.INT) {
                         break;
                     }
 

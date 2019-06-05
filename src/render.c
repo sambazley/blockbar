@@ -52,9 +52,9 @@ static void drawDiv(int bar, int x) {
 
     if (settings.divheight.val.INT >= 0) {
         height = settings.divheight.val.INT;
-        y = (bars[bar].height - height) / 2;
+        y = (settings.height.val.INT - height) / 2;
     } else {
-        height = bars[bar].height - settings.divvertmargin.val.INT * 2;
+        height = settings.height.val.INT - settings.divvertmargin.val.INT * 2;
         y = settings.divvertmargin.val.INT;
     }
 
@@ -360,7 +360,7 @@ static void drawBar(int bar) {
     int b = settings.borderwidth.val.INT;
     int r = settings.radius.val.INT;
     int w = bars[bar].width;
-    int h = bars[bar].height;
+    int h = settings.height.val.INT;
 
     if (b) {
         cairo_set_source_rgba(ctx,
