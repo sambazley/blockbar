@@ -95,6 +95,11 @@ struct Properties defProperties = {
 int settingCount;
 int propertyCount;
 
+void blockbarQueryBlocks(struct Block **_blocks, int *_blockCount) {
+    *_blocks = blocks;
+    *_blockCount = blockCount;
+}
+
 struct BarSettings *blockbarGetSettings() {
     return &settings;
 }

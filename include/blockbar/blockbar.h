@@ -24,6 +24,8 @@
 #include "types.h"
 #include "version.h"
 
+void blockbarQueryBlocks(struct Block **blocks, int *blockCount);
+
 struct BarSettings *blockbarGetSettings();
 
 int blockbarGetBarWidth(int bar);
