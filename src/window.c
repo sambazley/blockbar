@@ -78,13 +78,12 @@ int createBars() {
         struct Bar *bar = &bars[barCount-1];
 
         XSetWindowAttributes wa;
-        wa.override_redirect = True;
         wa.colormap = XCreateColormap(disp, root, visual, AllocNone);
         wa.border_pixel = 0;
 
         bar->window = XCreateWindow(disp, root, 0, 0, 10, 10,
                 0, vinfo.depth, InputOutput, visual,
-                CWOverrideRedirect | CWColormap | CWBorderPixel,
+                CWColormap | CWBorderPixel,
                 &wa);
 
         bar->output = malloc(oputInfo->nameLen + 1);
@@ -126,6 +125,9 @@ void updateGeom() {
     int s = DefaultScreen(disp);
     Window root = RootWindow(disp, s);
 
+    ATOM(_NET_WM_STRUT);
+    ATOM(_NET_WM_STRUT_PARTIAL);
+
     XRRScreenResources *res = XRRGetScreenResources(disp, root);
 
     int b = 0;
@@ -139,6 +141,8 @@ void updateGeom() {
 
         XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(disp, res, oputInfo->crtc);
         struct Bar *bar = &bars[b];
+
+        XUnmapWindow(disp, bar->window);
 
         int top = 1;
         if (strcmp(settings.position.val.STR, "bottom") == 0) {
@@ -181,10 +185,31 @@ void updateGeom() {
             bar->ctx[ri] = cairo_create(bar->sfc[ri]);
         }
 
+        long geom [12] = {0};
+        int height = settings.height.val.INT + settings.marginvert.val.INT * 2;
+
+        if (top) {
+            geom[2] = height;
+            geom[8] = crtcInfo->x;
+            geom[9] = crtcInfo->x + crtcInfo->width;
+        } else {
+            geom[3] = height;
+            geom[10] = crtcInfo->x;
+            geom[11] = crtcInfo->x + crtcInfo->width;
+        }
+
+        XChangeProperty(disp, bar->window, _NET_WM_STRUT, XA_CARDINAL, 32,
+                PropModeReplace, (unsigned char *) &geom, 4);
+        XChangeProperty(disp, bar->window, _NET_WM_STRUT_PARTIAL, XA_CARDINAL, 32,
+                PropModeReplace, (unsigned char *) &geom, 12);
+
         XRRFreeOutputInfo(oputInfo);
         XRRFreeCrtcInfo(crtcInfo);
 
         XMapWindow(disp, bar->window);
+
+        XMoveResizeWindow(disp, bar->window, x, y,
+                          width, settings.height.val.INT);
 
         b++;
     }
