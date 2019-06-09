@@ -192,12 +192,14 @@ static void drawDivs(int bar) {
         x[pos] += blk->width[bar];
     }
 
-    int maxWidth = bars[bar].width / 2 - x[CENTER] / 2;
+    if (x[CENTER]) {
+        int maxWidth = bars[bar].width / 2 - x[CENTER] / 2;
 
-    if (x[LEFT] > maxWidth) {
-        last[LEFT] = last[CENTER];
-    } else if (x[RIGHT] > maxWidth) {
-        last[CENTER] = last[RIGHT];
+        if (x[LEFT] > maxWidth) {
+            last[LEFT] = last[CENTER];
+        } else if (x[RIGHT] > maxWidth) {
+            last[CENTER] = last[RIGHT];
+        }
     }
 
     for (int i = 0; i < blockCount; i++) {
