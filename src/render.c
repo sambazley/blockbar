@@ -417,6 +417,8 @@ void redraw() {
     for (int i = 0; i < barCount; i++) {
         drawBar(i);
     }
+
+    XFlush(disp);
 }
 
 void redrawBlock(struct Block *blk) {
