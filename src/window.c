@@ -108,7 +108,7 @@ int createBars() {
         XFree(classhint);
 
         XSelectInput(disp, bar->window,
-                ButtonPressMask | SubstructureNotifyMask);
+                ButtonPressMask | SubstructureNotifyMask | ExposureMask);
 
         bar->sfc[RI_VISIBLE] = 0;
         bar->sfc[RI_BUFFER] = 0;
@@ -296,9 +296,6 @@ void pollEvents() {
             case ReparentNotify:
             case DestroyNotify:
                 handleDestroyEvent(&ev);
-                break;
-            case SubstructureNotifyMask:
-                printf("substructure\n");
                 break;
         }
     }
