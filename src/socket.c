@@ -607,7 +607,10 @@ cmd(_setSetting) {
 
                 for (int j = 0; j < blockCount; j++) {
                     struct Block *blk = &blocks[j];
-                    redrawBlock(blk);
+
+                    if (blk->id) {
+                        redrawBlock(blk);
+                    }
                 }
 
                 redraw();
