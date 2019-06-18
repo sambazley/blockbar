@@ -481,7 +481,7 @@ void configParseGeneral(JsonObject *jsonConfig) {
         }
 
         for (int j = 0; j < mod->data.settingCount; j++) {
-            struct Setting *setting = &mod->data.settings[i];
+            struct Setting *setting = &mod->data.settings[j];
 
             union Value val;
 
