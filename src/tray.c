@@ -75,9 +75,11 @@ static int untrapErrors() {
 }
 
 static void
-xembedSendMessage(Window w, long msg, long detail, long d1, long d2) {
+xembedSendMessage(int index, long msg, long detail, long d1, long d2) {
     XEvent ev;
     memset(&ev, 0, sizeof(ev));
+
+    Window w = trayIcons[index];
 
     ev.xclient.type = ClientMessage;
     ev.xclient.window = w;
@@ -97,7 +99,7 @@ xembedSendMessage(Window w, long msg, long detail, long d1, long d2) {
     int err = untrapErrors();
 
     if (err) {
-        fprintf(stderr, "xembed error %d\n", err);
+        trayIcons[index] = 0;
     }
 }
 
@@ -228,7 +230,7 @@ static void handleDockRequest(Window embed) {
         index = trayIconCount-1;
     }
 
-    xembedSendMessage(embed, XEMBED_EMBEDDED_NOTIFY, 0, parent,
+    xembedSendMessage(index, XEMBED_EMBEDDED_NOTIFY, 0, parent,
             XEMBED_VERSION);
 
     XMapRaised(disp, embed);
