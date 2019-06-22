@@ -33,6 +33,8 @@ BASHDIR?=$(DESTDIR)$(PREFIX)/share/bash-completion
 ZSHDIR?=$(DESTDIR)$(PREFIX)/share/zsh/site-functions
 MODDIR?=$(DESTDIR)$(PREFIX)/lib/blockbar/modules
 
+CFLAGS+='-DMODDIRS="$(abspath $(MODDIR))",'
+
 ifeq ($(DEBUG),1)
 CFLAGS+=-Og -ggdb
 endif
