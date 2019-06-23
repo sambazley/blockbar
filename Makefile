@@ -26,14 +26,14 @@ LDLIBS+=-ldl
 LDLIBS+=-lujson
 
 DESTDIR?=
-BINDIR?=$(DESTDIR)$(PREFIX)/bin
-INCDIR?=$(DESTDIR)$(PREFIX)/include
-MANDIR?=$(DESTDIR)$(PREFIX)/share/man
-BASHDIR?=$(DESTDIR)$(PREFIX)/share/bash-completion
-ZSHDIR?=$(DESTDIR)$(PREFIX)/share/zsh/site-functions
-MODDIR?=$(DESTDIR)$(PREFIX)/lib/blockbar/modules
+BINDIR?=$(PREFIX)/bin
+INCDIR?=$(PREFIX)/include
+MANDIR?=$(PREFIX)/share/man
+BASHDIR?=$(PREFIX)/share/bash-completion
+ZSHDIR?=$(PREFIX)/share/zsh/site-functions
+MODDIR?=$(PREFIX)/lib/blockbar/modules
 
-CFLAGS+='-DMODDIRS="$(abspath $(MODDIR))",'
+CFLAGS+='-DMODDIRS="$(abspath $(MODDIR))"'
 
 ifeq ($(DEBUG),1)
 CFLAGS+=-Og -ggdb
@@ -59,27 +59,27 @@ doc/%.gz: doc/%
 	$(CC) $(CFLAGS) $< -MM -MT $(@:.d=.o) > $@
 
 install: all
-	mkdir -p "$(BINDIR)"
-	mkdir -p "$(INCDIR)"
-	mkdir -p "$(MANDIR)/man1"
-	mkdir -p "$(BASHDIR)"
-	mkdir -p "$(ZSHDIR)"
-	mkdir -p "$(MODDIR)"
-	cp -fp blockbar "$(BINDIR)"
-	cp -fp bbc "$(BINDIR)"
-	cp -fpr include/blockbar "$(INCDIR)"
-	cp -fp doc/blockbar.1.gz "$(MANDIR)/man1"
-	cp -fp autocomplete/bbc.bash "$(BASHDIR)/bbc"
-	cp -fp autocomplete/bbc.zsh "$(ZSHDIR)/_bbc"
-	$(foreach m,$(MODULES),cp -fp "modules/$(m)/$(m).so" $(MODDIR) && ) true
+	mkdir -p "$(DESTDIR)$(BINDIR)"
+	mkdir -p "$(DESTDIR)$(INCDIR)"
+	mkdir -p "$(DESTDIR)$(MANDIR)/man1"
+	mkdir -p "$(DESTDIR)$(BASHDIR)"
+	mkdir -p "$(DESTDIR)$(ZSHDIR)"
+	mkdir -p "$(DESTDIR)$(MODDIR)"
+	cp -fp blockbar "$(DESTDIR)$(BINDIR)"
+	cp -fp bbc "$(DESTDIR)$(BINDIR)"
+	cp -fpr include/blockbar "$(DESTDIR)$(INCDIR)"
+	cp -fp doc/blockbar.1.gz "$(DESTDIR)$(MANDIR)/man1"
+	cp -fp autocomplete/bbc.bash "$(DESTDIR)$(BASHDIR)/bbc"
+	cp -fp autocomplete/bbc.zsh "$(DESTDIR)$(ZSHDIR)/_bbc"
+	$(foreach m,$(MODULES),cp -fp "modules/$(m)/$(m).so" "$(DESTDIR)$(MODDIR)" && ) true
 
 uninstall:
-	rm -f "$(BINDIR)/blockbar"
-	rm -f "$(BINDIR)/bbc"
-	rm -f "$(MANDIR)/man1/blockbar.1.gz"
-	rm -f "$(BASHDIR)/bbc"
-	rm -f "$(ZSHDIR)/_bbc"
-	rm -rf "$(MODDIR)"
+	rm -f "$(DESTDIR)$(BINDIR)/blockbar"
+	rm -f "$(DESTDIR)$(BINDIR)/bbc"
+	rm -f "$(DESTDIR)$(MANDIR)/man1/blockbar.1.gz"
+	rm -f "$(DESTDIR)$(BASHDIR)/bbc"
+	rm -f "$(DESTDIR)$(ZSHDIR)/_bbc"
+	rm -rf "$(DESTDIR)$(MODDIR)"
 
 clean:
 	rm -f blockbar bbc
