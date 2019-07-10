@@ -4,7 +4,6 @@ BLOCKBAR_OBJS=$(BLOCKBAR_SRCS:.c=.o)
 BBC_OBJS=$(BBC_SRCS:.c=.o)
 MODULES=legacy subblocks
 MODULEDIRS=$(addprefix modules/,$(MODULES))
-DOCS=$(addprefix doc/,blockbar.1.gz)
 
 VPATH=src
 
@@ -43,7 +42,7 @@ export DEBUG
 all: $(DEPS)
 -include $(DEPS)
 
-all: blockbar bbc modules $(DOCS)
+all: blockbar bbc modules
 
 blockbar: $(BLOCKBAR_OBJS)
 
@@ -51,9 +50,6 @@ bbc: $(BBC_OBJS)
 
 modules:
 	$(foreach m,$(MODULEDIRS),$(MAKE) -C $(m) && ) true
-
-doc/%.gz: doc/%
-	gzip -f < $< > $@
 
 %.d: %.c
 	$(CC) $(CFLAGS) $< -MM -MT $(@:.d=.o) > $@
@@ -68,7 +64,7 @@ install: all
 	cp -fp blockbar "$(DESTDIR)$(BINDIR)"
 	cp -fp bbc "$(DESTDIR)$(BINDIR)"
 	cp -fpr include/blockbar "$(DESTDIR)$(INCDIR)"
-	cp -fp doc/blockbar.1.gz "$(DESTDIR)$(MANDIR)/man1"
+	cp -fp doc/blockbar.1 "$(DESTDIR)$(MANDIR)/man1"
 	cp -fp autocomplete/bbc.bash "$(DESTDIR)$(BASHDIR)/bbc"
 	cp -fp autocomplete/bbc.zsh "$(DESTDIR)$(ZSHDIR)/_bbc"
 	$(foreach m,$(MODULES),cp -fp "modules/$(m)/$(m).so" "$(DESTDIR)$(MODDIR)" && ) true
@@ -76,7 +72,7 @@ install: all
 uninstall:
 	rm -f "$(DESTDIR)$(BINDIR)/blockbar"
 	rm -f "$(DESTDIR)$(BINDIR)/bbc"
-	rm -f "$(DESTDIR)$(MANDIR)/man1/blockbar.1.gz"
+	rm -f "$(DESTDIR)$(MANDIR)/man1/blockbar.1"
 	rm -f "$(DESTDIR)$(BASHDIR)/bbc"
 	rm -f "$(DESTDIR)$(ZSHDIR)/_bbc"
 	rm -rf "$(DESTDIR)$(MODDIR)"
@@ -84,7 +80,6 @@ uninstall:
 clean:
 	rm -f blockbar bbc
 	rm -f $(addprefix $(VPATH)/,$(BLOCKBAR_OBJS) $(BBC_OBJS)) $(DEPS)
-	rm -f $(DOCS)
 	$(foreach m,$(MODULEDIRS),$(MAKE) clean -C $(m) && ) true
 
 .PHONY: all modules install uninstall clean
