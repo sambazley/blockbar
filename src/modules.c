@@ -63,6 +63,23 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
         return 0;
     }
 
+    int *version = dlsym(m->dl, "API_VERSION");
+    err = dlerror();
+
+    if (err) {
+        fprintf(errout, "%s\n", err);
+        dlclose(m->dl);
+        moduleCount--;
+        return 0;
+    }
+
+    if (*version != API_VERSION) {
+        fprintf(errout, "Module \"%s\" is out of date\n", path);
+        dlclose(m->dl);
+        moduleCount--;
+        return 0;
+    }
+
     int (*init)(struct ModuleData *) = dlsym(m->dl, "init");
     err = dlerror();
 
@@ -111,23 +128,6 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
             moduleCount--;
             return 0;
         }
-    }
-
-    int *version = dlsym(m->dl, "API_VERSION");
-    err = dlerror();
-
-    if (err) {
-        fprintf(errout, "%s\n", err);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
-
-    if (*version != API_VERSION) {
-        fprintf(errout, "\"%s\" module is out of date\n", m->data.name);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
     }
 
     m->path = malloc(strlen(path) + 1);
