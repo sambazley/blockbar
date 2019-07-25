@@ -53,7 +53,7 @@ int createBars() {
 
     ATOM(_NET_WM_WINDOW_TYPE);
     ATOM(_NET_WM_WINDOW_TYPE_DOCK);
-    ATOM(_NET_WM_WINDOW_STATE);
+    ATOM(_NET_WM_STATE);
     ATOM(_NET_WM_STATE_STICKY);
     ATOM(_NET_WM_STATE_BELOW);
 
@@ -95,10 +95,10 @@ int createBars() {
         XChangeProperty(disp, bar->window, _NET_WM_WINDOW_TYPE, XA_ATOM, 32,
                 PropModeAppend, (unsigned char *) &_NET_WM_WINDOW_TYPE_DOCK, 1);
 
-        XChangeProperty(disp, bar->window, _NET_WM_WINDOW_STATE, XA_ATOM, 32,
+        XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM, 32,
                 PropModeAppend, (unsigned char *) &_NET_WM_STATE_STICKY, 1);
 
-        XChangeProperty(disp, bar->window, _NET_WM_WINDOW_STATE, XA_ATOM, 32,
+        XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM, 32,
                 PropModeAppend, (unsigned char *) &_NET_WM_STATE_BELOW, 1);
 
         XClassHint *classhint = XAllocClassHint();
