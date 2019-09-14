@@ -166,6 +166,8 @@ static void drawDivs(int bar) {
 
     int traywidth = getTrayWidth();
 
+    x[settings.trayside.val.POS] += traywidth;
+
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
         enum Pos pos = blk->properties.pos.val.POS;
