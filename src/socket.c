@@ -744,7 +744,7 @@ cmd(move_right) {
     }
 
     if (swp == 0) {
-        frprintf(rstderr, "Cannot move block in further\n");
+        frprintf(rstderr, "Cannot move block further right\n");
         return 1;
     }
 
