@@ -246,6 +246,14 @@ static void loadModulesInDir(char *path) {
             continue;
         }
 
+        if (strlen(dp->d_name) < 4) {
+            continue;
+        }
+
+        if (strcmp(".so", dp->d_name + strlen(dp->d_name) - 3)) {
+            continue;
+        }
+
         int fileLen = strlen(path) + strlen(dp->d_name) + 2;
         char *file = malloc(fileLen);
         memset(file, 0, fileLen);
