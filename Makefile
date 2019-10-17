@@ -67,7 +67,7 @@ install: all
 	cp -fp doc/blockbar.1 "$(DESTDIR)$(MANDIR)/man1"
 	cp -fp autocomplete/bbc.bash "$(DESTDIR)$(BASHDIR)/bbc"
 	cp -fp autocomplete/bbc.zsh "$(DESTDIR)$(ZSHDIR)/_bbc"
-	cp -fp modules/rebuild_module.sh "$(DESTDIR)$(MODDIR)"
+	cp -fp modules/rebuild_modules.sh "$(DESTDIR)$(MODDIR)"
 	$(foreach m,$(MODULES),cp -fp "modules/$(m)/$(m).so" "$(DESTDIR)$(MODDIR)" && ) true
 
 uninstall:
