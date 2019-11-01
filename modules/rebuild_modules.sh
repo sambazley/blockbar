@@ -17,9 +17,14 @@ rebuild() {
         fi
 
         echo "====> Rebuilding $(basename "$m")"
+
+        MODULEDIR="$(dirname "$(dirname "$m")")"
+        export MODULEDIR
+
         "$MAKECMD" -C "$m" clean > /dev/null
+        "$MAKECMD" -C "$m" uninstall-so > /dev/null
         "$MAKECMD" -C "$m" > /dev/null
-        "$MAKECMD" -C "$m" MODULEDIR="$(dirname "$(dirname "$m")")" install-so > /dev/null
+        "$MAKECMD" -C "$m" install-so > /dev/null
         "$MAKECMD" -C "$m" clean > /dev/null
     done
 }
