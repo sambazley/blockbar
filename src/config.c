@@ -80,7 +80,7 @@ struct BarSettings settings = {
 };
 
 struct Properties defProperties = {
-    S(module, STR, "The name of the module that handles the block", "legacy")
+    S(module, STR, "The name of the module that handles the block", "text")
     S(exec, STR, "Command to be executed", "")
     S(pos, POS, "Position of the block", LEFT)
     S(interval, INT, "Time between each execution of the block's script", 0)

@@ -20,7 +20,7 @@ static void setupFont() {
 }
 
 int init(struct ModuleData *data) {
-    data->name = "legacy";
+    data->name = "text";
 
     setupFont();
 

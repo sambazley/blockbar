@@ -12,9 +12,9 @@ ifeq ($(DEBUG),1)
 CFLAGS+=-Og -ggdb
 endif
 
-all: legacy.so
+all: text.so
 
-legacy.so: main.o
+text.so: main.o
 	$(CC) $^ -o $@ $(LDFLAGS) $(LDLIBS)
 
 clean:
