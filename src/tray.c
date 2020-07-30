@@ -138,7 +138,6 @@ void cleanupTray() {
 
         XUnmapWindow(disp, embed);
         XReparentWindow(disp, embed, DefaultRootWindow(disp), 0, 0);
-        XSync(disp, False);
     }
 
     if (trayIcons) {
