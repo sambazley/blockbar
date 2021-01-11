@@ -983,6 +983,7 @@ void socketRecv(int sockfd) {
     }
 
     if (!cmd) {
+        close(fd);
         return;
     }
 

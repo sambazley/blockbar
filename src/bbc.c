@@ -46,12 +46,14 @@ int main(int argc, char **argv) {
 
     if (connect(sockfd, (struct sockaddr *)&sockAddr, sizeof(sockAddr)) == -1) {
         fprintf(stderr, "Error connecting to socket\n");
+        close(sockfd);
         return 1;
     }
 
     for (int i = 0; i < argc; i++) {
         if (send(sockfd, argv[i], strlen(argv[i]) + 1, 0) == -1) {
             fprintf(stderr, "Error sending data\n");
+            close(sockfd);
             return 1;
         }
     }
