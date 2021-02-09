@@ -201,8 +201,8 @@ int main(int argc, const char *argv[]) {
         getTime(&timer2);
         long elapsed = TIMEDIFF(timer1, timer2);
 
-        tv.tv_sec = 0;
-        tv.tv_usec = MAX(interval * 1000 - elapsed, 0);
+        tv.tv_sec = MAX((interval * 1000 - elapsed) / 1000000, 0);
+        tv.tv_usec = MAX((interval * 1000 - elapsed) % 1000000, 0);
 
         int nfds = MAX(x11fd, sockfd);
         for (int i = 0; i < procCount; i++) {
@@ -217,6 +217,10 @@ int main(int argc, const char *argv[]) {
         }
 
         int fdsRdy = select(nfds+1, &fds, 0, 0, interval == 0 ? 0 : &tv);
+
+        if (fdsRdy == -1) {
+            continue;
+        }
 
         pollEvents();
 
