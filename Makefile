@@ -73,6 +73,7 @@ install: all
 uninstall:
 	rm -f "$(DESTDIR)$(BINDIR)/blockbar"
 	rm -f "$(DESTDIR)$(BINDIR)/bbc"
+	rm -fr "$(DESTDIR)$(INCDIR)/blockbar"
 	rm -f "$(DESTDIR)$(MANDIR)/man1/blockbar.1"
 	rm -f "$(DESTDIR)$(BASHDIR)/bbc"
 	rm -f "$(DESTDIR)$(ZSHDIR)/_bbc"
