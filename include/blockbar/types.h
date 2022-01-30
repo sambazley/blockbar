@@ -79,14 +79,13 @@ struct BlockData {
 struct Block {
     int id;
     int eachmon;
-    int timePassed;
+    int task;
 
     int *width;
     int *x;
     cairo_surface_t **sfc;
 
     struct Properties properties;
-
     struct BlockData *data;
 };
 
@@ -119,6 +118,7 @@ struct Module {
     void *dl;
     char *path;
     int inConfig;
+    int task;
 
     struct ModuleData data;
 

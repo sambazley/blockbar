@@ -19,11 +19,14 @@
 
 #include "util.h"
 #include "config.h"
+#include "exec.h"
 #include "modules.h"
+#include "task.h"
 #include "window.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
                            JsonError *err) {
@@ -178,11 +181,17 @@ struct Block *createBlock(int eachmon) {
 
     resizeBlock(blk);
 
+    updateBlockTask(blk);
+
     return blk;
 }
 
 void removeBlock(struct Block *blk) {
     moduleRegisterBlock(blk, 0, 0);
+
+    if (blk->task) {
+        cancelTask(blk->task);
+    }
 
     blk->id = 0;
 
@@ -219,8 +228,6 @@ void removeBlock(struct Block *blk) {
     free(blk->width);
     free(blk->x);
     free(blk->sfc);
-
-    updateTickInterval();
 }
 
 struct Block *getBlock(int id) {
@@ -234,19 +241,7 @@ struct Block *getBlock(int id) {
     return 0;
 }
 
-static int gcd(int a, int b) {
-    while (b) {
-        a %= b;
-        a ^= b;
-        b ^= a;
-        a ^= b;
-    }
-    return a;
-}
-
-void updateTickInterval() {
-    int time = 0;
-
+static void blockTaskExec(int id) {
     for (int i = 0; i < blockCount; i++) {
         struct Block *blk = &blocks[i];
 
@@ -254,19 +249,25 @@ void updateTickInterval() {
             continue;
         }
 
-        time = gcd(time, blk->properties.interval.val.INT);
-    }
-
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
-
-        if (!mod->dl || mod->data.type != RENDER) {
-            continue;
+        if (blk->task == id) {
+            blockExec(blk, 0);
         }
+    }
+}
 
-        time = gcd(time, mod->data.interval);
+void updateBlockTask(struct Block *blk) {
+    if (blk->task) {
+        cancelTask(blk->task);
     }
 
-    extern int interval;
-    interval = time;
+    if (blk->properties.interval.val.INT == 0) {
+        blk->task = 0;
+    } else {
+        blk->task = scheduleTask(blockTaskExec, blk->properties.interval.val.INT, 1);
+    }
+}
+
+void getTime(struct timeval *tv) {
+    clock_gettime(CLOCK_MONOTONIC_RAW, (struct timespec *) tv);
+    tv->tv_usec /= 1000;
 }

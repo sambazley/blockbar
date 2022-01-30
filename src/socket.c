@@ -429,7 +429,7 @@ cmd(_setProperty) {
 
             if (r == 0) {
                 if (property == &(blk->properties.interval)) {
-                    updateTickInterval();
+                    updateBlockTask(blk);
                 }
 
                 goto end;

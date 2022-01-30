@@ -22,6 +22,7 @@
 #include "modules.h"
 #include "render.h"
 #include "socket.h"
+#include "task.h"
 #include "tray.h"
 #include "window.h"
 #include <signal.h>
@@ -67,6 +68,7 @@ static void onexit() {
     cleanupModules();
     cleanupBars();
     cleanupSettings();
+    cleanupTasks();
 
     if (blocks) {
         free(blocks);
@@ -78,61 +80,6 @@ static void onexit() {
 
     exit(0);
 }
-
-static void tickBlock(struct Block *blk, int interval) {
-    if (!blk->id) {
-        return;
-    }
-
-    if (blk->properties.interval.val.INT == 0) {
-        return;
-    }
-
-    if (blk->timePassed >= blk->properties.interval.val.INT) {
-        blk->timePassed = 0;
-        blockExec(blk, 0);
-    }
-
-    blk->timePassed += interval;
-}
-
-static int tickModule(struct Module *mod, int interval) {
-    if (!mod->dl) {
-        return 0;
-    }
-
-    if (mod->data.type != RENDER) {
-        return 0;
-    }
-
-    if (mod->data.interval == 0) {
-        return 0;
-    }
-
-    int rendered = 0;
-
-    if (mod->timePassed >= mod->data.interval) {
-        mod->timePassed = 0;
-
-        for (int i = 0; i < barCount; i++) {
-            redrawModule(mod, i);
-        }
-
-        rendered = 1;
-    }
-
-    mod->timePassed += interval;
-
-    return rendered;
-}
-
-static void getTime(struct timeval *tv) {
-    clock_gettime(CLOCK_MONOTONIC_RAW, (struct timespec *) tv);
-    tv->tv_usec /= 1000;
-}
-
-#define TIMEDIFF(a, b) (long) (((b.tv_sec - a.tv_sec) * 1000000) \
-                              + (b.tv_usec - a.tv_usec))
 
 int main(int argc, const char *argv[]) {
     signal(SIGTERM, onexit);
@@ -183,13 +130,9 @@ int main(int argc, const char *argv[]) {
 
     redraw();
 
-    struct timeval tv, timer1, timer2;
+    struct timeval tv;
     fd_set fds;
     int x11fd = ConnectionNumber(disp);
-
-    updateTickInterval();
-
-    getTime(&timer1);
 
     while (1) {
         FD_ZERO(&fds);
@@ -198,11 +141,7 @@ int main(int argc, const char *argv[]) {
         }
         FD_SET(x11fd, &fds);
 
-        getTime(&timer2);
-        long elapsed = TIMEDIFF(timer1, timer2);
-
-        tv.tv_sec = MAX((interval * 1000 - elapsed) / 1000000, 0);
-        tv.tv_usec = MAX((interval * 1000 - elapsed) % 1000000, 0);
+        tv = getTimeToNextTask();
 
         int nfds = MAX(x11fd, sockfd);
         for (int i = 0; i < procCount; i++) {
@@ -216,7 +155,7 @@ int main(int argc, const char *argv[]) {
             }
         }
 
-        int fdsRdy = select(nfds+1, &fds, 0, 0, interval == 0 ? 0 : &tv);
+        int fdsRdy = select(nfds+1, &fds, 0, 0, tv.tv_sec < 0 || tv.tv_usec < 0 ? 0 : &tv);
 
         if (fdsRdy == -1) {
             continue;
@@ -225,18 +164,10 @@ int main(int argc, const char *argv[]) {
         pollEvents();
 
         if (fdsRdy == 0) {
-            getTime(&timer1);
+            tickTasks();
 
-            for (int i = 0; i < blockCount; i++) {
-                tickBlock(&blocks[i], interval);
-            }
-
-            int rendered = 0;
-            for (int i = 0; i < moduleCount; i++) {
-                rendered |= tickModule(&modules[i], interval);
-            }
-
-            if (rendered) {
+            if (moduleRedrawDirty) {
+                moduleRedrawDirty = 0;
                 redraw();
             }
 

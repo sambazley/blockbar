@@ -20,6 +20,7 @@
 #include "modules.h"
 #include "config.h"
 #include "render.h"
+#include "task.h"
 #include "window.h"
 #include "version.h"
 #include <dirent.h>
@@ -31,7 +32,26 @@
 struct Module *modules;
 int moduleCount;
 
+int moduleRedrawDirty;
+
 static int inConfig = 1;
+
+static void moduleTaskExec(int id) {
+    for (int i = 0; i < moduleCount; i++) {
+        struct Module *mod = &modules[i];
+
+        if (!mod->dl || mod->data.type != RENDER || mod->data.interval == 0) {
+            continue;
+        }
+
+        if (mod->task == id) {
+            for (int i = 0; i < barCount; i++) {
+                redrawModule(mod, i);
+            }
+            moduleRedrawDirty = 1;
+        }
+    }
+}
 
 struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
     char *err = dlerror();
@@ -174,7 +194,7 @@ struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
         resizeModule(m);
 
         if (m->data.interval != 0) {
-            updateTickInterval();
+            m->task = scheduleTask(moduleTaskExec, m->data.interval, 1);
         }
     }
 
@@ -186,6 +206,10 @@ void unloadModule(struct Module *mod) {
     void (*unloadFunc)() = moduleGetFunction(mod, "unload");
     if (unloadFunc) {
         unloadFunc();
+    }
+
+    if (mod->task) {
+        cancelTask(mod->task);
     }
 
     dlclose(mod->dl);
@@ -210,10 +234,6 @@ void unloadModule(struct Module *mod) {
         } else if (mod->zindex > 0 && _mod->zindex > mod->zindex) {
             _mod->zindex--;
         }
-    }
-
-    if (mod->data.interval != 0) {
-        updateTickInterval();
     }
 }
 

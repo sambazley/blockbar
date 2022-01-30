@@ -1,4 +1,4 @@
-BLOCKBAR_SRCS=blockbar.c config.c exec.c modules.c render.c socket.c tray.c util.c window.c
+BLOCKBAR_SRCS=blockbar.c config.c exec.c modules.c render.c socket.c task.c tray.c util.c window.c
 BBC_SRCS=bbc.c
 BLOCKBAR_OBJS=$(BLOCKBAR_SRCS:.c=.o)
 BBC_OBJS=$(BBC_SRCS:.c=.o)

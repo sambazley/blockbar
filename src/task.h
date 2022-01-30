@@ -17,28 +17,23 @@
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
-#ifndef MODULES_H
-#define MODULES_H
+#ifndef TASK_H
+#define TASK_H
 
-#include "types.h"
-#include <stdio.h>
+#include <sys/time.h>
 
-extern struct Module *modules;
-extern int moduleCount;
-extern int moduleRedrawDirty;
+struct Task {
+    int id;
+    int interval;
+    int repeat;
+    void (*callback)(int id);
+    struct timeval start;
+};
 
-struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout);
-void unloadModule(struct Module *mod);
+int scheduleTask(void (*callback)(int id), int interval, int repeat);
+void cancelTask(int id);
+struct timeval getTimeToNextTask();
+void tickTasks();
+void cleanupTasks();
 
-void resizeModule(struct Module *mod);
-
-void initModules();
-void cleanupModules();
-
-struct Module *getModuleByName(char *name);
-
-void (*moduleGetFunction(struct Module *mod, char *funcName));
-
-int moduleRegisterBlock(struct Block *blk, char *name, FILE *err);
-
-#endif /* MODULES_H */
+#endif /* TASK_H */

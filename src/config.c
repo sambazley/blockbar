@@ -345,6 +345,8 @@ parseBlocks(JsonObject *jo, const char *key, enum Pos pos, JsonError *err) {
             }
         }
 
+        updateBlockTask(blk);
+
         blk->properties.pos.val.POS = pos;
     }
 }

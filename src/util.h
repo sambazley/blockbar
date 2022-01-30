@@ -21,6 +21,7 @@
 #define UTIL_H
 
 #include <ujson.h>
+#include <sys/time.h>
 #include "types.h"
 
 #define MAX(a, b) (a>b?a:b)
@@ -36,5 +37,8 @@ void removeBlock(struct Block *blk);
 struct Block *getBlock(int id);
 
 void updateTickInterval();
+void updateBlockTask(struct Block *blk);
+
+void getTime(struct timeval *tv);
 
 #endif /* UTIL_H */

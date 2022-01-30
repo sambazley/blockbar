@@ -168,7 +168,6 @@ void blockExec(struct Block *blk, struct Click *cd) {
     }
 
     if (mod->data.flags & MFLAG_NO_EXEC) {
-        redrawBlock(blk);
         return;
     }
 
