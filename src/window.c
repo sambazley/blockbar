@@ -21,6 +21,7 @@
 #include "config.h"
 #include "exec.h"
 #include "modules.h"
+#include "task.h"
 #include "tray.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -36,6 +37,15 @@ struct Bar *bars;
 static Visual *visual;
 
 #define ATOM(x) Atom x = XInternAtom(disp, #x, False)
+
+static const unsigned char xdnd_version = 5;
+static Atom xdndPosition;
+static Atom xdndStatus;
+static Atom xdndLeave;
+
+static int taskid = 0;
+static int dndx, dndoldx, dndoldy;
+static int dndbar;
 
 int createBars() {
     disp = XOpenDisplay(NULL);
@@ -56,6 +66,11 @@ int createBars() {
     ATOM(_NET_WM_STATE);
     ATOM(_NET_WM_STATE_STICKY);
     ATOM(_NET_WM_STATE_BELOW);
+    ATOM(XdndAware);
+
+    xdndPosition = XInternAtom(disp, "XdndPosition", False);
+    xdndStatus = XInternAtom(disp, "XdndStatus", False);
+    xdndLeave = XInternAtom(disp, "XdndLeave", False);
 
     XVisualInfo vinfo;
     XMatchVisualInfo(disp, s, 32, TrueColor, &vinfo);
@@ -100,6 +115,9 @@ int createBars() {
 
         XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM, 32,
                 PropModeAppend, (unsigned char *) &_NET_WM_STATE_BELOW, 1);
+
+        XChangeProperty(disp, bar->window, XdndAware, XA_ATOM, 32,
+                PropModeReplace, &xdnd_version, 1);
 
         XClassHint *classhint = XAllocClassHint();
         classhint->res_name = "blockbar";
@@ -261,6 +279,69 @@ static void click(struct Click *cd) {
     }
 }
 
+static int isXdndEvent(XEvent *ev) {
+    if (ev->xclient.message_type == xdndPosition ||
+            ev->xclient.message_type == xdndLeave) {
+        return 1;
+    }
+
+    return 0;
+}
+
+static void dndTask(int id) {
+    if (id == taskid) {
+        taskid = 0;
+
+        struct Click cd = {
+            .button = -1,
+            .x = dndx - bars[dndbar].x,
+            .bar = dndbar
+        };
+
+        click(&cd);
+    }
+}
+
+static void handleXdndEvent(XEvent *ev) {
+    if (ev->xclient.message_type == xdndPosition) {
+        int bar;
+        uint16_t x = ev->xclient.data.l[2] >> 16;
+        uint16_t y = ev->xclient.data.l[2] & 0xffff;
+
+        for (bar = 0; bar < barCount; bar++) {
+            if (bars[bar].window == ev->xbutton.window) break;
+        }
+
+        dndx = x;
+
+        if (abs(x - dndoldx) > 5 || abs(y - dndoldy) > 5) {
+            dndoldx = x;
+            dndoldy = y;
+            dndbar = bar;
+
+            if (taskid) {
+                cancelTask(taskid);
+            }
+
+            taskid = scheduleTask(&dndTask, 500, 0);
+        }
+
+        XEvent resp;
+        memset(&resp, 0, sizeof(resp));
+        resp.xclient.type = ClientMessage;
+        resp.xclient.window = ev->xclient.data.l[0];
+        resp.xclient.message_type = xdndStatus;
+        resp.xclient.format = 32;
+        resp.xclient.data.l[0] = ev->xclient.window;
+        resp.xclient.data.l[1] = 0;
+        XSendEvent(disp, resp.xclient.window, False, NoEventMask, &resp);
+    } else if (ev->xclient.message_type == xdndLeave) {
+        if (taskid) {
+            cancelTask(taskid);
+        }
+    }
+}
+
 void pollEvents() {
     XEvent ev;
     while (XPending(disp)) {
@@ -291,6 +372,8 @@ void pollEvents() {
             case ClientMessage:
                 if (isTrayEvent(&ev)) {
                     handleTrayEvent(&ev);
+                } else if (isXdndEvent(&ev)) {
+                    handleXdndEvent(&ev);
                 }
                 break;
             case ReparentNotify:

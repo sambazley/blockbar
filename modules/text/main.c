@@ -34,6 +34,19 @@ void settingUpdate(struct Setting *setting) {
     }
 }
 
+int exec(struct Block *blk, int bar, struct Click *cd) {
+    (void) blk;
+    (void) bar;
+
+    if (cd) {
+        if (cd->button <= 0) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 static int drawString(cairo_t *ctx, char *str, color col) {
     struct BarSettings *barSettings = blockbarGetSettings();
 
