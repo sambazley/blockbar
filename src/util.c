@@ -135,7 +135,7 @@ void resize_block(struct block *blk)
 		}
 
 		blk->sfc[bar] = cairo_surface_create_similar_image(
-				bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
+				bars[bar].sfc, CAIRO_FORMAT_ARGB32,
 				bars[bar].width, settings.height.val.INT);
 	}
 }

@@ -20,7 +20,9 @@
 #include "render.h"
 #include "config.h"
 #include "modules.h"
+#ifndef WAYLAND
 #include "tray.h"
+#endif
 #include "types.h"
 #include "window.h"
 #include <stdlib.h>
@@ -47,7 +49,7 @@ static void draw_rect(cairo_t *ctx, int x, int y, int w, int h, int r)
 
 static void draw_div(int bar, int x)
 {
-	cairo_t *ctx = bars[bar].ctx[RI_BUFFER];
+	cairo_t *ctx = bars[bar].ctx;
 	int width = settings.divwidth.val.INT;
 	int height;
 	int y;
@@ -78,7 +80,7 @@ static void draw_div(int bar, int x)
 
 static void draw_modules(int bar, int above)
 {
-	cairo_t *ctx = bars[bar].ctx[RI_BUFFER];
+	cairo_t *ctx = bars[bar].ctx;
 
 	int last_z = 0;
 	for (int i = 0; i < module_count; i++) {
@@ -134,7 +136,7 @@ static void draw_modules(int bar, int above)
 
 static void draw_blocks(int bar)
 {
-	cairo_t *ctx = bars[bar].ctx[RI_BUFFER];
+	cairo_t *ctx = bars[bar].ctx;
 
 	for (int i = 0; i < block_count; i++) {
 		struct block *blk = &blocks[i];
@@ -171,11 +173,13 @@ static void draw_divs(int bar)
 	struct block *last [SIDES] = {0};
 	int x [SIDES] = {0};
 
+#ifndef WAYLAND
 	int traywidth = get_tray_width();
 
 	if (bar == tray_bar) {
 		x[settings.trayside.val.POS] += traywidth;
 	}
+#endif
 
 	for (int i = 0; i < block_count; i++) {
 		struct block *blk = &blocks[i];
@@ -237,6 +241,7 @@ static void draw_divs(int bar)
 		}
 	}
 
+#ifndef WAYLAND
 	if (last[settings.trayside.val.POS] && settings.traydiv.val.INT &&
 			bar == tray_bar && traywidth) {
 		int divx;
@@ -249,15 +254,18 @@ static void draw_divs(int bar)
 
 		draw_div(bar, divx);
 	}
+#endif
 }
 
 static void calculate_block_x(int bar)
 {
 	int x [SIDES] = {0};
 
+#ifndef WAYLAND
 	if (bar == tray_bar) {
 		x[settings.trayside.val.POS] = get_tray_width();
 	}
+#endif
 
 	for (int i = 0; i < block_count; i++) {
 		struct block *blk = &blocks[i];
@@ -366,7 +374,7 @@ void redraw_module(struct module *mod, int bar)
 
 static void draw_bar(int bar)
 {
-	cairo_t *ctx = bars[bar].ctx[RI_BUFFER];
+	cairo_t *ctx = bars[bar].ctx;
 
 	cairo_set_operator(ctx, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(ctx);
@@ -423,10 +431,14 @@ static void draw_bar(int bar)
 
 	draw_modules(bar, 1);
 
-	ctx = bars[bar].ctx[RI_VISIBLE];
+#ifdef WAYLAND
+	wl_redraw(&bars[bar]);
+#else
+	ctx = bars[bar].ctx_visible;
 	cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_surface(ctx, bars[bar].sfc[RI_BUFFER], 0, 0);
+	cairo_set_source_surface(ctx, bars[bar].sfc, 0, 0);
 	cairo_paint(ctx);
+#endif
 }
 
 void redraw()
@@ -435,7 +447,9 @@ void redraw()
 		draw_bar(i);
 	}
 
+#ifndef WAYLAND
 	XFlush(disp);
+#endif
 }
 
 void redraw_block(struct block *blk)

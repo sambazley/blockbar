@@ -26,9 +26,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifndef WAYLAND
 #include <X11/extensions/Xrandr.h>
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#endif
 
 Display *disp;
 int bar_count;
@@ -134,10 +137,10 @@ int create_bars()
 		XSelectInput(disp, bar->window,
 				ButtonPressMask | SubstructureNotifyMask | ExposureMask);
 
-		bar->sfc[RI_VISIBLE] = 0;
-		bar->sfc[RI_BUFFER] = 0;
-		bar->ctx[RI_VISIBLE] = 0;
-		bar->ctx[RI_BUFFER] = 0;
+		bar->sfc = 0;
+		bar->sfc_visible = 0;
+		bar->ctx = 0;
+		bar->ctx_visible = 0;
 	}
 	XRRFreeScreenResources(res);
 	XFlush(disp);
@@ -192,32 +195,28 @@ void update_geom()
 		bar->x = x;
 		bar->width = width;
 
-		for (int ri = 0; ri < RI_COUNT; ri++) {
-			if (bar->sfc[ri]) {
-				cairo_surface_destroy(bar->sfc[ri]);
-			}
-
-			if (bar->ctx[ri]) {
-				cairo_destroy(bar->ctx[ri]);
-			}
-
-			if (ri == 0) {
-				bar->sfc[0] = cairo_xlib_surface_create(
-						disp,
-						bar->window,
-						visual,
-						bar->width,
-						settings.height.val.INT);
-			} else {
-				bar->sfc[ri] = cairo_surface_create_similar_image(
-						bar->sfc[0],
-						CAIRO_FORMAT_ARGB32,
-						bar->width,
-						settings.height.val.INT);
-			}
-
-			bar->ctx[ri] = cairo_create(bar->sfc[ri]);
+		if (bar->sfc) {
+			cairo_surface_destroy(bar->sfc);
 		}
+		if (bar->sfc_visible) {
+			cairo_surface_destroy(bar->sfc_visible);
+		}
+
+		if (bar->ctx) {
+			cairo_destroy(bar->ctx);
+		}
+		if (bar->ctx_visible) {
+			cairo_destroy(bar->ctx_visible);
+		}
+
+		bar->sfc_visible = cairo_xlib_surface_create(disp, bar->window,
+				visual, bar->width, settings.height.val.INT);
+
+		bar->sfc = cairo_surface_create_similar_image(bar->sfc_visible,
+				CAIRO_FORMAT_ARGB32, bar->width, settings.height.val.INT);
+
+		bar->ctx = cairo_create(bar->sfc);
+		bar->ctx_visible = cairo_create(bar->sfc_visible);
 
 		long geom [12] = {0};
 		int height = settings.height.val.INT + settings.marginvert.val.INT * 2;
@@ -264,34 +263,6 @@ void update_geom()
 
 		if (mod->dl && mod->data.type == RENDER) {
 			resize_module(mod);
-		}
-	}
-}
-
-static void click(struct click *cd)
-{
-	for (int i = 0; i < block_count; i++) {
-		struct block *blk = &blocks[i];
-
-		if (!blk->id) {
-			continue;
-		}
-
-		int rendered;
-		if (blk->eachmon) {
-			rendered = blk->data[cd->bar].rendered;
-		} else {
-			rendered = blk->data->rendered;
-		}
-
-		if (!rendered) {
-			continue;
-		}
-
-		if (cd->x > blk->x[cd->bar] &&
-				cd->x < blk->x[cd->bar] + blk->width[cd->bar]) {
-			block_exec(blk, cd);
-			break;
 		}
 	}
 }
@@ -411,10 +382,10 @@ void cleanup_bars()
 		struct bar *bar = &bars[i];
 
 		free(bar->output);
-		cairo_surface_destroy(bar->sfc[0]);
-		cairo_surface_destroy(bar->sfc[1]);
-		cairo_destroy(bar->ctx[0]);
-		cairo_destroy(bar->ctx[1]);
+		cairo_surface_destroy(bar->sfc);
+		cairo_surface_destroy(bar->sfc_visible);
+		cairo_destroy(bar->ctx);
+		cairo_destroy(bar->ctx_visible);
 		XDestroyWindow(disp, bar->window);
 	}
 

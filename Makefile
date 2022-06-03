@@ -1,11 +1,23 @@
-BLOCKBAR_SRCS=blockbar.c config.c exec.c modules.c render.c socket.c task.c tray.c util.c window.c
+BLOCKBAR_SRCS=blockbar.c config.c exec.c modules.c render.c socket.c task.c util.c window-common.c
+BLOCKBAR_X11_SRCS=tray.c window.c
+BLOCKBAR_WL_SRCS=wl.c
+WL_PROTOCOL_DIR=$(shell pkgconf --variable=pkgdatadir wayland-protocols)
+WL_PROTOCOL=stable/xdg-shell/xdg-shell.xml wlr-layer-shell-unstable-v1.xml
 BBC_SRCS=bbc.c
 BLOCKBAR_OBJS=$(BLOCKBAR_SRCS:.c=.o)
+WL_HEADERS=$(addprefix protocol/,$(WL_PROTOCOL:.xml=-client-protocol.h))
+BLOCKBAR_WL_OBJS=$(addprefix protocol/,$(WL_PROTOCOL:.xml=-protocol.o))
 BBC_OBJS=$(BBC_SRCS:.c=.o)
 MODULES=text subblocks
 MODULEDIRS=$(addprefix modules/,$(MODULES))
 
 VPATH=src
+
+ifeq ($(WAYLAND),1)
+BLOCKBAR_SRCS+=$(BLOCKBAR_WL_SRCS)
+else
+BLOCKBAR_SRCS+=$(BLOCKBAR_X11_SRCS)
+endif
 
 DEPS=$(addprefix $(VPATH)/,$(BLOCKBAR_SRCS:.c=.d) $(BBC_SRCS:.c=.d))
 
@@ -14,13 +26,9 @@ PREFIX?=/usr/local
 CFLAGS+=-std=gnu99 -Wall -Wextra -D_WITH_DPRINTF
 CFLAGS+=-Iinclude/blockbar
 CFLAGS+=$(shell pkgconf --cflags cairo)
-CFLAGS+=$(shell pkgconf --cflags x11)
-CFLAGS+=$(shell pkgconf --cflags xrandr)
 
 LDFLAGS+=-rdynamic
 LDLIBS+=$(shell pkgconf --libs cairo)
-LDLIBS+=$(shell pkgconf --libs x11)
-LDLIBS+=$(shell pkgconf --libs xrandr)
 LDLIBS+=-ldl
 LDLIBS+=-lujson
 
@@ -40,11 +48,26 @@ endif
 export DEBUG
 
 all: $(DEPS)
+src/wl.d: $(WL_HEADERS)
+
 -include $(DEPS)
 
 all: blockbar bbc modules
 
+ifeq ($(WAYLAND),1)
+CFLAGS+=-Iprotocol -DWAYLAND
+CFLAGS+=$(shell pkgconf --cflags wayland-client)
+LDLIBS+=$(shell pkgconf --libs wayland-client)
+
+blockbar: $(WL_HEADERS) $(BLOCKBAR_OBJS) $(BLOCKBAR_WL_OBJS)
+else
+CFLAGS+=$(shell pkgconf --cflags x11)
+CFLAGS+=$(shell pkgconf --cflags xrandr)
+LDLIBS+=$(shell pkgconf --libs x11)
+LDLIBS+=$(shell pkgconf --libs xrandr)
+
 blockbar: $(BLOCKBAR_OBJS)
+endif
 
 bbc: $(BBC_OBJS)
 
@@ -53,6 +76,20 @@ modules:
 
 %.d: %.c
 	$(CC) $(CFLAGS) $< -MM -MT $(@:.d=.o) > $@
+
+protocol/%-protocol.c: $(WL_PROTOCOL_DIR)/%.xml
+	mkdir -p $(dir $@)
+	wayland-scanner private-code $< $@
+
+protocol/%-client-protocol.h: $(WL_PROTOCOL_DIR)/%.xml
+	mkdir -p $(dir $@)
+	wayland-scanner client-header $< $@
+
+protocol/%-protocol.c: protocol/%.xml
+	wayland-scanner private-code $< $@
+
+protocol/%-client-protocol.h: protocol/%.xml
+	wayland-scanner client-header $< $@
 
 install: all
 	mkdir -p "$(DESTDIR)$(BINDIR)"
@@ -83,5 +120,8 @@ clean:
 	rm -f blockbar bbc
 	rm -f $(addprefix $(VPATH)/,$(BLOCKBAR_OBJS) $(BBC_OBJS)) $(DEPS)
 	$(foreach m,$(MODULEDIRS),$(MAKE) clean -C $(m) && ) true
+	rm -f $(addprefix protocol/,$(WL_PROTOCOL:.xml=-protocol.c))
+	rm -f $(addprefix protocol/,$(WL_PROTOCOL:.xml=-client-protocol.h))
+	rm -f $(addprefix protocol/,$(WL_PROTOCOL:.xml=-protocol.o))
 
 .PHONY: all modules install uninstall clean

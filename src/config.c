@@ -19,7 +19,9 @@
 
 #include "config.h"
 #include "modules.h"
+#ifndef WAYLAND
 #include "tray.h"
+#endif
 #include "util.h"
 #include "window.h"
 #include <pwd.h>
@@ -121,9 +123,11 @@ int set_setting(struct setting *setting, union value val)
 			return 1;
 		}
 
+#ifndef WAYLAND
 		if (setting == &settings.trayside && val.POS == CENTER) {
 			return 1;
 		}
+#endif
 
 		setting->val.POS = val.POS;
 		break;
@@ -136,6 +140,7 @@ int set_setting(struct setting *setting, union value val)
 			if (strcmp(val.STR, "top") && strcmp(val.STR, "bottom")) {
 				return 1;
 			}
+#ifndef WAYLAND
 		} else if (setting == &settings.traybar) {
 			int traybar = -1;
 			for (int i = 0; i < bar_count; i++) {
@@ -152,6 +157,7 @@ int set_setting(struct setting *setting, union value val)
 			} else {
 				return 1;
 			}
+#endif
 		}
 
 		if (setting->val.STR) {

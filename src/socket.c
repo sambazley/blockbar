@@ -24,7 +24,9 @@
 #include "modules.h"
 #include "render.h"
 #include "types.h"
+#ifndef WAYLAND
 #include "tray.h"
+#endif
 #include "util.h"
 #include <poll.h>
 #include <signal.h>
@@ -602,6 +604,7 @@ cmd(_set_setting)
 					update_geom();
 				}
 
+#ifndef WAYLAND
 				if (0
 					E(height)
 					E(marginhoriz)
@@ -617,6 +620,7 @@ cmd(_set_setting)
 					E(traybar)) {
 					reparent_icons();
 				}
+#endif
 
 				for (int j = 0; j < block_count; j++) {
 					struct block *blk = &blocks[j];

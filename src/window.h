@@ -19,26 +19,54 @@
 
 #ifndef WINDOW_H
 #define WINDOW_H
-#include <cairo/cairo-xlib.h>
-#include <X11/Xlib.h>
 
-enum render_index {
-	RI_VISIBLE,
-	RI_BUFFER,
-	RI_COUNT
-};
+#include "types.h"
+#include <cairo/cairo-xlib.h>
+#ifdef WAYLAND
+#include <wayland-client.h>
+#include "wlr-layer-shell-unstable-v1-client-protocol.h"
+#else
+#include <X11/Xlib.h>
+#endif
+
+#ifdef WAYLAND
+static const char shm_fmt [] = "/blockbar-shm-xxxxxx";
+#endif
 
 struct bar {
+#ifdef WAYLAND
+	struct wl_output *wl_output;
+	struct wl_surface *surface;
+	struct zwlr_layer_surface_v1 *layer_surface;
+
+	struct wl_buffer *buffer;
+	void *map;
+	int fd;
+	char shm_path [sizeof(shm_fmt) / sizeof(*shm_fmt)];
+
+	int output_rotate;
+	int output_width;
+#else
 	Window window;
+#endif
 	int x;
 	int width;
 	char *output;
 
-	cairo_surface_t *sfc [RI_COUNT];
-	cairo_t *ctx [RI_COUNT];
+	cairo_surface_t *sfc;
+	cairo_t *ctx;
+#ifndef WAYLAND
+	cairo_surface_t *sfc_visible;
+	cairo_t *ctx_visible;
+#endif
 };
 
+#ifdef WAYLAND
+extern struct wl_display *disp;
+#else
 extern Display *disp;
+#endif
+
 extern int bar_count;
 extern struct bar *bars;
 
@@ -46,5 +74,11 @@ int create_bars();
 void update_geom();
 void poll_events();
 void cleanup_bars();
+
+void click(struct click *cd);
+
+#ifdef WAYLAND
+void wl_redraw(struct bar *bar);
+#endif
 
 #endif /* WINDOW_H */

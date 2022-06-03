@@ -23,7 +23,9 @@
 #include "render.h"
 #include "socket.h"
 #include "task.h"
+#ifndef WAYLAND
 #include "tray.h"
+#endif
 #include "window.h"
 #include <signal.h>
 #include <stdio.h>
@@ -68,7 +70,9 @@ static void onexit()
 
 	exited = 1;
 
+#ifndef WAYLAND
 	cleanup_tray();
+#endif
 	cleanup_blocks();
 	cleanup_modules();
 	cleanup_bars();
@@ -117,9 +121,11 @@ int main(int argc, const char *argv[])
 
 	update_geom();
 
+#ifndef WAYLAND
 	if (!is_setting_modified(&settings.traybar)) {
 		tray_init(0);
 	}
+#endif
 
 	modules_init();
 
@@ -138,18 +144,22 @@ int main(int argc, const char *argv[])
 
 	struct timeval tv;
 	fd_set fds;
-	int x11fd = ConnectionNumber(disp);
+#ifdef WAYLAND
+	int dispfd = wl_display_get_fd(disp);
+#else
+	int dispfd = ConnectionNumber(disp);
+#endif
 
 	while (1) {
 		FD_ZERO(&fds);
 		if (sockfd > 0) {
 			FD_SET(sockfd, &fds);
 		}
-		FD_SET(x11fd, &fds);
+		FD_SET(dispfd, &fds);
 
 		tv = get_time_to_next_task();
 
-		int nfds = MAX(x11fd, sockfd);
+		int nfds = MAX(dispfd, sockfd);
 		for (int i = 0; i < proc_count; i++) {
 			struct proc *proc = &procs[i];
 
