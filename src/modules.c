@@ -29,363 +29,380 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct Module *modules;
-int moduleCount;
+struct module *modules;
+int module_count;
 
-int moduleRedrawDirty;
+int module_redraw_dirty;
 
-static int inConfig = 1;
+static int in_config = 1;
 
-static void moduleTaskExec(int id) {
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
+static void module_task_exec(int id)
+{
+	for (int i = 0; i < module_count; i++) {
+		struct module *mod = &modules[i];
 
-        if (!mod->dl || mod->data.type != RENDER || mod->data.interval == 0) {
-            continue;
-        }
+		if (!mod->dl || mod->data.type != RENDER ||
+				mod->data.interval == 0) {
+			continue;
+		}
 
-        if (mod->task == id) {
-            for (int i = 0; i < barCount; i++) {
-                redrawModule(mod, i);
-            }
-            moduleRedrawDirty = 1;
-        }
-    }
+		if (mod->task == id) {
+			for (int i = 0; i < bar_count; i++) {
+				redraw_module(mod, i);
+			}
+			module_redraw_dirty = 1;
+		}
+	}
 }
 
-struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout) {
-    char *err = dlerror();
+struct module *load_module(char *path, int zindex, FILE *out, FILE *errout)
+{
+	char *err = dlerror();
 
-    struct Module *m = 0;
+	struct module *m = 0;
 
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
-        if (mod->dl == 0) {
-            m = mod;
-            break;
-        }
-    }
+	for (int i = 0; i < module_count; i++) {
+		struct module *mod = &modules[i];
+		if (mod->dl == 0) {
+			m = mod;
+			break;
+		}
+	}
 
-    if (!m) {
-        modules = realloc(modules, sizeof(struct Module) * ++moduleCount);
-        m = &modules[moduleCount - 1];
-    }
+	if (!m) {
+		modules = realloc(modules,
+				sizeof(struct module) * ++module_count);
+		m = &modules[module_count - 1];
+	}
 
-    memset(m, 0, sizeof(struct Module));
-    memset(&(m->data), 0, sizeof(struct ModuleData));
+	memset(m, 0, sizeof(struct module));
+	memset(&(m->data), 0, sizeof(struct module_data));
 
-    m->dl = dlopen(path, RTLD_NOW);
-    err = dlerror();
+	m->dl = dlopen(path, RTLD_NOW);
+	err = dlerror();
 
-    if (err || !m->dl) {
-        fprintf(errout, "%s\n", err);
-        moduleCount--;
-        return 0;
-    }
+	if (err || !m->dl) {
+		fprintf(errout, "%s\n", err);
+		module_count--;
+		return 0;
+	}
 
-    int *version = dlsym(m->dl, "API_VERSION");
-    err = dlerror();
+	int *version = dlsym(m->dl, "API_VERSION");
+	err = dlerror();
 
-    if (err) {
-        fprintf(errout, "%s\n", err);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
+	if (err) {
+		fprintf(errout, "%s\n", err);
+		dlclose(m->dl);
+		module_count--;
+		return 0;
+	}
 
-    if (*version != API_VERSION) {
-        fprintf(errout, "Module \"%s\" is out of date\n", path);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
+	if (*version != API_VERSION) {
+		fprintf(errout, "Module \"%s\" is out of date\n", path);
+		dlclose(m->dl);
+		module_count--;
+		return 0;
+	}
 
-    int (*init)(struct ModuleData *) = dlsym(m->dl, "init");
-    err = dlerror();
+	int (*init)(struct module_data *) = dlsym(m->dl, "init");
+	err = dlerror();
 
-    if (err) {
-        fprintf(errout, "Error loading module \"%s\":\n%s\n", path, err);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
+	if (err) {
+		fprintf(errout, "Error loading module \"%s\":\n%s\n",
+				path, err);
+		dlclose(m->dl);
+		module_count--;
+		return 0;
+	}
 
-    if (!init) {
-        fprintf(errout, "Module \"%s\" has no init function\n", path);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
+	if (!init) {
+		fprintf(errout, "Module \"%s\" has no init function\n", path);
+		dlclose(m->dl);
+		module_count--;
+		return 0;
+	}
 
-    int ret = init(&m->data);
+	int ret = init(&m->data);
 
-    if (ret != 0) {
-        fprintf(errout, "Module \"%s\" failed to initialize (%d)\n", path, ret);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
+	if (ret != 0) {
+		fprintf(errout, "Module \"%s\" failed to initialize (%d)\n",
+				path, ret);
+		dlclose(m->dl);
+		module_count--;
+		return 0;
+	}
 
-    if (!m->data.name) {
-        fprintf(errout, "Module \"%s\" has no name\n", path);
-        dlclose(m->dl);
-        moduleCount--;
-        return 0;
-    }
+	if (!m->data.name) {
+		fprintf(errout, "Module \"%s\" has no name\n", path);
+		dlclose(m->dl);
+		module_count--;
+		return 0;
+	}
 
-    for (int i = 0; i < moduleCount; i++) {
-        if (!modules[i].dl || &modules[i] == m) {
-            continue;
-        }
+	for (int i = 0; i < module_count; i++) {
+		if (!modules[i].dl || &modules[i] == m) {
+			continue;
+		}
 
-        if (strcmp(m->data.name, modules[i].data.name) == 0) {
-            if (inConfig) {
-                fprintf(errout, "Module \"%s\" failed to initialize\n", path);
-                fprintf(errout, "Module with name \"%s\" already loaded\n",
-                        m->data.name);
-            }
-            dlclose(m->dl);
-            moduleCount--;
-            return 0;
-        }
-    }
+		if (strcmp(m->data.name, modules[i].data.name) == 0) {
+			if (in_config) {
+				fprintf(errout, "Module \"%s\" failed to initialize\n", path);
+				fprintf(errout, "Module with name \"%s\" already loaded\n",
+						m->data.name);
+			}
+			dlclose(m->dl);
+			module_count--;
+			return 0;
+		}
+	}
 
-    m->path = malloc(strlen(path) + 1);
-    strcpy(m->path, path);
+	m->path = malloc(strlen(path) + 1);
+	strcpy(m->path, path);
 
-    m->inConfig = inConfig;
+	m->in_config = in_config;
 
-    if (m->data.type == BLOCK) {
-        for (int i = 0; i < blockCount; i++) {
-            struct Block *blk = &blocks[i];
+	if (m->data.type == BLOCK) {
+		for (int i = 0; i < block_count; i++) {
+			struct block *blk = &blocks[i];
 
-            if (!blk->id) {
-                continue;
-            }
+			if (!blk->id) {
+				continue;
+			}
 
-            if (strcmp(blk->properties.module.val.STR, m->data.name) == 0) {
-                moduleRegisterBlock(blk, m->data.name, errout);
+			if (strcmp(blk->properties.module.val.STR, m->data.name) == 0) {
+				module_register_block(blk, m->data.name, errout);
 
-                redrawBlock(blk);
-            }
-        }
-    } else if (m->data.type == RENDER) {
-        if (zindex == 0) {
-            zindex = -1;
-        }
-        m->zindex = zindex;
+				redraw_block(blk);
+			}
+		}
+	} else if (m->data.type == RENDER) {
+		if (zindex == 0) {
+			zindex = -1;
+		}
+		m->zindex = zindex;
 
-        for (int i = 0; i < moduleCount; i++) {
-            struct Module *mod = &modules[i];
+		for (int i = 0; i < module_count; i++) {
+			struct module *mod = &modules[i];
 
-            if (mod == m) {
-                continue;
-            }
+			if (mod == m) {
+				continue;
+			}
 
-            if (m->zindex < 0 && m->zindex >= mod->zindex) {
-                mod->zindex--;
-            } else if (m->zindex > 0 && m->zindex <= mod->zindex) {
-                mod->zindex++;
-            }
-        }
-        m->sfc = malloc(sizeof(cairo_surface_t *) * barCount);
-        memset(m->sfc, 0, sizeof(cairo_surface_t *) * barCount);
+			if (m->zindex < 0 && m->zindex >= mod->zindex) {
+				mod->zindex--;
+			} else if (m->zindex > 0 && m->zindex <= mod->zindex) {
+				mod->zindex++;
+			}
+		}
+		m->sfc = malloc(sizeof(cairo_surface_t *) * bar_count);
+		memset(m->sfc, 0, sizeof(cairo_surface_t *) * bar_count);
 
-        resizeModule(m);
+		resize_module(m);
 
-        if (m->data.interval != 0) {
-            m->task = scheduleTask(moduleTaskExec, m->data.interval, 1);
-        }
-    }
+		if (m->data.interval != 0) {
+			m->task = schedule_task(
+					module_task_exec, m->data.interval, 1);
+		}
+	}
 
-    fprintf(out, "Loaded \"%s\" module (%s)\n", m->data.name, path);
-    return m;
+	fprintf(out, "Loaded \"%s\" module (%s)\n", m->data.name, path);
+	return m;
 }
 
-void unloadModule(struct Module *mod) {
-    void (*unloadFunc)() = moduleGetFunction(mod, "unload");
-    if (unloadFunc) {
-        unloadFunc();
-    }
+void unload_module(struct module *mod)
+{
+	void (*unload_func)() = module_get_function(mod, "unload");
+	if (unload_func) {
+		unload_func();
+	}
 
-    if (mod->task) {
-        cancelTask(mod->task);
-    }
+	if (mod->task) {
+		cancel_task(mod->task);
+	}
 
-    dlclose(mod->dl);
-    mod->dl = 0;
+	dlclose(mod->dl);
+	mod->dl = 0;
 
-    free(mod->path);
+	free(mod->path);
 
-    if (mod->data.type == RENDER) {
-        if (mod->sfc[0]) {
-            for (int bar = 0; bar < barCount; bar++) {
-                cairo_surface_destroy(mod->sfc[bar]);
-            }
-        }
-        free(mod->sfc);
-    }
+	if (mod->data.type == RENDER) {
+		if (mod->sfc[0]) {
+			for (int bar = 0; bar < bar_count; bar++) {
+				cairo_surface_destroy(mod->sfc[bar]);
+			}
+		}
+		free(mod->sfc);
+	}
 
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *_mod = &modules[i];
+	for (int i = 0; i < module_count; i++) {
+		struct module *_mod = &modules[i];
 
-        if (mod->zindex < 0 && _mod->zindex < mod->zindex) {
-            _mod->zindex++;
-        } else if (mod->zindex > 0 && _mod->zindex > mod->zindex) {
-            _mod->zindex--;
-        }
-    }
+		if (mod->zindex < 0 && _mod->zindex < mod->zindex) {
+			_mod->zindex++;
+		} else if (mod->zindex > 0 && _mod->zindex > mod->zindex) {
+			_mod->zindex--;
+		}
+	}
 }
 
-void resizeModule(struct Module *mod) {
-    if (mod->sfc[0]) {
-        for (int bar = 0; bar < barCount; bar++) {
-            cairo_surface_destroy(mod->sfc[bar]);
-        }
-    }
+void resize_module(struct module *mod)
+{
+	if (mod->sfc[0]) {
+		for (int bar = 0; bar < bar_count; bar++) {
+			cairo_surface_destroy(mod->sfc[bar]);
+		}
+	}
 
-    for (int bar = 0; bar < barCount; bar++) {
-        if (bars[bar].sfc[0]) {
-            mod->sfc[bar] = cairo_surface_create_similar_image(
-                    bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
-                    bars[bar].width, settings.height.val.INT);
-        }
-    }
+	for (int bar = 0; bar < bar_count; bar++) {
+		if (bars[bar].sfc[0]) {
+			mod->sfc[bar] = cairo_surface_create_similar_image(
+					bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
+					bars[bar].width, settings.height.val.INT);
+		}
+	}
 }
 
-static void loadModulesInDir(char *path) {
-    DIR *dir = opendir(path);
-    struct dirent *dp;
+static void load_modules_in_dir(char *path)
+{
+	DIR *dir = opendir(path);
+	struct dirent *dp;
 
-    if (!dir) {
-        return;
-    }
+	if (!dir) {
+		return;
+	}
 
-    while ((dp = readdir(dir))) {
-        if (dp->d_type != DT_REG && dp->d_type != DT_LNK) {
-            continue;
-        }
+	while ((dp = readdir(dir))) {
+		if (dp->d_type != DT_REG && dp->d_type != DT_LNK) {
+			continue;
+		}
 
-        if (strlen(dp->d_name) < 4) {
-            continue;
-        }
+		if (strlen(dp->d_name) < 4) {
+			continue;
+		}
 
-        if (strcmp(".so", dp->d_name + strlen(dp->d_name) - 3)) {
-            continue;
-        }
+		if (strcmp(".so", dp->d_name + strlen(dp->d_name) - 3)) {
+			continue;
+		}
 
-        int fileLen = strlen(path) + strlen(dp->d_name) + 2;
-        char *file = malloc(fileLen);
-        memset(file, 0, fileLen);
+		int file_len = strlen(path) + strlen(dp->d_name) + 2;
+		char *file = malloc(file_len);
+		memset(file, 0, file_len);
 
-        strcat(file, path);
-        strcat(file, "/");
-        strcat(file, dp->d_name);
+		strcat(file, path);
+		strcat(file, "/");
+		strcat(file, dp->d_name);
 
-        loadModule(file, -1, stdout, stderr);
-        free(file);
-    }
+		load_module(file, -1, stdout, stderr);
+		free(file);
+	}
 
-    closedir(dir);
+	closedir(dir);
 }
 
-void initModules() {
+void modules_init()
+{
 #ifndef MODDIRS
 #   define MODDIRS
 #endif
 
-    char *dirs [] = {
-        MODDIRS "",
-        "/usr/local/lib/blockbar/modules",
-        "/usr/lib/blockbar/modules",
-    };
-    int dirCount = sizeof(dirs) / sizeof(char *);
+	char *dirs [] = {
+		MODDIRS "",
+		"/usr/local/lib/blockbar/modules",
+		"/usr/lib/blockbar/modules",
+	};
+	int dir_count = sizeof(dirs) / sizeof(char *);
 
-    inConfig = 0;
+	in_config = 0;
 
-    for (int i = 0; i < dirCount; i++) {
-        if (dirs[i][0] != '\0') {
-            loadModulesInDir(dirs[i]);
-        }
-    }
+	for (int i = 0; i < dir_count; i++) {
+		if (dirs[i][0] != '\0') {
+			load_modules_in_dir(dirs[i]);
+		}
+	}
 
-    inConfig = 1;
+	in_config = 1;
 }
 
-void cleanupModules() {
-    for (int i = 0; i < moduleCount; i++) {
-        if (modules[i].dl) {
-            unloadModule(&modules[i]);
-        }
-    }
+void cleanup_modules()
+{
+	for (int i = 0; i < module_count; i++) {
+		if (modules[i].dl) {
+			unload_module(&modules[i]);
+		}
+	}
 
-    free(modules);
+	free(modules);
 }
 
-struct Module *getModuleByName(char *name) {
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
+struct module *get_module_by_name(char *name)
+{
+	for (int i = 0; i < module_count; i++) {
+		struct module *mod = &modules[i];
 
-        if (!mod->dl) {
-            continue;
-        }
+		if (!mod->dl) {
+			continue;
+		}
 
-        if (strcmp(mod->data.name, name) == 0) {
-            return mod;
-        }
-    }
+		if (strcmp(mod->data.name, name) == 0) {
+			return mod;
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
-void (*moduleGetFunction(struct Module *mod, char *funcName)) {
-    dlerror();
+void (*module_get_function(struct module *mod, char *func_name))
+{
+	dlerror();
 
-    void (*func) = dlsym(mod->dl, funcName);
-    char *err = dlerror();
+	void (*func) = dlsym(mod->dl, func_name);
+	char *err = dlerror();
 
-    if (err) {
-        return 0;
-    } else {
-        return func;
-    }
+	if (err) {
+		return 0;
+	} else {
+		return func;
+	}
 }
 
-int moduleRegisterBlock(struct Block *blk, char *new, FILE *err) {
-    struct Module *oldMod = getModuleByName(blk->properties.module.val.STR);
-    struct Module *newMod = 0;
+int module_register_block(struct block *blk, char *new, FILE *err)
+{
+	struct module *old_mod = get_module_by_name(blk->properties.module.val.STR);
+	struct module *new_mod = 0;
 
-    if (new) {
-        newMod = getModuleByName(new);
+	if (new) {
+		new_mod = get_module_by_name(new);
 
-        if (!newMod) {
-            fprintf(err, "Module \"%s\" not found\n", new);
-            return 1;
-        }
+		if (!new_mod) {
+			fprintf(err, "Module \"%s\" not found\n", new);
+			return 1;
+		}
 
-        if (newMod->data.type != BLOCK) {
-            fprintf(err, "Module \"%s\" not a block module\n", new);
-            return 1;
-        }
-    }
+		if (new_mod->data.type != BLOCK) {
+			fprintf(err, "Module \"%s\" not a block module\n", new);
+			return 1;
+		}
+	}
 
-    if (oldMod && oldMod != newMod) {
-        void (*rm)(struct Block *) = moduleGetFunction(oldMod, "blockRemove");
+	if (old_mod && old_mod != new_mod) {
+		void (*rm)(struct block *) =
+			module_get_function(old_mod, "block_remove");
 
-        if (rm) {
-            rm(blk);
-        }
-    }
+		if (rm) {
+			rm(blk);
+		}
+	}
 
-    if (new) {
-        setSetting(&blk->properties.module, (union Value) new);
+	if (new) {
+		set_setting(&blk->properties.module, (union value) new);
 
-        void (*add)(struct Block *) = moduleGetFunction(newMod, "blockAdd");
+		void (*add)(struct block *) =
+			module_get_function(new_mod, "block_add");
 
-        if (add) {
-            add(blk);
-        }
-    }
+		if (add) {
+			add(blk);
+		}
+	}
 
-    return 0;
+	return 0;
 }

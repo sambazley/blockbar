@@ -6,14 +6,14 @@
 
 typedef uint8_t color [4];
 
-enum Pos {
+enum pos {
     LEFT,
     RIGHT,
     CENTER,
     SIDES
 };
 
-enum SettingType {
+enum setting_type {
     INT,
     BOOL,
     STR,
@@ -21,62 +21,62 @@ enum SettingType {
     POS,
 };
 
-union Value {
+union value {
     int INT;
     int BOOL;
     char *STR;
     color COL;
-    enum Pos POS;
+    enum pos POS;
 };
 
-struct Setting {
+struct setting {
     char *name;
     char *desc;
-    enum SettingType type;
-    union Value def, val;
+    enum setting_type type;
+    union value def, val;
 };
 
-struct BarSettings {
-    struct Setting height;
-    struct Setting marginvert;
-    struct Setting marginhoriz;
-    struct Setting xoffset;
-    struct Setting radius;
-    struct Setting padding;
-    struct Setting background;
-    struct Setting foreground;
-    struct Setting font;
-    struct Setting position;
-    struct Setting divwidth;
-    struct Setting divheight;
-    struct Setting divvertmargin;
-    struct Setting divcolor;
-    struct Setting borderwidth;
-    struct Setting bordercolor;
-    struct Setting traydiv;
-    struct Setting traypadding;
-    struct Setting trayiconsize;
-    struct Setting traybar;
-    struct Setting trayside;
+struct bar_settings {
+    struct setting height;
+    struct setting marginvert;
+    struct setting marginhoriz;
+    struct setting xoffset;
+    struct setting radius;
+    struct setting padding;
+    struct setting background;
+    struct setting foreground;
+    struct setting font;
+    struct setting position;
+    struct setting divwidth;
+    struct setting divheight;
+    struct setting divvertmargin;
+    struct setting divcolor;
+    struct setting borderwidth;
+    struct setting bordercolor;
+    struct setting traydiv;
+    struct setting traypadding;
+    struct setting trayiconsize;
+    struct setting traybar;
+    struct setting trayside;
 };
 
-struct Properties {
-    struct Setting module;
-    struct Setting exec;
-    struct Setting pos;
-    struct Setting interval;
-    struct Setting padding;
-    struct Setting paddingleft;
-    struct Setting paddingright;
-    struct Setting nodiv;
+struct properties {
+    struct setting module;
+    struct setting exec;
+    struct setting pos;
+    struct setting interval;
+    struct setting padding;
+    struct setting paddingleft;
+    struct setting paddingright;
+    struct setting nodiv;
 };
 
-struct BlockData {
+struct block_data {
     int rendered;
-    char *execData;
+    char *exec_data;
 };
 
-struct Block {
+struct block {
     int id;
     int eachmon;
     int task;
@@ -85,11 +85,11 @@ struct Block {
     int *x;
     cairo_surface_t **sfc;
 
-    struct Properties properties;
-    struct BlockData *data;
+    struct properties properties;
+    struct block_data *data;
 };
 
-struct Click {
+struct click {
     int button;
     int x;
     int bar;
@@ -97,30 +97,30 @@ struct Click {
 
 #define MFLAG_NO_EXEC (1<<0)
 
-enum ModuleType {
+enum module_type {
     BLOCK,
     RENDER,
 };
 
-struct ModuleData {
+struct module_data {
     char *name;
 
-    enum ModuleType type;
+    enum module_type type;
     long flags;
 
-    struct Setting *settings;
-    int settingCount;
+    struct setting *settings;
+    int setting_count;
 
     int interval;
 };
 
-struct Module {
+struct module {
     void *dl;
     char *path;
-    int inConfig;
+    int in_config;
     int task;
 
-    struct ModuleData data;
+    struct module_data data;
 
     cairo_surface_t **sfc;
     int zindex;

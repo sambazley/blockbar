@@ -24,144 +24,151 @@
 #include <string.h>
 
 static struct Task *tasks;
-static int taskCount;
+static int task_count;
 
 static int id;
 
-int scheduleTask(void (*callback)(int id), int interval, int repeat) {
-    struct Task *t = 0;
+int schedule_task(void (*callback)(int id), int interval, int repeat)
+{
+	struct Task *t = 0;
 
-    for (int i = 0; i < taskCount; i++) {
-        struct Task *task = &tasks[i];
-        if (task->id == 0) {
-            t = task;
-            break;
-        }
-    }
+	for (int i = 0; i < task_count; i++) {
+		struct Task *task = &tasks[i];
+		if (task->id == 0) {
+			t = task;
+			break;
+		}
+	}
 
-    if (!t) {
-        tasks = realloc(tasks, sizeof(struct Task) * ++taskCount);
-        t = &tasks[taskCount - 1];
-    }
+	if (!t) {
+		tasks = realloc(tasks, sizeof(struct Task) * ++task_count);
+		t = &tasks[task_count - 1];
+	}
 
-    memset(t, 0, sizeof(struct Task));
+	memset(t, 0, sizeof(struct Task));
 
-    while (!t->id) {
+	while (!t->id) {
 start:
-        id++;
+		id++;
 
-        if (id == INT_MAX) {
-            id = 1;
-        }
+		if (id == INT_MAX) {
+			id = 1;
+		}
 
-        for (int i = 0; i < taskCount; i++) {
-            if (tasks[i].id == id) {
-                goto start;
-            }
-        }
+		for (int i = 0; i < task_count; i++) {
+			if (tasks[i].id == id) {
+				goto start;
+			}
+		}
 
-        t->id = id;
-    }
+		t->id = id;
+	}
 
-    t->callback = callback;
-    t->interval = interval;
-    t->repeat = repeat;
-    getTime(&t->start);
+	t->callback = callback;
+	t->interval = interval;
+	t->repeat = repeat;
+	get_time(&t->start);
 
-    return t->id;
+	return t->id;
 }
 
-void cancelTask(int id) {
-    for (int i = 0; i < taskCount; i++) {
-        if (tasks[i].id == id) {
-            tasks[i].id = 0;
-        }
-    }
+void cancel_task(int id)
+{
+	for (int i = 0; i < task_count; i++) {
+		if (tasks[i].id == id) {
+			tasks[i].id = 0;
+		}
+	}
 }
 
 #define TIMEDIFF(a, b) (long) (((b.tv_sec - a.tv_sec) * 1000000) \
-                              + (b.tv_usec - a.tv_usec))
+		+ (b.tv_usec - a.tv_usec))
 
-struct timeval getTimeToNextTask() {
-    int i;
-    struct timeval ret, now, interval;
+struct timeval get_time_to_next_task()
+{
+	int i;
+	struct timeval ret, now, interval;
 
-    ret.tv_sec = ret.tv_usec = -1;
+	ret.tv_sec = ret.tv_usec = -1;
 
-    for (i = 0; i < taskCount; i++) {
-        if (tasks[i].id) {
-            interval.tv_sec = tasks[i].interval / 1000;
-            interval.tv_usec = (tasks[i].interval % 1000) * 1000;
+	for (i = 0; i < task_count; i++) {
+		if (tasks[i].id) {
+			interval.tv_sec = tasks[i].interval / 1000;
+			interval.tv_usec = (tasks[i].interval % 1000) * 1000;
 
-            timeradd(&tasks[i].start, &interval, &ret);
-            break;
-        }
-    }
+			timeradd(&tasks[i].start, &interval, &ret);
+			break;
+		}
+	}
 
-    for (i++; i < taskCount; i++) {
-        if (!tasks[i].id) {
-            continue;
-        }
+	for (i++; i < task_count; i++) {
+		if (!tasks[i].id) {
+			continue;
+		}
 
-        struct timeval t = tasks[i].start;
+		struct timeval t = tasks[i].start;
 
-        interval.tv_sec = tasks[i].interval / 1000;
-        interval.tv_usec = (tasks[i].interval % 1000) * 1000;
+		interval.tv_sec = tasks[i].interval / 1000;
+		interval.tv_usec = (tasks[i].interval % 1000) * 1000;
 
-        timeradd(&t, &interval, &t);
+		timeradd(&t, &interval, &t);
 
-        if (t.tv_sec * 1000000 + t.tv_usec < ret.tv_sec * 1000000 + ret.tv_usec) {
-            ret = t;
-        }
-    }
+		if (t.tv_sec * 1000000 + t.tv_usec <
+				ret.tv_sec * 1000000 + ret.tv_usec) {
+			ret = t;
+		}
+	}
 
-    getTime(&now);
+	get_time(&now);
 
-    if (ret.tv_sec || ret.tv_usec) {
-        timersub(&ret, &now, &ret);
-    }
+	if (ret.tv_sec || ret.tv_usec) {
+		timersub(&ret, &now, &ret);
+	}
 
-    if (ret.tv_sec < 0) {
-        ret.tv_sec = ret.tv_usec = 0;
-    }
+	if (ret.tv_sec < 0) {
+		ret.tv_sec = ret.tv_usec = 0;
+	}
 
-    return ret;
+	return ret;
 }
 
-void tickTasks() {
-    int id;
-    struct timeval now, interval;
+void tick_tasks()
+{
+	int id;
+	struct timeval now, interval;
 
-    getTime(&now);
+	get_time(&now);
 
-    for (int i = 0; i < taskCount; i++) {
-        if (!tasks[i].id) {
-            continue;
-        }
+	for (int i = 0; i < task_count; i++) {
+		if (!tasks[i].id) {
+			continue;
+		}
 
-        struct timeval t = tasks[i].start;
+		struct timeval t = tasks[i].start;
 
-        interval.tv_sec = tasks[i].interval / 1000;
-        interval.tv_usec = (tasks[i].interval % 1000) * 1000;
+		interval.tv_sec = tasks[i].interval / 1000;
+		interval.tv_usec = (tasks[i].interval % 1000) * 1000;
 
-        timeradd(&t, &interval, &t);
+		timeradd(&t, &interval, &t);
 
-        if (t.tv_sec * 1000000 + t.tv_usec < now.tv_sec * 1000000 + now.tv_usec) {
-            id = tasks[i].id;
+		if (t.tv_sec * 1000000 + t.tv_usec <
+				now.tv_sec * 1000000 + now.tv_usec) {
+			id = tasks[i].id;
 
-            if (!tasks[i].repeat) {
-                tasks[i].id = 0;
-            } else {
-                tasks[i].start = now;
-            }
+			if (!tasks[i].repeat) {
+				tasks[i].id = 0;
+			} else {
+				tasks[i].start = now;
+			}
 
-            tasks[i].callback(id);
-        }
-    }
+			tasks[i].callback(id);
+		}
+	}
 }
 
-void cleanupTasks() {
-    if (tasks) {
-        free(tasks);
-    }
+void cleanup_tasks()
+{
+	if (tasks) {
+		free(tasks);
+	}
 }

@@ -26,81 +26,82 @@
 #include <sys/un.h>
 #include <unistd.h>
 
-int main(int argc, char **argv) {
-    int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        fprintf(stderr, "Error opening socket\n");
-        return 1;
-    }
+int main(int argc, char **argv)
+{
+	int sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sockfd < 0) {
+		fprintf(stderr, "Error opening socket\n");
+		return 1;
+	}
 
-    char *socketpath = getenv("BLOCKBAR_SOCKET");
+	char *socketpath = getenv("BLOCKBAR_SOCKET");
 
-    if (!socketpath) {
-        socketpath = defsocketpath;
-    }
+	if (!socketpath) {
+		socketpath = defsocketpath;
+	}
 
-    struct sockaddr_un sockAddr;
+	struct sockaddr_un sock_addr;
 
-    sockAddr.sun_family = AF_UNIX;
-    strcpy(sockAddr.sun_path, socketpath);
+	sock_addr.sun_family = AF_UNIX;
+	strcpy(sock_addr.sun_path, socketpath);
 
-    if (connect(sockfd, (struct sockaddr *)&sockAddr, sizeof(sockAddr)) == -1) {
-        fprintf(stderr, "Error connecting to socket\n");
-        close(sockfd);
-        return 1;
-    }
+	if (connect(sockfd, (struct sockaddr *) &sock_addr, sizeof(sock_addr)) == -1) {
+		fprintf(stderr, "Error connecting to socket\n");
+		close(sockfd);
+		return 1;
+	}
 
-    for (int i = 0; i < argc; i++) {
-        if (send(sockfd, argv[i], strlen(argv[i]) + 1, 0) == -1) {
-            fprintf(stderr, "Error sending data\n");
-            close(sockfd);
-            return 1;
-        }
-    }
+	for (int i = 0; i < argc; i++) {
+		if (send(sockfd, argv[i], strlen(argv[i]) + 1, 0) == -1) {
+			fprintf(stderr, "Error sending data\n");
+			close(sockfd);
+			return 1;
+		}
+	}
 
-    send(sockfd, "\x04", 1, 0);
+	send(sockfd, "\x04", 1, 0);
 
-    struct pollfd fds [] = {
-        {sockfd, POLLIN, 0},
-        {STDOUT_FILENO, POLLHUP, 0},
-    };
+	struct pollfd fds [] = {
+		{sockfd, POLLIN, 0},
+		{STDOUT_FILENO, POLLHUP, 0},
+	};
 
-    FILE *out = stdout;
-    char rsp [bbcbuffsize];
-    int n, ret = 0;
+	FILE *out = stdout;
+	char rsp [bbcbuffsize];
+	int n, ret = 0;
 
-    while (poll(fds, 2, -1) > 0) {
-        if (fds[1].revents & (POLLERR | POLLHUP)) {
-            break;
-        }
-        if (fds[0].revents & POLLIN) {
-            if ((n = recv(sockfd, rsp, sizeof(rsp), 0)) > 0) {
-                rsp[n] = 0;
-                for (int i = 0; i < n; i++) {
-                    if (rsp[i] == setout) {
-                        fflush(out);
-                        if (rsp[i + 1] == rstdout) {
-                            out = stdout;
-                        } else if (rsp[i + 1] == rstderr) {
-                            out = stderr;
-                        }
-                        i++;
-                    } else if (rsp[i] == setret) {
-                        ret = rsp[i + 1];
-                        i++;
-                    } else {
-                        fprintf(out, "%c", rsp[i]);
-                    }
-                }
-            } else {
-                break;
-            }
-        }
-    }
+	while (poll(fds, 2, -1) > 0) {
+		if (fds[1].revents & (POLLERR | POLLHUP)) {
+			break;
+		}
+		if (fds[0].revents & POLLIN) {
+			if ((n = recv(sockfd, rsp, sizeof(rsp), 0)) > 0) {
+				rsp[n] = 0;
+				for (int i = 0; i < n; i++) {
+					if (rsp[i] == setout) {
+						fflush(out);
+						if (rsp[i + 1] == rstdout) {
+							out = stdout;
+						} else if (rsp[i + 1] == rstderr) {
+							out = stderr;
+						}
+						i++;
+					} else if (rsp[i] == setret) {
+						ret = rsp[i + 1];
+						i++;
+					} else {
+						fprintf(out, "%c", rsp[i]);
+					}
+				}
+			} else {
+				break;
+			}
+		}
+	}
 
-    fflush(out);
+	fflush(out);
 
-    close(sockfd);
+	close(sockfd);
 
-    return ret;
+	return ret;
 }

@@ -9,11 +9,11 @@
  * freely, subject to the following restrictions:
  *
  * 1. The origin of this software must not be misrepresented; you must not
- *    claim that you wrote the original software. If you use this software
- *    in a product, an acknowledgment in the product documentation would be
- *    appreciated but is not required.
+ *	claim that you wrote the original software. If you use this software
+ *	in a product, an acknowledgment in the product documentation would be
+ *	appreciated but is not required.
  * 2. Altered source versions must be plainly marked as such, and must not be
- *    misrepresented as being the original software.
+ *	misrepresented as being the original software.
  * 3. This notice may not be removed or altered from any source distribution.
  */
 
@@ -24,19 +24,19 @@
 #include "types.h"
 #include "version.h"
 
-void blockbarQueryBlocks(struct Block **blocks, int *blockCount);
+void blockbar_query_blocks(struct block **blocks, int *block_count);
 
-struct BarSettings *blockbarGetSettings();
+struct bar_settings *blockbar_get_settings();
 
-int blockbarGetBarWidth(int bar);
+int blockbar_get_bar_width(int bar);
 
-void blockbarSetEnv(const char *key, const char *val);
+void blockbar_set_env(const char *key, const char *val);
 
-int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
-                           JsonError *err);
+int blockbar_parse_color_json(JsonObject *jo, const char *key, color dest,
+		JsonError *err);
 
-int blockbarParseColorString(const char *str, color dest);
+int blockbar_parse_color_string(const char *str, color dest);
 
-void blockbarStringifyColor(const color c, char *s);
+void blockbar_stringify_color(const color c, char *s);
 
 #endif /* BLOCKBAR_H */

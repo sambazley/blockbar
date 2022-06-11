@@ -23,17 +23,17 @@
 #include <sys/time.h>
 
 struct Task {
-    int id;
-    int interval;
-    int repeat;
-    void (*callback)(int id);
-    struct timeval start;
+	int id;
+	int interval;
+	int repeat;
+	void (*callback)(int id);
+	struct timeval start;
 };
 
-int scheduleTask(void (*callback)(int id), int interval, int repeat);
-void cancelTask(int id);
-struct timeval getTimeToNextTask();
-void tickTasks();
-void cleanupTasks();
+int schedule_task(void (*callback)(int id), int interval, int repeat);
+void cancel_task(int id);
+struct timeval get_time_to_next_task();
+void tick_tasks();
+void cleanup_tasks();
 
 #endif /* TASK_H */

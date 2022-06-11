@@ -22,29 +22,29 @@
 #include <cairo/cairo-xlib.h>
 #include <X11/Xlib.h>
 
-enum RenderIndex {
-    RI_VISIBLE,
-    RI_BUFFER,
-    RI_COUNT
+enum render_index {
+	RI_VISIBLE,
+	RI_BUFFER,
+	RI_COUNT
 };
 
-struct Bar {
-    Window window;
-    int x;
-    int width;
-    char *output;
+struct bar {
+	Window window;
+	int x;
+	int width;
+	char *output;
 
-    cairo_surface_t *sfc [RI_COUNT];
-    cairo_t *ctx [RI_COUNT];
+	cairo_surface_t *sfc [RI_COUNT];
+	cairo_t *ctx [RI_COUNT];
 };
 
 extern Display *disp;
-extern int barCount;
-extern struct Bar *bars;
+extern int bar_count;
+extern struct bar *bars;
 
-int createBars();
-void updateGeom();
-void pollEvents();
-void cleanupBars();
+int create_bars();
+void update_geom();
+void poll_events();
+void cleanup_bars();
 
 #endif /* WINDOW_H */

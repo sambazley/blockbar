@@ -23,22 +23,22 @@
 #include "types.h"
 #include <stdio.h>
 
-extern struct Module *modules;
-extern int moduleCount;
-extern int moduleRedrawDirty;
+extern struct module *modules;
+extern int module_count;
+extern int module_redraw_dirty;
 
-struct Module *loadModule(char *path, int zindex, FILE *out, FILE *errout);
-void unloadModule(struct Module *mod);
+struct module *load_module(char *path, int zindex, FILE *out, FILE *errout);
+void unload_module(struct module *mod);
 
-void resizeModule(struct Module *mod);
+void resize_module(struct module *mod);
 
-void initModules();
-void cleanupModules();
+void modules_init();
+void cleanup_modules();
 
-struct Module *getModuleByName(char *name);
+struct module *get_module_by_name(char *name);
 
-void (*moduleGetFunction(struct Module *mod, char *funcName));
+void (*module_get_function(struct module *mod, char *func_name));
 
-int moduleRegisterBlock(struct Block *blk, char *name, FILE *err);
+int module_register_block(struct block *blk, char *name, FILE *err);
 
 #endif /* MODULES_H */

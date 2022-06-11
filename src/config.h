@@ -24,23 +24,23 @@
 #include "util.h"
 #include <ujson.h>
 
-void cleanupSettings();
-int setSetting(struct Setting *setting, union Value val);
-int isSettingModified(struct Setting *setting);
+void cleanup_settings();
+int set_setting(struct setting *setting, union value val);
+int is_setting_modified(struct setting *setting);
 
-JsonObject *configInit(const char *config);
-void configParseGeneral(JsonObject *jsonConfig);
-void configParseBlocks(JsonObject *jsonConfig);
-void configCleanup(JsonObject *jsonConfig);
-char *configSave(FILE *file, int explicit);
+JsonObject *config_init(const char *config);
+void config_parse_general(JsonObject *json_config);
+void config_parse_blocks(JsonObject *json_config);
+void config_cleanup(JsonObject *json_config);
+char *config_save(FILE *file, int explicit);
 
-extern const char *typeStrings [];
-extern struct BarSettings settings;
-extern int settingCount;
-extern struct Properties defProperties;
-extern int propertyCount;
+extern const char *type_strings [];
+extern struct bar_settings settings;
+extern int setting_count;
+extern struct properties def_properties;
+extern int property_count;
 
-extern int blockCount;
-extern struct Block *blocks;
+extern int block_count;
+extern struct block *blocks;
 
 #endif /* CONFIG_H */

@@ -22,19 +22,19 @@
 
 #include "window.h"
 
-extern int trayBar;
+extern int tray_bar;
 
-void trayInit(int barIndex);
-void cleanupTray();
+void tray_init(int bar_index);
+void cleanup_tray();
 
-void redrawTray();
+void redraw_tray();
 
-int isTrayEvent(XEvent *ev);
-void handleTrayEvent(XEvent *ev);
-void handleDestroyEvent(XEvent *ev);
+int is_tray_event(XEvent *ev);
+void handle_tray_event(XEvent *ev);
+void handle_destroy_event(XEvent *ev);
 
-int getTrayWidth();
+int get_tray_width();
 
-void reparentIcons();
+void reparent_icons();
 
 #endif /* TRAY_H */

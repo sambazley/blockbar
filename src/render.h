@@ -23,7 +23,7 @@
 #include "types.h"
 
 void redraw();
-void redrawBlock(struct Block *blk);
-void redrawModule(struct Module *mod, int bar);
+void redraw_block(struct block *blk);
+void redraw_module(struct module *mod, int bar);
 
 #endif /* RENDER_H */

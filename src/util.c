@@ -28,246 +28,257 @@
 #include <string.h>
 #include <time.h>
 
-int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
-                           JsonError *err) {
-    int index = jsonGetPairIndex(jo, key);
-    if (index == -1) {
-        return 1;
-    }
+int blockbar_parse_color_json(JsonObject *jo, const char *key, color dest,
+		JsonError *err)
+{
+	int index = jsonGetPairIndex(jo, key);
+	if (index == -1) {
+		return 1;
+	}
 
-    void *val = jo->pairs[index].val;
+	void *val = jo->pairs[index].val;
 
-    if (jsonGetType(val) == JSON_STRING) {
-        char *str;
-        jsonGetString(jo, key, &str, err);
+	if (jsonGetType(val) == JSON_STRING) {
+		char *str;
+		jsonGetString(jo, key, &str, err);
 
-        if (str && *str == '#') {
-            return blockbarParseColorString(str+1, dest);
-        }
+		if (str && *str == '#') {
+			return blockbar_parse_color_string(str+1, dest);
+		}
 
-        return 1;
-    }
+		return 1;
+	}
 
-    JsonArray *col;
-    jsonGetArray(jo, key, &col, err);
-    if (jsonErrorIsSet(err)) {
-        fprintf(stderr, "Error parsing array \"%s\"\n", key);
-        jsonErrorCleanup(err);
-        jsonErrorInit(err);
-        return 1;
-    }
+	JsonArray *col;
+	jsonGetArray(jo, key, &col, err);
+	if (jsonErrorIsSet(err)) {
+		fprintf(stderr, "Error parsing array \"%s\"\n", key);
+		jsonErrorCleanup(err);
+		jsonErrorInit(err);
+		return 1;
+	}
 
-    if (col->used != 3 && col->used != 4) {
-        fprintf(stderr, "\"%s\" array must contain 3 or 4 values\n", key);
-        jsonErrorCleanup(err);
-        jsonErrorInit(err);
-        return 1;
-    }
+	if (col->used != 3 && col->used != 4) {
+		fprintf(stderr, "\"%s\" array must contain 3 or 4 values\n", key);
+		jsonErrorCleanup(err);
+		jsonErrorInit(err);
+		return 1;
+	}
 
-    for (unsigned int j = 0; j < col->used; j++) {
-        void *val = col->vals[j];
-        if (jsonGetType(val) != JSON_NUMBER) {
-            fprintf(stderr, "Value in \"%s\" array is not a valid int\n", key);
-            jsonErrorCleanup(err);
-            jsonErrorInit(err);
-            return 1;
-        }
+	for (unsigned int j = 0; j < col->used; j++) {
+		void *val = col->vals[j];
+		if (jsonGetType(val) != JSON_NUMBER) {
+			fprintf(stderr, "value in \"%s\" array is not a valid int\n", key);
+			jsonErrorCleanup(err);
+			jsonErrorInit(err);
+			return 1;
+		}
 
-        JsonNumber *n = (JsonNumber *) val;
-        dest[j] = n->data;
-    }
+		JsonNumber *n = (JsonNumber *) val;
+		dest[j] = n->data;
+	}
 
-    if (col->used == 3) {
-        dest[3] = 0xFF;
-    }
+	if (col->used == 3) {
+		dest[3] = 0xFF;
+	}
 
-    return 0;
+	return 0;
 }
 
-int blockbarParseColorString(const char *str, color dest) {
-    char *end = 0;
+int blockbar_parse_color_string(const char *str, color dest)
+{
+	char *end = 0;
 
-    int c = strtol(str, &end, 16);
-    int colInt = 0xFFFFFFFF;
+	int c = strtol(str, &end, 16);
+	int col_int = 0xFFFFFFFF;
 
-    if (end && *end) {
-        return 1;
-    }
+	if (end && *end) {
+		return 1;
+	}
 
-    if (strlen(str) == 3 || strlen(str) == 4) {
-        if (strlen(str) == 3) {
-            c <<= 4;
-            c |= 0xF;
-        }
+	if (strlen(str) == 3 || strlen(str) == 4) {
+		if (strlen(str) == 3) {
+			c <<= 4;
+			c |= 0xF;
+		}
 
-        colInt = ((c & 0xF000) << 16) | ((c & 0xF000) << 12)
-               | ((c & 0x0F00) << 12) | ((c & 0x0F00) << 8)
-               | ((c & 0x00F0) << 8) | ((c & 0x00F0) << 4)
-               | ((c & 0x000F) << 4) | (c & 0x000F);
-    } else if (strlen(str) == 6) {
-        colInt = (c << 8) | 0xFF;
-    } else if (strlen(str) == 8) {
-        colInt = c;
-    } else {
-        return 1;
-    }
+		col_int = ((c & 0xF000) << 16) | ((c & 0xF000) << 12)
+   			| ((c & 0x0F00) << 12) | ((c & 0x0F00) << 8)
+   			| ((c & 0x00F0) << 8) | ((c & 0x00F0) << 4)
+   			| ((c & 0x000F) << 4) | (c & 0x000F);
+	} else if (strlen(str) == 6) {
+		col_int = (c << 8) | 0xFF;
+	} else if (strlen(str) == 8) {
+		col_int = c;
+	} else {
+		return 1;
+	}
 
-    dest[0] = colInt >> 24;
-    dest[1] = (colInt >> 16) & 0xFF;
-    dest[2] = (colInt >> 8) & 0xFF;
-    dest[3] = colInt & 0xFF;
+	dest[0] = col_int >> 24;
+	dest[1] = (col_int >> 16) & 0xFF;
+	dest[2] = (col_int >> 8) & 0xFF;
+	dest[3] = col_int & 0xFF;
 
-    return 0;
+	return 0;
 }
 
-void blockbarStringifyColor(const color c, char *s) {
-    sprintf(s, "#%02x%02x%02x%02x", c[0], c[1], c[2], c[3]);
+void blockbar_stringify_color(const color c, char *s)
+{
+	sprintf(s, "#%02x%02x%02x%02x", c[0], c[1], c[2], c[3]);
 }
 
-void resizeBlock(struct Block *blk) {
-    for (int bar = 0; bar < barCount; bar++) {
-        if (blk->sfc[bar]) {
-            cairo_surface_destroy(blk->sfc[bar]);
-        }
+void resize_block(struct block *blk)
+{
+	for (int bar = 0; bar < bar_count; bar++) {
+		if (blk->sfc[bar]) {
+			cairo_surface_destroy(blk->sfc[bar]);
+		}
 
-        blk->sfc[bar] = cairo_surface_create_similar_image(
-                bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
-                bars[bar].width, settings.height.val.INT);
-    }
+		blk->sfc[bar] = cairo_surface_create_similar_image(
+				bars[bar].sfc[0], CAIRO_FORMAT_ARGB32,
+				bars[bar].width, settings.height.val.INT);
+	}
 }
 
-struct Block *createBlock(int eachmon) {
-    struct Block *blk = 0;
+struct block *create_block(int eachmon)
+{
+	struct block *blk = 0;
 
-    for (int i = 0; i < blockCount; i++) {
-        if (blocks[i].id == 0) {
-            blk = &blocks[i];
-            memset(blk, 0, sizeof(struct Block));
-            blk->id = i + 1;
-            break;
-        }
-    }
+	for (int i = 0; i < block_count; i++) {
+		if (blocks[i].id == 0) {
+			blk = &blocks[i];
+			memset(blk, 0, sizeof(struct block));
+			blk->id = i + 1;
+			break;
+		}
+	}
 
-    if (blk == 0) {
-        blocks = realloc(blocks, sizeof(struct Block) * ++blockCount);
-        blk = &blocks[blockCount - 1];
-        memset(blk, 0, sizeof(struct Block));
-        blk->id = blockCount;
-    }
+	if (blk == 0) {
+		blocks = realloc(blocks, sizeof(struct block) * ++block_count);
+		blk = &blocks[block_count - 1];
+		memset(blk, 0, sizeof(struct block));
+		blk->id = block_count;
+	}
 
-    blk->eachmon = eachmon;
+	blk->eachmon = eachmon;
 
-    if (eachmon) {
-        blk->data = malloc(sizeof(struct BlockData) * barCount);
-        memset(blk->data, 0, sizeof(struct BlockData) * barCount);
-    } else {
-        blk->data = malloc(sizeof(struct BlockData));
-        memset(blk->data, 0, sizeof(struct BlockData));
-    }
+	if (eachmon) {
+		blk->data = malloc(sizeof(struct block_data) * bar_count);
+		memset(blk->data, 0, sizeof(struct block_data) * bar_count);
+	} else {
+		blk->data = malloc(sizeof(struct block_data));
+		memset(blk->data, 0, sizeof(struct block_data));
+	}
 
-    memcpy(&(blk->properties), &defProperties, sizeof(blk->properties));
+	memcpy(&(blk->properties), &def_properties, sizeof(blk->properties));
 
-    for (int i = 0; i < propertyCount; i++) {
-        struct Setting *property = &((struct Setting *) &(blk->properties))[i];
-        memset(&(property->val), 0, sizeof(property->val));
+	for (int i = 0; i < property_count; i++) {
+		struct setting *property = &((struct setting *) &(blk->properties))[i];
+		memset(&(property->val), 0, sizeof(property->val));
 
-        setSetting(property, property->def);
-    }
+		set_setting(property, property->def);
+	}
 
-    blk->width = malloc(sizeof(int) * barCount);
-    blk->x = malloc(sizeof(int) * barCount);
-    blk->sfc = malloc(sizeof(cairo_surface_t *) * barCount);
-    memset(blk->sfc, 0, sizeof(cairo_surface_t *) * barCount);
+	blk->width = malloc(sizeof(int) * bar_count);
+	blk->x = malloc(sizeof(int) * bar_count);
+	blk->sfc = malloc(sizeof(cairo_surface_t *) * bar_count);
+	memset(blk->sfc, 0, sizeof(cairo_surface_t *) * bar_count);
 
-    resizeBlock(blk);
+	resize_block(blk);
 
-    updateBlockTask(blk);
+	update_block_task(blk);
 
-    return blk;
+	return blk;
 }
 
-void removeBlock(struct Block *blk) {
-    moduleRegisterBlock(blk, 0, 0);
+void remove_block(struct block *blk)
+{
+	module_register_block(blk, 0, 0);
 
-    if (blk->task) {
-        cancelTask(blk->task);
-    }
+	if (blk->task) {
+		cancel_task(blk->task);
+	}
 
-    blk->id = 0;
+	blk->id = 0;
 
-    if (blk->eachmon) {
-        for (int i = 0; i < barCount; i++) {
-            char *execData = blk->data[i].execData;
+	if (blk->eachmon) {
+		for (int i = 0; i < bar_count; i++) {
+			char *exec_data = blk->data[i].exec_data;
 
-            if (execData) {
-                free(execData);
-            }
-        }
-    } else {
-        char *execData = blk->data->execData;
+			if (exec_data) {
+				free(exec_data);
+			}
+		}
+	} else {
+		char *exec_data = blk->data->exec_data;
 
-        if (execData) {
-            free(execData);
-        }
-    }
+		if (exec_data) {
+			free(exec_data);
+		}
+	}
 
-    free(blk->data);
+	free(blk->data);
 
-    for (int i = 0; i < propertyCount; i++) {
-        struct Setting *property = &((struct Setting *) &(blk->properties))[i];
+	for (int i = 0; i < property_count; i++) {
+		struct setting *property = &((struct setting *) &(blk->properties))[i];
 
-        if (property->type == STR && property->val.STR) {
-            free(property->val.STR);
-        }
-    }
+		if (property->type == STR && property->val.STR) {
+			free(property->val.STR);
+		}
+	}
 
-    for (int i = 0; i < barCount; i++) {
-        cairo_surface_destroy(blk->sfc[i]);
-    }
+	for (int i = 0; i < bar_count; i++) {
+		cairo_surface_destroy(blk->sfc[i]);
+	}
 
-    free(blk->width);
-    free(blk->x);
-    free(blk->sfc);
+	free(blk->width);
+	free(blk->x);
+	free(blk->sfc);
 }
 
-struct Block *getBlock(int id) {
-    for (int i = 0; i < blockCount && id; i++) {
-        struct Block *blk = &blocks[i];
-        if (blk->id == id) {
-            return blk;
-        }
-    }
+struct block *get_block(int id)
+{
+	for (int i = 0; i < block_count && id; i++) {
+		struct block *blk = &blocks[i];
+		if (blk->id == id) {
+			return blk;
+		}
+	}
 
-    return 0;
+	return 0;
 }
 
-static void blockTaskExec(int id) {
-    for (int i = 0; i < blockCount; i++) {
-        struct Block *blk = &blocks[i];
+static void block_task_exec(int id)
+{
+	for (int i = 0; i < block_count; i++) {
+		struct block *blk = &blocks[i];
 
-        if (!blk->id) {
-            continue;
-        }
+		if (!blk->id) {
+			continue;
+		}
 
-        if (blk->task == id) {
-            blockExec(blk, 0);
-        }
-    }
+		if (blk->task == id) {
+			block_exec(blk, 0);
+		}
+	}
 }
 
-void updateBlockTask(struct Block *blk) {
-    if (blk->task) {
-        cancelTask(blk->task);
-    }
+void update_block_task(struct block *blk)
+{
+	if (blk->task) {
+		cancel_task(blk->task);
+	}
 
-    if (blk->properties.interval.val.INT == 0) {
-        blk->task = 0;
-    } else {
-        blk->task = scheduleTask(blockTaskExec, blk->properties.interval.val.INT, 1);
-    }
+	if (blk->properties.interval.val.INT == 0) {
+		blk->task = 0;
+	} else {
+		blk->task = schedule_task(block_task_exec,
+				blk->properties.interval.val.INT, 1);
+	}
 }
 
-void getTime(struct timeval *tv) {
-    clock_gettime(CLOCK_MONOTONIC_RAW, (struct timespec *) tv);
-    tv->tv_usec /= 1000;
+void get_time(struct timeval *tv)
+{
+	clock_gettime(CLOCK_MONOTONIC_RAW, (struct timespec *) tv);
+	tv->tv_usec /= 1000;
 }

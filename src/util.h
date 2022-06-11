@@ -24,21 +24,19 @@
 #include <sys/time.h>
 #include "types.h"
 
-#define MAX(a, b) (a>b?a:b)
+int blockbar_parse_color_json(JsonObject *jo, const char *key, color dest,
+	JsonError *err);
+int blockbar_parse_color_string(const char *str, color dest);
+void blockbar_stringify_color(const color c, char *s);
 
-int blockbarParseColorJson(JsonObject *jo, const char *key, color dest,
-                           JsonError *err);
-int blockbarParseColorString(const char *str, color dest);
-void blockbarStringifyColor(const color c, char *s);
+void resize_block(struct block *blk);
+struct block *create_block(int eachmon);
+void remove_block(struct block *blk);
+struct block *get_block(int id);
 
-void resizeBlock(struct Block *blk);
-struct Block *createBlock(int eachmon);
-void removeBlock(struct Block *blk);
-struct Block *getBlock(int id);
+void update_tick_interval();
+void update_block_task(struct block *blk);
 
-void updateTickInterval();
-void updateBlockTask(struct Block *blk);
-
-void getTime(struct timeval *tv);
+void get_time(struct timeval *tv);
 
 #endif /* UTIL_H */

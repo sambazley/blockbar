@@ -23,17 +23,17 @@
 #include "types.h"
 #include "window.h"
 
-struct Proc {
-    int blk;
-    int bar;
-    int pid;
-    int fdout;
-    char *buffer;
+struct proc {
+	int blk;
+	int bar;
+	int pid;
+	int fdout;
+	char *buffer;
 };
 
-extern int procCount;
-extern struct Proc *procs;
+extern int proc_count;
+extern struct proc *procs;
 
-void blockExec(struct Block *blk, struct Click *cd);
+void block_exec(struct block *blk, struct click *cd);
 
 #endif /* EXEC_H */

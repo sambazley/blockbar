@@ -39,205 +39,212 @@
 #   define CLOCK_MONOTONIC_RAW CLOCK_MONOTONIC
 #endif
 
+#define MAX(a, b) (a>b?a:b)
+
 int interval;
 
-static void printUsage(const char *file) {
-    fprintf(stderr, "Usage: %s [config_file]\n", file);
+static void print_usage(const char *file)
+{
+	fprintf(stderr, "Usage: %s [config_file]\n", file);
 }
 
-static void cleanupBlocks() {
-    for (int i = 0; i < blockCount; i++) {
-        struct Block *blk = &blocks[i];
-        if (blk->id) {
-            removeBlock(blk);
-        }
-    }
+static void cleanup_blocks()
+{
+	for (int i = 0; i < block_count; i++) {
+		struct block *blk = &blocks[i];
+		if (blk->id) {
+			remove_block(blk);
+		}
+	}
 }
 
-static void onexit() {
-    static int exited = 0;
+static void onexit()
+{
+	static int exited = 0;
 
-    if (exited) {
-        return;
-    }
+	if (exited) {
+		return;
+	}
 
-    exited = 1;
+	exited = 1;
 
-    cleanupTray();
-    cleanupBlocks();
-    cleanupModules();
-    cleanupBars();
-    cleanupSettings();
-    cleanupTasks();
+	cleanup_tray();
+	cleanup_blocks();
+	cleanup_modules();
+	cleanup_bars();
+	cleanup_settings();
+	cleanup_tasks();
 
-    if (blocks) {
-        free(blocks);
-    }
+	if (blocks) {
+		free(blocks);
+	}
 
-    if (procs) {
-        free(procs);
-    }
+	if (procs) {
+		free(procs);
+	}
 
-    exit(0);
+	exit(0);
 }
 
-int main(int argc, const char *argv[]) {
-    signal(SIGTERM, onexit);
-    signal(SIGINT, onexit);
-    atexit(onexit);
+int main(int argc, const char *argv[])
+{
+	signal(SIGTERM, onexit);
+	signal(SIGINT, onexit);
+	atexit(onexit);
 
-    const char *config = "";
-    if (argc == 2) {
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-            printUsage(argv[0]);
-            return 1;
-        }
+	const char *config = "";
+	if (argc == 2) {
+		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+			print_usage(argv[0]);
+			return 1;
+		}
 
-        config = argv[1];
-    } else if (argc > 2) {
-        printUsage(argv[0]);
-        return 1;
-    }
+		config = argv[1];
+	} else if (argc > 2) {
+		print_usage(argv[0]);
+		return 1;
+	}
 
-    if (createBars() != 0) {
-        return 1;
-    }
+	if (create_bars() != 0) {
+		return 1;
+	}
 
-    JsonObject *jsonConfig = configInit(config);
+	JsonObject *json_config = config_init(config);
 
-    if (jsonConfig) {
-        configParseGeneral(jsonConfig);
-    }
+	if (json_config) {
+		config_parse_general(json_config);
+	}
 
-    updateGeom();
+	update_geom();
 
-    if (!isSettingModified(&settings.traybar)) {
-        trayInit(0);
-    }
+	if (!is_setting_modified(&settings.traybar)) {
+		tray_init(0);
+	}
 
-    initModules();
+	modules_init();
 
-    if (jsonConfig) {
-        configParseBlocks(jsonConfig);
-        configCleanup(jsonConfig);
-    }
+	if (json_config) {
+		config_parse_blocks(json_config);
+		config_cleanup(json_config);
+	}
 
-    int sockfd = socketInit();
+	int sockfd = socket_init();
 
-    for (int i = 0; i < blockCount; i++) {
-        blockExec(&blocks[i], 0);
-    }
+	for (int i = 0; i < block_count; i++) {
+		block_exec(&blocks[i], 0);
+	}
 
-    redraw();
+	redraw();
 
-    struct timeval tv;
-    fd_set fds;
-    int x11fd = ConnectionNumber(disp);
+	struct timeval tv;
+	fd_set fds;
+	int x11fd = ConnectionNumber(disp);
 
-    while (1) {
-        FD_ZERO(&fds);
-        if (sockfd > 0) {
-            FD_SET(sockfd, &fds);
-        }
-        FD_SET(x11fd, &fds);
+	while (1) {
+		FD_ZERO(&fds);
+		if (sockfd > 0) {
+			FD_SET(sockfd, &fds);
+		}
+		FD_SET(x11fd, &fds);
 
-        tv = getTimeToNextTask();
+		tv = get_time_to_next_task();
 
-        int nfds = MAX(x11fd, sockfd);
-        for (int i = 0; i < procCount; i++) {
-            struct Proc *proc = &procs[i];
+		int nfds = MAX(x11fd, sockfd);
+		for (int i = 0; i < proc_count; i++) {
+			struct proc *proc = &procs[i];
 
-            if (proc->pid) {
-                FD_SET(proc->fdout, &fds);
-                if (proc->fdout > nfds) {
-                    nfds = proc->fdout;
-                }
-            }
-        }
+			if (proc->pid) {
+				FD_SET(proc->fdout, &fds);
+				if (proc->fdout > nfds) {
+					nfds = proc->fdout;
+				}
+			}
+		}
 
-        int fdsRdy = select(nfds+1, &fds, 0, 0, tv.tv_sec < 0 || tv.tv_usec < 0 ? 0 : &tv);
+		int fds_rdy = select(nfds + 1, &fds, 0, 0,
+				tv.tv_sec < 0 || tv.tv_usec < 0 ? 0 : &tv);
 
-        if (fdsRdy == -1) {
-            continue;
-        }
+		if (fds_rdy == -1) {
+			continue;
+		}
 
-        pollEvents();
+		poll_events();
 
-        if (fdsRdy == 0) {
-            tickTasks();
+		if (fds_rdy == 0) {
+			tick_tasks();
 
-            if (moduleRedrawDirty) {
-                moduleRedrawDirty = 0;
-                redraw();
-            }
+			if (module_redraw_dirty) {
+				module_redraw_dirty = 0;
+				redraw();
+			}
 
-            continue;
-        }
+			continue;
+		}
 
-        if (FD_ISSET(sockfd, &fds)) {
-            socketRecv(sockfd);
-            continue;
-        }
+		if (FD_ISSET(sockfd, &fds)) {
+			socket_recv(sockfd);
+			continue;
+		}
 
-        for (int i = 0; i < procCount; i++) {
-            struct Proc *proc = &procs[i];
+		for (int i = 0; i < proc_count; i++) {
+			struct proc *proc = &procs[i];
 
-            if (proc->pid == 0) continue;
-            if (!FD_ISSET(proc->fdout, &fds)) continue;
+			if (proc->pid == 0) continue;
+			if (!FD_ISSET(proc->fdout, &fds)) continue;
 
-            char buf [2048] = {0};
-            int r = read(proc->fdout, buf, sizeof(buf) - 1);
+			char buf [2048] = {0};
+			int r = read(proc->fdout, buf, sizeof(buf) - 1);
 
-            if (r < 0) {
-                fprintf(stderr, "Error reading fdout\n");
-                continue;
-            }
+			if (r < 0) {
+				fprintf(stderr, "Error reading fdout\n");
+				continue;
+			}
 
-            if (!proc->buffer) {
-                proc->buffer = malloc(strlen(buf) + 1);
-                strcpy(proc->buffer, buf);
-            } else {
-                proc->buffer = realloc(proc->buffer,
-                                       strlen(proc->buffer) + strlen(buf) + 1);
-                strcpy(proc->buffer + strlen(proc->buffer), buf);
-            }
+			if (!proc->buffer) {
+				proc->buffer = malloc(strlen(buf) + 1);
+				strcpy(proc->buffer, buf);
+			} else {
+				proc->buffer = realloc(proc->buffer,
+						strlen(proc->buffer) + strlen(buf) + 1);
+				strcpy(proc->buffer + strlen(proc->buffer), buf);
+			}
 
-            if (waitpid(proc->pid, 0, WNOHANG) == 0) continue;
+			if (waitpid(proc->pid, 0, WNOHANG) == 0) continue;
 
-            struct Block *blk = getBlock(proc->blk);
+			struct block *blk = get_block(proc->blk);
 
-            if (blk) {
-                char **execData;
-                if (blk->eachmon) {
-                    execData = &(blk->data[proc->bar].execData);
-                } else {
-                    execData = &(blk->data->execData);
-                }
+			if (blk) {
+				char **exec_data;
+				if (blk->eachmon) {
+					exec_data = &(blk->data[proc->bar].exec_data);
+				} else {
+					exec_data = &(blk->data->exec_data);
+				}
 
-                if (*execData) {
-                    free(*execData);
-                }
-                *execData = proc->buffer;
+				if (*exec_data) {
+					free(*exec_data);
+				}
+				*exec_data = proc->buffer;
 
-                if (strlen(*execData) &&
-                        (*execData)[strlen(*execData) - 1] == '\n') {
-                    (*execData)[strlen(*execData) - 1] = 0;
-                }
+				if (strlen(*exec_data) &&
+						(*exec_data)[strlen(*exec_data) - 1] == '\n') {
+					(*exec_data)[strlen(*exec_data) - 1] = 0;
+				}
 
-                redrawBlock(blk);
-            }
+				redraw_block(blk);
+			}
 
-            close(proc->fdout);
+			close(proc->fdout);
 
-            proc->blk = 0;
-            proc->pid = 0;
-            proc->fdout = 0;
+			proc->blk = 0;
+			proc->pid = 0;
+			proc->fdout = 0;
 
-            break;
-        }
+			break;
+		}
 
-        redraw();
-    }
+		redraw();
+	}
 
-    return 0;
+	return 0;
 }

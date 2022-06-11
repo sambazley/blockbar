@@ -26,184 +26,190 @@
 #include <string.h>
 #include <unistd.h>
 
-int procCount;
-struct Proc *procs;
+int proc_count;
+struct proc *procs;
 
-static int envCount = 0;
+static int env_count = 0;
 static char **envs = 0;
 
-void blockbarSetEnv(const char *key, const char *val) {
-    envs = realloc(envs, sizeof(char *) * ++envCount);
-    envs[envCount - 1] = malloc(strlen(key) + 1);
-    strcpy(envs[envCount - 1], key);
+void blockbar_set_env(const char *key, const char *val)
+{
+	envs = realloc(envs, sizeof(char *) * ++env_count);
+	envs[env_count - 1] = malloc(strlen(key) + 1);
+	strcpy(envs[env_count - 1], key);
 
-    setenv(key, val, 1);
+	setenv(key, val, 1);
 }
 
-static void resetEnvs() {
-    if (envs == 0) {
-        return;
-    }
+static void reset_envs()
+{
+	if (envs == 0) {
+		return;
+	}
 
-    for (int i = 0; i < envCount; i++) {
-        setenv(envs[i], "", 1);
-        free(envs[i]);
-    }
+	for (int i = 0; i < env_count; i++) {
+		setenv(envs[i], "", 1);
+		free(envs[i]);
+	}
 
-    free(envs);
+	free(envs);
 
-    envs = 0;
-    envCount = 0;
+	envs = 0;
+	env_count = 0;
 }
 
-static void barEnvs(struct Block *blk, int bar, struct Click *cd) {
-    if (cd) {
-        bar = cd->bar;
-    }
+static void bar_envs(struct block *blk, int bar, struct click *cd)
+{
+	if (cd) {
+		bar = cd->bar;
+	}
 
-    if (blk->eachmon || cd) {
-        blockbarSetEnv("BAR_OUTPUT", bars[bar].output);
-    }
+	if (blk->eachmon || cd) {
+		blockbar_set_env("BAR_OUTPUT", bars[bar].output);
+	}
 
-    int rendered;
+	int rendered;
 
-    if (blk->eachmon) {
-        rendered = blk->data[bar].rendered;
-    } else {
-        rendered = blk->data->rendered;
-    }
+	if (blk->eachmon) {
+		rendered = blk->data[bar].rendered;
+	} else {
+		rendered = blk->data->rendered;
+	}
 
-    if (!rendered) {
-        return;
-    }
+	if (!rendered) {
+		return;
+	}
 
-    if (blk->eachmon || cd) {
-        char x [12] = {0};
-        sprintf(x, "%d", blk->x[bar] + bars[bar].x);
-        blockbarSetEnv("BLOCK_X", x);
+	if (blk->eachmon || cd) {
+		char x [12] = {0};
+		sprintf(x, "%d", blk->x[bar] + bars[bar].x);
+		blockbar_set_env("BLOCK_X", x);
 
-        char w [12] = {0};
-        sprintf(w, "%d", blk->width[bar]);
-        blockbarSetEnv("BLOCK_WIDTH", w);
-    }
+		char w [12] = {0};
+		sprintf(w, "%d", blk->width[bar]);
+		blockbar_set_env("BLOCK_WIDTH", w);
+	}
 }
 
-static void execute(struct Block *blk, int bar, struct Click *cd) {
-    char blockid [12] = {0};
-    sprintf(blockid, "%d", blk->id);
-    blockbarSetEnv("BLOCK_ID", blockid);
+static void execute(struct block *blk, int bar, struct click *cd)
+{
+	char blockid [12] = {0};
+	sprintf(blockid, "%d", blk->id);
+	blockbar_set_env("BLOCK_ID", blockid);
 
-    barEnvs(blk, bar, cd);
+	bar_envs(blk, bar, cd);
 
-    struct Module *mod = getModuleByName(blk->properties.module.val.STR);
+	struct module *mod = get_module_by_name(blk->properties.module.val.STR);
 
-    if (mod) {
-        int (*func)(struct Block *, int, struct Click *) =
-            moduleGetFunction(mod, "exec");
+	if (mod) {
+		int (*func)(struct block *, int, struct click *) =
+			module_get_function(mod, "exec");
 
-        if (func) {
-            int ret = func(blk, bar, cd);
+		if (func) {
+			int ret = func(blk, bar, cd);
 
-            if (ret != 0) {
-                goto end;
-            }
-        }
-    }
+			if (ret != 0) {
+				goto end;
+			}
+		}
+	}
 
-    int out [2];
+	int out [2];
 
-    if (pipe(out) == -1) {
-        fprintf(stderr, "Failed to create pipe\n");
-        return;
-    }
+	if (pipe(out) == -1) {
+		fprintf(stderr, "Failed to create pipe\n");
+		return;
+	}
 
-    int pid = fork();
-    if (pid == -1) {
-        fprintf(stderr, "Failed to fork\n");
-        return;
-    }
+	int pid = fork();
+	if (pid == -1) {
+		fprintf(stderr, "Failed to fork\n");
+		return;
+	}
 
-    if (pid == 0) {
-        close(out[0]);
+	if (pid == 0) {
+		close(out[0]);
 
-        dup2(out[1], STDOUT_FILENO);
+		dup2(out[1], STDOUT_FILENO);
 
-        close(out[1]);
+		close(out[1]);
 
-        char *shell = "/bin/sh";
-        execl(shell, shell, "-c", blk->properties.exec.val.STR, (char *) 0);
-    }
+		char *shell = "/bin/sh";
+		execl(shell, shell, "-c", blk->properties.exec.val.STR,
+				(char *) 0);
+	}
 
-    close(out[1]);
+	close(out[1]);
 
-    struct Proc *proc = 0;
-    for (int i = 0; i < procCount; i++) {
-        if (procs[i].pid == 0) {
-            proc = &procs[i];
-            break;
-        }
-    }
+	struct proc *proc = 0;
+	for (int i = 0; i < proc_count; i++) {
+		if (procs[i].pid == 0) {
+			proc = &procs[i];
+			break;
+		}
+	}
 
-    if (proc == 0) {
-        procCount++;
-        procs = realloc(procs, sizeof(struct Proc) * procCount);
-        proc = &procs[procCount - 1];
-    }
+	if (proc == 0) {
+		proc_count++;
+		procs = realloc(procs, sizeof(struct proc) * proc_count);
+		proc = &procs[proc_count - 1];
+	}
 
-    proc->fdout = out[0];
-    proc->pid = pid;
-    proc->blk = blk->id;
-    proc->bar = bar;
-    proc->buffer = 0;
+	proc->fdout = out[0];
+	proc->pid = pid;
+	proc->blk = blk->id;
+	proc->bar = bar;
+	proc->buffer = 0;
 
 end:
-    resetEnvs();
+	reset_envs();
 }
 
-void blockExec(struct Block *blk, struct Click *cd) {
-    struct Module *mod = getModuleByName(blk->properties.module.val.STR);
+void block_exec(struct block *blk, struct click *cd)
+{
+	struct module *mod = get_module_by_name(blk->properties.module.val.STR);
 
-    if (!mod) {
-        return;
-    }
+	if (!mod) {
+		return;
+	}
 
-    if (mod->data.flags & MFLAG_NO_EXEC) {
-        return;
-    }
+	if (mod->data.flags & MFLAG_NO_EXEC) {
+		return;
+	}
 
-    if (!blk->properties.exec.val.STR ||
-            strcmp(blk->properties.exec.val.STR, "") == 0) {
-        return;
-    }
+	if (!blk->properties.exec.val.STR ||
+			strcmp(blk->properties.exec.val.STR, "") == 0) {
+		return;
+	}
 
-    char button [12] = {0};
-    char clickx [12] = {0};
+	char button [12] = {0};
+	char clickx [12] = {0};
 
-    if (cd != 0) {
-        sprintf(button, "%d", cd->button);
-        sprintf(clickx, "%d", cd->x + bars[cd->bar].x);
-    }
+	if (cd != 0) {
+		sprintf(button, "%d", cd->button);
+		sprintf(clickx, "%d", cd->x + bars[cd->bar].x);
+	}
 
-    blockbarSetEnv("BLOCK_BUTTON", button);
-    blockbarSetEnv("CLICK_X", clickx);
+	blockbar_set_env("BLOCK_BUTTON", button);
+	blockbar_set_env("CLICK_X", clickx);
 
-    if (blk->eachmon) {
-        if (cd) {
-            execute(blk, cd->bar, cd);
+	if (blk->eachmon) {
+		if (cd) {
+			execute(blk, cd->bar, cd);
 
-            for (int i = 0; i < barCount; i++) {
-                if (i == cd->bar) {
-                    continue;
-                }
+			for (int i = 0; i < bar_count; i++) {
+				if (i == cd->bar) {
+					continue;
+				}
 
-                execute(blk, i, 0);
-            }
-        } else {
-            for (int i = 0; i < barCount; i++) {
-                execute(blk, i, 0);
-            }
-        }
-    } else {
-        execute(blk, 0, cd);
-    }
+				execute(blk, i, 0);
+			}
+		} else {
+			for (int i = 0; i < bar_count; i++) {
+				execute(blk, i, 0);
+			}
+		}
+	} else {
+		execute(blk, 0, cd);
+	}
 }

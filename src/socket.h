@@ -20,7 +20,7 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-int socketInit();
-void socketRecv(int sockfd);
+int socket_init();
+void socket_recv(int sockfd);
 
 #endif /* SOCKET_H */

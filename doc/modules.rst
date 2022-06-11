@@ -12,7 +12,7 @@ Common Functions
 ----------------
 This section provides a list of functions that are common to all module types.
 
-``int init(struct ModuleData *data)``
+``int init(struct module_data *data)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 This function is called when the module is loaded. It is used to initialize the
 module. It has the following requirements:
@@ -25,12 +25,12 @@ If these requirements are not met, the module will fail to initialize.
 
 ``data`` also contains other optional variables:
 
-* ``enum ModuleType type`` - The module's type. Defaults to ``BLOCK``.
+* ``enum module_type type`` - The module's type. Defaults to ``BLOCK``.
 * ``long flags`` - A flag field for setting module options. The flags each have
   a ``MFLAG_`` prefix and can be found in types.h.
-* ``struct Setting *settings`` - A pointer to the first setting in a list of
+* ``struct setting *settings`` - A pointer to the first setting in a list of
   settings.
-* ``int settingCount`` - The number of settings in the list.
+* ``int setting_count`` - The number of settings in the list.
 * ``int interval`` - The time interval between each call of a ``RENDER``
   module's ``render`` function. If this variable is set to zero, the ``render``
   function is called each time that the bar is redrawn. This variable is ignored
@@ -40,7 +40,7 @@ Below is a minimalistic example of an ``init`` function:
 
 .. code-block:: c
 
-    int init(struct ModuleData *data) {
+    int init(struct module_data *data) {
         data->name = "example";
         return 0;
     }
@@ -50,7 +50,7 @@ Below is a minimalistic example of an ``init`` function:
 
 This function is called when the module is unloaded.
 
-``void settingUpdate(struct Setting *setting)``
+``void setting_update(struct setting *setting)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This function is called when a bar setting or module setting is changed.
@@ -60,18 +60,18 @@ This function is called when a bar setting or module setting is changed.
 This sections provides a list of functions that are specific to ``BLOCK``
 modules.
 
-``void blockAdd(struct Block *blk)``
+``void block_add(struct block *blk)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This function is called when a block is registered to the module.
 
-``void blockRemove(struct Block *blk)``
+``void block_remove(struct block *blk)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This function is called when a block is unregistered from the module, or when a
 block registered to the module is removed.
 
-``int render(cairo_t *ctx, struct Block *blk, int bar)``
+``int render(cairo_t *ctx, struct block *blk, int bar)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This function renders the contents of the block. Typically, this function
@@ -81,14 +81,14 @@ that the block failed to render. Here is an example ``render`` function:
 
 .. code-block:: c
 
-    int render(cairo_t *ctx, struct Block *blk, int bar) {
+    int render(cairo_t *ctx, struct block *blk, int bar) {
         int x = 0;
         char *execdata;
 
         if (blk->eachmon) {
-            execdata = blk->data[bar].execData;
+            execdata = blk->data[bar].exec_data;
         } else {
-            execdata = blk->data->execData;
+            execdata = blk->data->exec_data;
         }
 
         if (!execdata) {
@@ -96,13 +96,13 @@ that the block failed to render. Here is an example ``render`` function:
         }
 
         ...
-        x += drawXyz(...);
+        x += draw_xyz(...);
         ...
 
         return x;
     }
 
-``int exec(struct Block *blk, int bar, struct Click *cd)``
+``int exec(struct block *blk, int bar, struct click *cd)``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This function is called before a block is executed. If this was triggered by
@@ -121,7 +121,7 @@ the block was not clicked and the block has ``eachmon=false``, both ``cd`` and
   ``bar`` parameter of the function.
 
 Additional environment variables can be set from this function using the
-``blockbarSetEnv`` function.
+``blockbar_set_env`` function.
 
 If the ``exec`` function returns non zero, the block's execution will be
 cancelled.

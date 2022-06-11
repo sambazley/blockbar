@@ -31,374 +31,397 @@
 #include <X11/Xlib.h>
 
 Display *disp;
-int barCount;
-struct Bar *bars;
+int bar_count;
+struct bar *bars;
 
 static Visual *visual;
 
 #define ATOM(x) Atom x = XInternAtom(disp, #x, False)
 
 static const unsigned char xdnd_version = 5;
-static Atom xdndPosition;
-static Atom xdndStatus;
-static Atom xdndLeave;
+static Atom xdnd_position;
+static Atom xdnd_status;
+static Atom xdnd_leave;
 
 static int taskid = 0;
 static int dndx, dndoldx, dndoldy;
 static int dndbar;
 
-int createBars() {
-    disp = XOpenDisplay(NULL);
-    if (!disp) {
-        fprintf(stderr, "Error opening display\n");
-        return 1;
-    }
+int create_bars()
+{
+	disp = XOpenDisplay(NULL);
+	if (!disp) {
+		fprintf(stderr, "Error opening display\n");
+		return 1;
+	}
 
-    int s = DefaultScreen(disp);
-    Window root = RootWindow(disp, s);
+	int s = DefaultScreen(disp);
+	Window root = RootWindow(disp, s);
 
-    XRRScreenResources *res = XRRGetScreenResources(disp, root);
+	XRRScreenResources *res = XRRGetScreenResources(disp, root);
 
-    barCount = 0;
+	bar_count = 0;
 
-    ATOM(_NET_WM_WINDOW_TYPE);
-    ATOM(_NET_WM_WINDOW_TYPE_DOCK);
-    ATOM(_NET_WM_STATE);
-    ATOM(_NET_WM_STATE_STICKY);
-    ATOM(_NET_WM_STATE_BELOW);
-    ATOM(XdndAware);
+	ATOM(_NET_WM_WINDOW_TYPE);
+	ATOM(_NET_WM_WINDOW_TYPE_DOCK);
+	ATOM(_NET_WM_STATE);
+	ATOM(_NET_WM_STATE_STICKY);
+	ATOM(_NET_WM_STATE_BELOW);
+	ATOM(XdndAware);
 
-    xdndPosition = XInternAtom(disp, "XdndPosition", False);
-    xdndStatus = XInternAtom(disp, "XdndStatus", False);
-    xdndLeave = XInternAtom(disp, "XdndLeave", False);
+	xdnd_position = XInternAtom(disp, "XdndPosition", False);
+	xdnd_status = XInternAtom(disp, "XdndStatus", False);
+	xdnd_leave = XInternAtom(disp, "XdndLeave", False);
 
-    XVisualInfo vinfo;
-    XMatchVisualInfo(disp, s, 32, TrueColor, &vinfo);
+	XVisualInfo vinfo;
+	XMatchVisualInfo(disp, s, 32, TrueColor, &vinfo);
 
-    visual = vinfo.visual;
+	visual = vinfo.visual;
 
-    for (int i = 0; i < res->noutput; i++) {
-        XRROutputInfo *oputInfo = XRRGetOutputInfo(disp, res, res->outputs[i]);
+	for (int i = 0; i < res->noutput; i++) {
+		XRROutputInfo *oput_info = XRRGetOutputInfo(disp, res,
+				res->outputs[i]);
 
-        if (!oputInfo->crtc) {
-            XRRFreeOutputInfo(oputInfo);
-            continue;
-        }
+		if (!oput_info->crtc) {
+			XRRFreeOutputInfo(oput_info);
+			continue;
+		}
 
-        barCount++;
-        bars = realloc(bars, sizeof(struct Bar) * barCount);
+		bar_count++;
+		bars = realloc(bars, sizeof(struct bar) * bar_count);
 
-        XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(disp, res, oputInfo->crtc);
+		XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(disp, res,
+				oput_info->crtc);
 
-        struct Bar *bar = &bars[barCount-1];
+		struct bar *bar = &bars[bar_count-1];
 
-        XSetWindowAttributes wa;
-        wa.colormap = XCreateColormap(disp, root, visual, AllocNone);
-        wa.border_pixel = 0;
+		XSetWindowAttributes wa;
+		wa.colormap = XCreateColormap(disp, root, visual, AllocNone);
+		wa.border_pixel = 0;
 
-        bar->window = XCreateWindow(disp, root, 0, 0, 10, 10,
-                0, vinfo.depth, InputOutput, visual,
-                CWColormap | CWBorderPixel,
-                &wa);
+		bar->window = XCreateWindow(disp, root, 0, 0, 10, 10,
+				0, vinfo.depth, InputOutput, visual,
+				CWColormap | CWBorderPixel,
+				&wa);
 
-        bar->output = malloc(oputInfo->nameLen + 1);
-        strcpy(bar->output, oputInfo->name);
+		bar->output = malloc(oput_info->nameLen + 1);
+		strcpy(bar->output, oput_info->name);
 
-        XRRFreeOutputInfo(oputInfo);
-        XRRFreeCrtcInfo(crtcInfo);
+		XRRFreeOutputInfo(oput_info);
+		XRRFreeCrtcInfo(crtc_info);
 
-        XChangeProperty(disp, bar->window, _NET_WM_WINDOW_TYPE, XA_ATOM, 32,
-                PropModeAppend, (unsigned char *) &_NET_WM_WINDOW_TYPE_DOCK, 1);
+		XChangeProperty(disp, bar->window, _NET_WM_WINDOW_TYPE, XA_ATOM,
+				32, PropModeAppend,
+				(unsigned char *) &_NET_WM_WINDOW_TYPE_DOCK, 1);
 
-        XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM, 32,
-                PropModeAppend, (unsigned char *) &_NET_WM_STATE_STICKY, 1);
+		XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM,
+				32, PropModeAppend,
+				(unsigned char *) &_NET_WM_STATE_STICKY, 1);
 
-        XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM, 32,
-                PropModeAppend, (unsigned char *) &_NET_WM_STATE_BELOW, 1);
+		XChangeProperty(disp, bar->window, _NET_WM_STATE, XA_ATOM,
+				32, PropModeAppend,
+				(unsigned char *) &_NET_WM_STATE_BELOW, 1);
 
-        XChangeProperty(disp, bar->window, XdndAware, XA_ATOM, 32,
-                PropModeReplace, &xdnd_version, 1);
+		XChangeProperty(disp, bar->window, XdndAware, XA_ATOM, 32,
+				PropModeReplace, &xdnd_version, 1);
 
-        XClassHint *classhint = XAllocClassHint();
-        classhint->res_name = "blockbar";
-        classhint->res_class = "blockbar";
-        XSetClassHint(disp, bar->window, classhint);
-        XFree(classhint);
+		XClassHint *classhint = XAllocClassHint();
+		classhint->res_name = "blockbar";
+		classhint->res_class = "blockbar";
+		XSetClassHint(disp, bar->window, classhint);
+		XFree(classhint);
 
-        XSelectInput(disp, bar->window,
-                ButtonPressMask | SubstructureNotifyMask | ExposureMask);
+		XSelectInput(disp, bar->window,
+				ButtonPressMask | SubstructureNotifyMask | ExposureMask);
 
-        bar->sfc[RI_VISIBLE] = 0;
-        bar->sfc[RI_BUFFER] = 0;
-        bar->ctx[RI_VISIBLE] = 0;
-        bar->ctx[RI_BUFFER] = 0;
-    }
-    XRRFreeScreenResources(res);
-    XFlush(disp);
+		bar->sfc[RI_VISIBLE] = 0;
+		bar->sfc[RI_BUFFER] = 0;
+		bar->ctx[RI_VISIBLE] = 0;
+		bar->ctx[RI_BUFFER] = 0;
+	}
+	XRRFreeScreenResources(res);
+	XFlush(disp);
 
-    return 0;
+	return 0;
 }
 
-void updateGeom() {
-    int s = DefaultScreen(disp);
-    Window root = RootWindow(disp, s);
+void update_geom()
+{
+	int s = DefaultScreen(disp);
+	Window root = RootWindow(disp, s);
 
-    ATOM(_NET_WM_STRUT);
-    ATOM(_NET_WM_STRUT_PARTIAL);
+	ATOM(_NET_WM_STRUT);
+	ATOM(_NET_WM_STRUT_PARTIAL);
 
-    XRRScreenResources *res = XRRGetScreenResources(disp, root);
+	XRRScreenResources *res = XRRGetScreenResources(disp, root);
 
-    int b = 0;
-    for (int i = 0; i < res->noutput; i++) {
-        XRROutputInfo *oputInfo = XRRGetOutputInfo(disp, res, res->outputs[i]);
+	int b = 0;
+	for (int i = 0; i < res->noutput; i++) {
+		XRROutputInfo *oput_info = XRRGetOutputInfo(disp, res,
+				res->outputs[i]);
 
-        if (!oputInfo->crtc) {
-            XRRFreeOutputInfo(oputInfo);
-            continue;
-        }
+		if (!oput_info->crtc) {
+			XRRFreeOutputInfo(oput_info);
+			continue;
+		}
 
-        XRRCrtcInfo *crtcInfo = XRRGetCrtcInfo(disp, res, oputInfo->crtc);
-        struct Bar *bar = &bars[b];
+		XRRCrtcInfo *crtc_info = XRRGetCrtcInfo(disp, res,
+				oput_info->crtc);
+		struct bar *bar = &bars[b];
 
-        XUnmapWindow(disp, bar->window);
+		XUnmapWindow(disp, bar->window);
 
-        int top = 1;
-        if (strcmp(settings.position.val.STR, "bottom") == 0) {
-            top = 0;
-        }
+		int top = 1;
+		if (strcmp(settings.position.val.STR, "bottom") == 0) {
+			top = 0;
+		}
 
-        int x = crtcInfo->x + settings.marginhoriz.val.INT
-                            + settings.xoffset.val.INT;
+		int x = crtc_info->x + settings.marginhoriz.val.INT
+			+ settings.xoffset.val.INT;
 
-        int y = top ? settings.marginvert.val.INT
-                         : (signed) crtcInfo->height
-                         - settings.height.val.INT
-                         - settings.marginvert.val.INT;
+		int y = top ? settings.marginvert.val.INT
+			: (signed) crtc_info->height
+			- settings.height.val.INT
+			- settings.marginvert.val.INT;
 
-        int width = crtcInfo->width - settings.marginhoriz.val.INT * 2;
+		int width = crtc_info->width - settings.marginhoriz.val.INT * 2;
 
-        XMoveResizeWindow(disp, bar->window, x, y,
-                          width, settings.height.val.INT);
+		XMoveResizeWindow(disp, bar->window, x, y,
+				width, settings.height.val.INT);
 
-        bar->x = x;
-        bar->width = width;
+		bar->x = x;
+		bar->width = width;
 
-        for (int ri = 0; ri < RI_COUNT; ri++) {
-            if (bar->sfc[ri]) {
-                cairo_surface_destroy(bar->sfc[ri]);
-            }
+		for (int ri = 0; ri < RI_COUNT; ri++) {
+			if (bar->sfc[ri]) {
+				cairo_surface_destroy(bar->sfc[ri]);
+			}
 
-            if (bar->ctx[ri]) {
-                cairo_destroy(bar->ctx[ri]);
-            }
+			if (bar->ctx[ri]) {
+				cairo_destroy(bar->ctx[ri]);
+			}
 
-            if (ri == 0) {
-                bar->sfc[0] = cairo_xlib_surface_create(disp, bar->window,
-                    visual, bar->width, settings.height.val.INT);
-            } else {
-                bar->sfc[ri] = cairo_surface_create_similar_image(bar->sfc[0],
-                    CAIRO_FORMAT_ARGB32, bar->width, settings.height.val.INT);
-            }
+			if (ri == 0) {
+				bar->sfc[0] = cairo_xlib_surface_create(
+						disp,
+						bar->window,
+						visual,
+						bar->width,
+						settings.height.val.INT);
+			} else {
+				bar->sfc[ri] = cairo_surface_create_similar_image(
+						bar->sfc[0],
+						CAIRO_FORMAT_ARGB32,
+						bar->width,
+						settings.height.val.INT);
+			}
 
-            bar->ctx[ri] = cairo_create(bar->sfc[ri]);
-        }
+			bar->ctx[ri] = cairo_create(bar->sfc[ri]);
+		}
 
-        long geom [12] = {0};
-        int height = settings.height.val.INT + settings.marginvert.val.INT * 2;
+		long geom [12] = {0};
+		int height = settings.height.val.INT + settings.marginvert.val.INT * 2;
 
-        if (top) {
-            geom[2] = height;
-            geom[8] = crtcInfo->x;
-            geom[9] = crtcInfo->x + crtcInfo->width;
-        } else {
-            geom[3] = height;
-            geom[10] = crtcInfo->x;
-            geom[11] = crtcInfo->x + crtcInfo->width;
-        }
+		if (top) {
+			geom[2] = height;
+			geom[8] = crtc_info->x;
+			geom[9] = crtc_info->x + crtc_info->width;
+		} else {
+			geom[3] = height;
+			geom[10] = crtc_info->x;
+			geom[11] = crtc_info->x + crtc_info->width;
+		}
 
-        XChangeProperty(disp, bar->window, _NET_WM_STRUT, XA_CARDINAL, 32,
-                PropModeReplace, (unsigned char *) &geom, 4);
-        XChangeProperty(disp, bar->window, _NET_WM_STRUT_PARTIAL, XA_CARDINAL, 32,
-                PropModeReplace, (unsigned char *) &geom, 12);
+		XChangeProperty(disp, bar->window, _NET_WM_STRUT, XA_CARDINAL, 32,
+				PropModeReplace, (unsigned char *) &geom, 4);
+		XChangeProperty(disp, bar->window, _NET_WM_STRUT_PARTIAL, XA_CARDINAL, 32,
+				PropModeReplace, (unsigned char *) &geom, 12);
 
-        XRRFreeOutputInfo(oputInfo);
-        XRRFreeCrtcInfo(crtcInfo);
+		XRRFreeOutputInfo(oput_info);
+		XRRFreeCrtcInfo(crtc_info);
 
-        XMapWindow(disp, bar->window);
+		XMapWindow(disp, bar->window);
 
-        XMoveResizeWindow(disp, bar->window, x, y,
-                          width, settings.height.val.INT);
+		XMoveResizeWindow(disp, bar->window, x, y,
+				width, settings.height.val.INT);
 
-        b++;
-    }
+		b++;
+	}
 
-    XRRFreeScreenResources(res);
-    XFlush(disp);
+	XRRFreeScreenResources(res);
+	XFlush(disp);
 
-    for (int i = 0; i < blockCount; i++) {
-        struct Block *blk = &blocks[i];
+	for (int i = 0; i < block_count; i++) {
+		struct block *blk = &blocks[i];
 
-        if (blk->id) {
-            resizeBlock(blk);
-        }
-    }
+		if (blk->id) {
+			resize_block(blk);
+		}
+	}
 
-    for (int i = 0; i < moduleCount; i++) {
-        struct Module *mod = &modules[i];
+	for (int i = 0; i < module_count; i++) {
+		struct module *mod = &modules[i];
 
-        if (mod->dl && mod->data.type == RENDER) {
-            resizeModule(mod);
-        }
-    }
+		if (mod->dl && mod->data.type == RENDER) {
+			resize_module(mod);
+		}
+	}
 }
 
-static void click(struct Click *cd) {
-    for (int i = 0; i < blockCount; i++) {
-        struct Block *blk = &blocks[i];
+static void click(struct click *cd)
+{
+	for (int i = 0; i < block_count; i++) {
+		struct block *blk = &blocks[i];
 
-        if (!blk->id) {
-            continue;
-        }
+		if (!blk->id) {
+			continue;
+		}
 
-        int rendered;
-        if (blk->eachmon) {
-            rendered = blk->data[cd->bar].rendered;
-        } else {
-            rendered = blk->data->rendered;
-        }
+		int rendered;
+		if (blk->eachmon) {
+			rendered = blk->data[cd->bar].rendered;
+		} else {
+			rendered = blk->data->rendered;
+		}
 
-        if (!rendered) {
-            continue;
-        }
+		if (!rendered) {
+			continue;
+		}
 
-        if (cd->x > blk->x[cd->bar] &&
-                cd->x < blk->x[cd->bar] + blk->width[cd->bar]) {
-            blockExec(blk, cd);
-            break;
-        }
-    }
+		if (cd->x > blk->x[cd->bar] &&
+				cd->x < blk->x[cd->bar] + blk->width[cd->bar]) {
+			block_exec(blk, cd);
+			break;
+		}
+	}
 }
 
-static int isXdndEvent(XEvent *ev) {
-    if (ev->xclient.message_type == xdndPosition ||
-            ev->xclient.message_type == xdndLeave) {
-        return 1;
-    }
+static int is_xdnd_event(XEvent *ev)
+{
+	if (ev->xclient.message_type == xdnd_position ||
+			ev->xclient.message_type == xdnd_leave) {
+		return 1;
+	}
 
-    return 0;
+	return 0;
 }
 
-static void dndTask(int id) {
-    if (id == taskid) {
-        taskid = 0;
+static void dnd_task(int id)
+{
+	if (id == taskid) {
+		taskid = 0;
 
-        struct Click cd = {
-            .button = -1,
-            .x = dndx - bars[dndbar].x,
-            .bar = dndbar
-        };
+		struct click cd = {
+			.button = -1,
+			.x = dndx - bars[dndbar].x,
+			.bar = dndbar
+		};
 
-        click(&cd);
-    }
+		click(&cd);
+	}
 }
 
-static void handleXdndEvent(XEvent *ev) {
-    if (ev->xclient.message_type == xdndPosition) {
-        int bar;
-        uint16_t x = ev->xclient.data.l[2] >> 16;
-        uint16_t y = ev->xclient.data.l[2] & 0xffff;
+static void handle_xdnd_event(XEvent *ev)
+{
+	if (ev->xclient.message_type == xdnd_position) {
+		int bar;
+		uint16_t x = ev->xclient.data.l[2] >> 16;
+		uint16_t y = ev->xclient.data.l[2] & 0xffff;
 
-        for (bar = 0; bar < barCount; bar++) {
-            if (bars[bar].window == ev->xbutton.window) break;
-        }
+		for (bar = 0; bar < bar_count; bar++) {
+			if (bars[bar].window == ev->xbutton.window) break;
+		}
 
-        dndx = x;
+		dndx = x;
 
-        if (abs(x - dndoldx) > 5 || abs(y - dndoldy) > 5) {
-            dndoldx = x;
-            dndoldy = y;
-            dndbar = bar;
+		if (abs(x - dndoldx) > 5 || abs(y - dndoldy) > 5) {
+			dndoldx = x;
+			dndoldy = y;
+			dndbar = bar;
 
-            if (taskid) {
-                cancelTask(taskid);
-            }
+			if (taskid) {
+				cancel_task(taskid);
+			}
 
-            taskid = scheduleTask(&dndTask, 500, 0);
-        }
+			taskid = schedule_task(&dnd_task, 500, 0);
+		}
 
-        XEvent resp;
-        memset(&resp, 0, sizeof(resp));
-        resp.xclient.type = ClientMessage;
-        resp.xclient.window = ev->xclient.data.l[0];
-        resp.xclient.message_type = xdndStatus;
-        resp.xclient.format = 32;
-        resp.xclient.data.l[0] = ev->xclient.window;
-        resp.xclient.data.l[1] = 0;
-        XSendEvent(disp, resp.xclient.window, False, NoEventMask, &resp);
-    } else if (ev->xclient.message_type == xdndLeave) {
-        if (taskid) {
-            cancelTask(taskid);
-        }
-    }
+		XEvent resp;
+		memset(&resp, 0, sizeof(resp));
+		resp.xclient.type = ClientMessage;
+		resp.xclient.window = ev->xclient.data.l[0];
+		resp.xclient.message_type = xdnd_status;
+		resp.xclient.format = 32;
+		resp.xclient.data.l[0] = ev->xclient.window;
+		resp.xclient.data.l[1] = 0;
+		XSendEvent(disp, resp.xclient.window, False, NoEventMask, &resp);
+	} else if (ev->xclient.message_type == xdnd_leave) {
+		if (taskid) {
+			cancel_task(taskid);
+		}
+	}
 }
 
-void pollEvents() {
-    XEvent ev;
-    while (XPending(disp)) {
-        XNextEvent(disp, &ev);
-        switch (ev.type) {
-            case ButtonPress:
-                {
-                    int bar;
-                    for (bar = 0; bar < barCount; bar++) {
-                        if (bars[bar].window == ev.xbutton.window) break;
-                    }
+void poll_events()
+{
+	XEvent ev;
+	while (XPending(disp)) {
+		XNextEvent(disp, &ev);
+		switch (ev.type) {
+			case ButtonPress:
+			{
+				int bar;
+				for (bar = 0; bar < bar_count; bar++) {
+					if (bars[bar].window == ev.xbutton.window) break;
+				}
 
-                    if (ev.xbutton.x < 0 || ev.xbutton.y < 0 ||
-                            ev.xbutton.x > bars[bar].width ||
-                            ev.xbutton.y > settings.height.val.INT) {
-                        break;
-                    }
+				if (ev.xbutton.x < 0 || ev.xbutton.y < 0 ||
+						ev.xbutton.x > bars[bar].width ||
+						ev.xbutton.y > settings.height.val.INT) {
+					break;
+				}
 
-                    struct Click cd = {
-                        .button = ev.xbutton.button,
-                        .x = ev.xbutton.x,
-                        .bar = bar,
-                    };
+				struct click cd = {
+					.button = ev.xbutton.button,
+					.x = ev.xbutton.x,
+					.bar = bar,
+				};
 
-                    click(&cd);
-                }
-                break;
-            case ClientMessage:
-                if (isTrayEvent(&ev)) {
-                    handleTrayEvent(&ev);
-                } else if (isXdndEvent(&ev)) {
-                    handleXdndEvent(&ev);
-                }
-                break;
-            case ReparentNotify:
-            case DestroyNotify:
-                handleDestroyEvent(&ev);
-                break;
-        }
-    }
+				click(&cd);
+			}
+			break;
+			case ClientMessage:
+				if (is_tray_event(&ev)) {
+					handle_tray_event(&ev);
+				} else if (is_xdnd_event(&ev)) {
+					handle_xdnd_event(&ev);
+				}
+				break;
+			case ReparentNotify:
+			case DestroyNotify:
+				handle_destroy_event(&ev);
+				break;
+		}
+	}
 }
 
-void cleanupBars() {
-    for (int i = 0; i < barCount; i++) {
-        struct Bar *bar = &bars[i];
+void cleanup_bars()
+{
+	for (int i = 0; i < bar_count; i++) {
+		struct bar *bar = &bars[i];
 
-        free(bar->output);
-        cairo_surface_destroy(bar->sfc[0]);
-        cairo_surface_destroy(bar->sfc[1]);
-        cairo_destroy(bar->ctx[0]);
-        cairo_destroy(bar->ctx[1]);
-        XDestroyWindow(disp, bar->window);
-    }
+		free(bar->output);
+		cairo_surface_destroy(bar->sfc[0]);
+		cairo_surface_destroy(bar->sfc[1]);
+		cairo_destroy(bar->ctx[0]);
+		cairo_destroy(bar->ctx[1]);
+		XDestroyWindow(disp, bar->window);
+	}
 
-    free(bars);
+	free(bars);
 }
 
-int blockbarGetBarWidth(int bar) {
-    return bars[bar].width;
+int blockbar_get_bar_width(int bar)
+{
+	return bars[bar].width;
 }
