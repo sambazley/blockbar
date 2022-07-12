@@ -21,6 +21,7 @@
 #include "config.h"
 #include "exec.h"
 #include "modules.h"
+#include "render.h"
 #include "task.h"
 #include "tray.h"
 #include <stdio.h>
@@ -49,6 +50,8 @@ static Atom xdnd_leave;
 static int taskid = 0;
 static int dndx, dndoldx, dndoldy;
 static int dndbar;
+
+static int xrr_ev_base, xrr_err_base;
 
 int create_bars()
 {
@@ -142,6 +145,10 @@ int create_bars()
 		bar->ctx = 0;
 		bar->ctx_visible = 0;
 	}
+
+	XRRQueryExtension(disp, &xrr_ev_base, &xrr_err_base);
+	XRRSelectInput(disp, root, RRScreenChangeNotifyMask);
+
 	XRRFreeScreenResources(res);
 	XFlush(disp);
 
@@ -372,6 +379,20 @@ void poll_events()
 			case DestroyNotify:
 				handle_destroy_event(&ev);
 				break;
+			default:
+				if (ev.type == xrr_ev_base + RRScreenChangeNotify) {
+					update_geom();
+
+					for (int i = 0; i < block_count; i++) {
+						struct block *blk = &blocks[i];
+
+						if (blk->id) {
+							redraw_block(blk);
+						}
+					}
+					redraw();
+					redraw_tray();
+				}
 		}
 	}
 }
