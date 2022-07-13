@@ -1,5 +1,5 @@
 # blockbar
-Blocks based status bar for X window managers.
+Blocks based status bar for X window managers and Wayland (wlroots) compositors.
 
 ![screenshot](doc/1.png)
 
@@ -9,7 +9,7 @@ If you are using Arch Linux, blockbar can be installed from the [AUR](https://au
 Otherwise, it can be installed with the following commands:
 
 ```
-$ git clone https://gitlab.com/sambazley/blockbar
+$ git clone https://github.com/sambazley/blockbar
 $ cd blockbar
 $ sudo make install
 ```
