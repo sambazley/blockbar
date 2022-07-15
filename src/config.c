@@ -85,7 +85,7 @@ struct properties def_properties = {
 	S(module, STR, "The name of the module that handles the block", "text")
 	S(exec, STR, "Command to be executed", "")
 	S(pos, POS, "Position of the block", LEFT)
-	S(interval, INT, "Time between each execution of the block's script", 0)
+	S(interval, INT, "Time in milliseconds between each execution of the block's script", 0)
 	S(padding, INT, "Additional padding on both sides of the block", 0)
 	S(paddingleft, INT, "Additional padding on the left of the block", 0)
 	S(paddingright, INT, "Additonal padding on the right of the block", 0)
