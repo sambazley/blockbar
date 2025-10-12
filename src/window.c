@@ -189,10 +189,10 @@ void update_geom()
 		int x = crtc_info->x + settings.marginhoriz.val.INT
 			+ settings.xoffset.val.INT;
 
-		int y = top ? settings.marginvert.val.INT
+		int y = crtc_info->y + (top ? settings.marginvert.val.INT
 			: (signed) crtc_info->height
 			- settings.height.val.INT
-			- settings.marginvert.val.INT;
+			- settings.marginvert.val.INT);
 
 		int width = crtc_info->width - settings.marginhoriz.val.INT * 2;
 
